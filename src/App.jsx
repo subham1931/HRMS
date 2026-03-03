@@ -14,6 +14,7 @@ import PlaceholderPage from "./pages/PlaceholderPage"
 function App() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+
   const routeContent = {
     "/dashboard": <DashboardPage />,
     "/employees": <EmployeesPage />,

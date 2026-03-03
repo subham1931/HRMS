@@ -12,6 +12,6 @@ export function writeLocalStorage(key, value) {
   try {
     window.localStorage.setItem(key, JSON.stringify(value))
   } catch {
-    // Ignore storage write failures in private mode/quota errors.
+    // Ignore storage write failures.
   }
 }

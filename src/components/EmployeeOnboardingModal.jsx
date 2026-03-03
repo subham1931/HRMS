@@ -194,7 +194,16 @@ const emptyProfessionalData = {
   officeLocation: "",
 }
 
-function EmployeeOnboardingModal({ open, onClose, onAddEmployee, onEditEmployee, initialData = null }) {
+const defaultDepartmentOptions = []
+
+function EmployeeOnboardingModal({
+  open,
+  onClose,
+  onAddEmployee,
+  onEditEmployee,
+  initialData = null,
+  departmentOptions = defaultDepartmentOptions,
+}) {
   const [stepIndex, setStepIndex] = useState(0)
   const [personalTouched, setPersonalTouched] = useState(false)
   const [profilePreview, setProfilePreview] = useState("")
@@ -415,6 +424,7 @@ function EmployeeOnboardingModal({ open, onClose, onAddEmployee, onEditEmployee,
                 placeholder="Enter employee ID"
                 value={professionalData.employeeId}
                 onChange={setProfessionalField("employeeId")}
+                readOnly={isEditMode}
                 required
               />
               <TextField
@@ -444,7 +454,7 @@ function EmployeeOnboardingModal({ open, onClose, onAddEmployee, onEditEmployee,
                 placeholder="Select department"
                 value={professionalData.department}
                 onChange={setProfessionalField("department")}
-                options={["Design", "Engineering", "Sales", "Marketing", "HR", "Analytics", "Healthcare"]}
+                options={departmentOptions}
                 required
               />
               <TextField

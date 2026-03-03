@@ -34,7 +34,7 @@ const initialAttendanceRows = [
 ]
 
 const normalizeAttendanceRows = (rows) =>
-  rows.map((row) => [indianNameMap[row[0]] ?? row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]])
+  (rows || []).map((row) => [indianNameMap[row[0]] ?? row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]])
 
 const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 

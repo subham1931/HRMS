@@ -1,36 +1,15 @@
 import { useEffect, useMemo, useState } from "react"
 import { Pencil, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react"
+import { CiUser } from "react-icons/ci"
 import EmployeeDetailsView from "../components/EmployeeDetailsView"
 import EmployeeFilterModal from "../components/EmployeeFilterModal"
 import EmployeeOnboardingModal from "../components/EmployeeOnboardingModal"
-import { employeeRows } from "../data/mockData"
 import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
 
 const EMPLOYEES_STORAGE_KEY = "hrms_employees"
-const indianNameMap = {
-  "Darlene Robertson": "Aarav Sharma",
-  "Floyd Miles": "Rohan Verma",
-  "Cody Fisher": "Vikram Singh",
-  "Dianne Russell": "Ananya Iyer",
-  "Savannah Nguyen": "Priya Nair",
-  "Jacob Jones": "Arjun Patel",
-}
-
-const defaultEmployees = employeeRows.map(([name, employeeId, department, designation, type]) => ({
-  id: employeeId,
-  name: indianNameMap[name] ?? name,
-  employeeId,
-  department,
-  designation,
-  type,
-  status: "Permanent",
-}))
-
-const normalizeEmployees = (rows) =>
-  rows.map((employee) => ({
-    ...employee,
-    name: indianNameMap[employee.name] ?? employee.name,
-  }))
+const DEPARTMENT_NAMES_STORAGE_KEY = "hrms_department_names"
+const defaultEmployees = []
+const normalizeEmployees = (rows) => rows
 
 function EmployeesPage() {
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false)
@@ -40,6 +19,7 @@ function EmployeesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState({ departments: [], type: "" })
   const [employees, setEmployees] = useState(() => normalizeEmployees(readLocalStorage(EMPLOYEES_STORAGE_KEY, defaultEmployees)))
+  const [departmentNames] = useState(() => readLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, []))
   const [toastMessage, setToastMessage] = useState("")
 
   useEffect(() => {
@@ -66,9 +46,18 @@ function EmployeesPage() {
   }, [employees, filters, searchQuery])
 
   const selectedEmployee = useMemo(
-    () => filteredRows.find((item) => item.employeeId === selectedEmployeeId) || employees.find((item) => item.employeeId === selectedEmployeeId),
+    () =>
+      filteredRows.find((item) => item.employeeId === selectedEmployeeId) ||
+      employees.find((item) => item.employeeId === selectedEmployeeId),
     [employees, filteredRows, selectedEmployeeId],
   )
+  const departmentOptions = useMemo(() => {
+    const fromEmployees = employees
+      .map((item) => (item.department || "").trim())
+      .filter((value) => value !== "")
+    const fromDepartmentPage = (departmentNames || []).map((item) => (item || "").trim()).filter((value) => value !== "")
+    return Array.from(new Set([...fromDepartmentPage, ...fromEmployees]))
+  }, [departmentNames, employees])
 
   const addEmployee = (payload) => {
     setEmployees((prev) => {
@@ -116,17 +105,16 @@ function EmployeesPage() {
   const saveEditedEmployee = (payload) => {
     const originalId = editingEmployee?.employeeId
     if (!originalId) return
+    const currentEmployee = employees.find((item) => item.employeeId === originalId)
+    if (!currentEmployee) return
+    const updatedEmployee = {
+      ...currentEmployee,
+      ...payload,
+      id: payload.employeeId,
+      employeeId: payload.employeeId,
+    }
     setEmployees((prev) =>
-      prev.map((item) =>
-        item.employeeId === originalId
-          ? {
-              ...item,
-              ...payload,
-              id: payload.employeeId,
-              employeeId: payload.employeeId,
-            }
-          : item,
-      ),
+      prev.map((item) => (item.employeeId === originalId ? updatedEmployee : item)),
     )
     if (selectedEmployeeId === originalId) {
       setSelectedEmployeeId(payload.employeeId)
@@ -184,7 +172,9 @@ function EmployeesPage() {
         {selectedEmployee ? (
           <EmployeeDetailsView
             employee={selectedEmployee}
-            onBack={() => setSelectedEmployeeId("")}
+            onBack={() => {
+              setSelectedEmployeeId("")
+            }}
             onEditProfile={() => editEmployeeProfile(selectedEmployee.employeeId)}
           />
         ) : (
@@ -205,12 +195,20 @@ function EmployeesPage() {
                 {filteredRows.map((row) => (
                   <tr
                     key={`${row.name}-${row.employeeId}`}
-                    onClick={() => setSelectedEmployeeId(row.employeeId)}
+                    onClick={() => {
+                      setSelectedEmployeeId(row.employeeId)
+                    }}
                     className="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50"
                   >
                     <td className="py-3.5 font-medium text-slate-800">
                       <span className="flex items-center gap-3">
-                        <span className="inline-flex h-9 w-9 rounded-full bg-slate-200" />
+                        {row.profileImage ? (
+                          <img src={row.profileImage} alt={row.name} className="h-9 w-9 rounded-full object-cover" />
+                        ) : (
+                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                            <CiUser size={24} />
+                          </span>
+                        )}
                         {row.name}
                       </span>
                     </td>
@@ -255,6 +253,7 @@ function EmployeesPage() {
       <EmployeeOnboardingModal
         open={showAddEmployeeModal}
         initialData={editingEmployee}
+        departmentOptions={departmentOptions}
         onClose={() => {
           setShowAddEmployeeModal(false)
           setEditingEmployee(null)
