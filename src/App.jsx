@@ -42,7 +42,7 @@ function App() {
         <div className="flex gap-0 pt-4">
           <Sidebar pathname={pathname} onNavigate={handleNavigate} />
 
-          <section className="flex-1 space-y-5 px-5 pb-5 pt-0">
+          <section className="min-w-0 flex-1 space-y-5 px-5 pb-5 pt-0">
             {routeContent[pathname] ?? <DashboardPage />}
           </section>
         </div>

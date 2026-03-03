@@ -203,6 +203,7 @@ function EmployeeOnboardingModal({
   onEditEmployee,
   initialData = null,
   departmentOptions = defaultDepartmentOptions,
+  presetDepartment = "",
 }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [personalTouched, setPersonalTouched] = useState(false)
@@ -297,13 +298,16 @@ function EmployeeOnboardingModal({
       setUploadedDocs(initialData.documents || {})
     } else {
       setPersonalData(emptyPersonalData)
-      setProfessionalData(emptyProfessionalData)
+      setProfessionalData({
+        ...emptyProfessionalData,
+        department: presetDepartment || "",
+      })
       setProfilePreview("")
       setUploadedDocs({})
     }
     setStepIndex(0)
     setPersonalTouched(false)
-  }, [open, initialData])
+  }, [open, initialData, presetDepartment])
 
   if (!open) return null
 

@@ -199,8 +199,8 @@ function AttendancePage() {
   }
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 lg:flex-nowrap">
+    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex w-full items-center gap-3 lg:w-auto">
           <div className="relative w-full sm:w-[360px]">
             <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -355,8 +355,8 @@ function AttendancePage() {
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1240px] text-left">
+      <div className="w-full overflow-x-auto">
+        <table className="w-full min-w-[1080px] text-left">
           <thead className="border-b border-slate-100 text-sm text-slate-400">
             <tr>
               <th className="pb-4 font-medium">Date</th>

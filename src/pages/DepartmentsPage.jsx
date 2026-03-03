@@ -14,6 +14,7 @@ function DepartmentsPage() {
   const [selectedEmployee, setSelectedEmployee] = useState(null)
   const [employees, setEmployees] = useState(() => readLocalStorage(EMPLOYEES_STORAGE_KEY, []))
   const [departmentNames, setDepartmentNames] = useState(() => readLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, []))
+  const [showAddDepartmentEmployeeModal, setShowAddDepartmentEmployeeModal] = useState(false)
   const [showAddDepartmentModal, setShowAddDepartmentModal] = useState(false)
   const [newDepartmentName, setNewDepartmentName] = useState("")
   const [departmentError, setDepartmentError] = useState("")
@@ -85,26 +86,46 @@ function DepartmentsPage() {
 
   const addDepartmentEmployee = () => {
     if (!selectedDepartment) return
-    const departmentName = selectedDepartment.replace(" Department", "").trim()
-    const employeeId = window.prompt("Employee ID")
-    if (!employeeId || employeeId.trim() === "") return
-    const name = window.prompt("Employee Name")
-    if (!name || name.trim() === "") return
-    const designation = window.prompt("Designation", "UI/UX Designer")
-    if (!designation || designation.trim() === "") return
-    const type = window.prompt("Type (Office/Remote)", "Office")
-    if (!type || type.trim() === "") return
+    setShowAddDepartmentEmployeeModal(true)
+  }
 
-    const nextEmployee = {
-      id: employeeId.trim(),
-      name: name.trim(),
-      employeeId: employeeId.trim(),
-      department: departmentName,
-      designation: designation.trim(),
-      type: type.trim(),
-      status: "Permanent",
-    }
-    setEmployees((prev) => [nextEmployee, ...prev])
+  const addDepartmentEmployeeFromModal = (payload) => {
+    if (!selectedDepartment) return
+    const departmentName = selectedDepartment.replace(" Department", "").trim()
+    setEmployees((prev) => {
+      const uniqueEmployeeId = prev.some((item) => item.employeeId === payload.employeeId)
+        ? `EMP${Date.now().toString().slice(-6)}`
+        : payload.employeeId
+      const nextEmployee = {
+        id: uniqueEmployeeId,
+        name: payload.name || "New Employee",
+        employeeId: uniqueEmployeeId,
+        department: departmentName,
+        designation: payload.designation || "UI/UX Designer",
+        type: payload.type || "Office",
+        status: payload.status || "Permanent",
+        mobile: payload.mobile || "",
+        email: payload.email || "",
+        dob: payload.dob || "",
+        maritalStatus: payload.maritalStatus || "",
+        gender: payload.gender || "",
+        nationality: payload.nationality || "",
+        address: payload.address || "",
+        city: payload.city || "",
+        state: payload.state || "",
+        zipCode: payload.zipCode || "",
+        userName: payload.userName || "",
+        officeEmail: payload.officeEmail || "",
+        workingDays: payload.workingDays || "",
+        joiningDate: payload.joiningDate || "",
+        officeLocation: payload.officeLocation || "",
+        generatedPassword: payload.generatedPassword || "",
+        profileImage: payload.profileImage || "",
+        documents: payload.documents || {},
+      }
+      return [nextEmployee, ...prev]
+    })
+    setShowAddDepartmentEmployeeModal(false)
   }
 
   const addDepartment = () => {
@@ -384,6 +405,13 @@ function DepartmentsPage() {
         departmentOptions={departmentOptions}
         onClose={() => setEditingDepartmentEmployee(null)}
         onEditEmployee={saveEditedDepartmentEmployee}
+      />
+      <EmployeeOnboardingModal
+        open={showAddDepartmentEmployeeModal}
+        departmentOptions={departmentOptions}
+        presetDepartment={selectedDepartment.replace(" Department", "").trim()}
+        onClose={() => setShowAddDepartmentEmployeeModal(false)}
+        onAddEmployee={addDepartmentEmployeeFromModal}
       />
       {showAddDepartmentModal && (
         <div className="fixed inset-0 z-50 bg-black/35 p-4">
