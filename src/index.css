@@ -5,6 +5,17 @@ body {
   min-width: 320px;
 }
 
+:where(button, a[href], [role="button"], input[type="button"], input[type="submit"], input[type="reset"], summary, label[for]) {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -13,4 +24,74 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+@keyframes chartLineDraw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes chartPointPop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes chartHighlightGrow {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  to {
+    opacity: 0.35;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes chartValueFade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-line-animate {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: chartLineDraw 1.2s ease forwards;
+}
+
+.chart-point-animate {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chartPointPop 0.45s ease forwards;
+}
+
+.chart-highlight-animate {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: chartHighlightGrow 0.7s ease 0.4s both;
+}
+
+.chart-area-animate {
+  opacity: 0;
+  animation: chartValueFade 0.8s ease 0.5s both;
+}
+
+.chart-value-animate {
+  animation: chartValueFade 0.5s ease 0.9s both;
 }

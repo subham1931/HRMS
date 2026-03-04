@@ -40,7 +40,7 @@ function FieldRow({ leftLabel, leftValue, rightLabel, rightValue }) {
   )
 }
 
-function EmployeeDetailsView({ employee, onBack, onEditProfile, backLabel = "Back to All Employees" }) {
+function EmployeeDetailsView({ employee, onBack, onEditProfile, backLabel = "Back" }) {
   const [activeTab, setActiveTab] = useState("personal")
   const [activeMenu, setActiveMenu] = useState("profile")
   const isLegacyEmployee = Array.isArray(employee)

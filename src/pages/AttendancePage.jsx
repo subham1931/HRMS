@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
 import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Pencil, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react"
+import { CiUser } from "react-icons/ci"
 import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
 
 const ATTENDANCE_STORAGE_KEY = "hrms_attendance"
+const EMPLOYEES_STORAGE_KEY = "hrms_employees"
 const indianNameMap = {
   "Leasie Watson": "Aarav Sharma",
   "Darlene Robertson": "Rohan Verma",
@@ -18,23 +20,45 @@ const indianNameMap = {
   "Jenny Wilson": "Nisha Rao",
 }
 
-const initialAttendanceRows = [
-  ["Aarav Sharma", "Design", "Team Lead - Design", "Office", "09:27 AM", "On Time", "https://i.pravatar.cc/80?img=32", "A1"],
-  ["Rohan Verma", "Design", "Web Designer", "Office", "10:15 AM", "Late", "https://i.pravatar.cc/80?img=5", "A2"],
-  ["Arjun Patel", "Healthcare", "Medical Assistant", "Remote", "10:24 AM", "Late", "https://i.pravatar.cc/80?img=66", "A3"],
-  ["Meera Joshi", "Marketing", "Marketing Coordinator", "Office", "09:10 AM", "On Time", "https://i.pravatar.cc/80?img=41", "A4"],
-  ["Rahul Desai", "Analytics", "Data Analyst", "Office", "09:15 AM", "On Time", "https://i.pravatar.cc/80?img=51", "A5"],
-  ["Karan Malhotra", "Engineering", "Phyton Developer", "Remote", "09:29 AM", "On Time", "https://i.pravatar.cc/80?img=54", "A6"],
-  ["Aditya Khanna", "Design", "UI/UX Design", "Remote", "09:29 AM", "On Time", "https://i.pravatar.cc/80?img=58", "A7"],
-  ["Ishaan Bhat", "Engineering", "React JS", "Remote", "09:29 AM", "On Time", "https://i.pravatar.cc/80?img=14", "A8"],
-  ["Priya Nair", "Engineering", "IOS Developer", "Remote", "10:50 AM", "Late", "https://i.pravatar.cc/80?img=48", "A9"],
-  ["Aniket Tiwari", "HR", "HR", "Remote", "09:29 AM", "On Time", "https://i.pravatar.cc/80?img=61", "A10"],
-  ["Siddharth Mehra", "Sales", "Sales Manager", "Remote", "09:29 AM", "On Time", "https://i.pravatar.cc/80?img=53", "A11"],
-  ["Nisha Rao", "Engineering", "React JS Developer", "Remote", "11:30 AM", "Late", "https://i.pravatar.cc/80?img=25", "A12"],
-]
+const initialAttendanceRows = []
 
 const normalizeAttendanceRows = (rows) =>
-  (rows || []).map((row) => [indianNameMap[row[0]] ?? row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]])
+  (rows || []).map((row) => {
+    if (row.length >= 9) {
+      return [indianNameMap[row[0]] ?? row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]]
+    }
+    return [indianNameMap[row[0]] ?? row[0], row[1], row[2], row[3], row[4], "--", row[5], row[6], row[7]]
+  })
+
+const toAttendanceRowFromEmployee = (employee) => [
+  employee.name || "Employee",
+  employee.department || "General",
+  employee.designation || "-",
+  employee.type || "Office",
+  "--",
+  "--",
+  "Not Marked",
+  employee.profileImage || "",
+  employee.employeeId || `A${Date.now()}`,
+]
+
+const buildAttendanceRowsFromEmployees = (employees, existingRows) => {
+  const existingMap = new Map((existingRows || []).map((row) => [row[8], row]))
+  return (employees || []).map((employee) => {
+    const existing = existingMap.get(employee.employeeId)
+    return [
+      employee.name || "Employee",
+      employee.department || "General",
+      employee.designation || "-",
+      employee.type || "Office",
+      existing?.[4] || "--",
+      existing?.[5] || "--",
+      existing?.[6] || "Not Marked",
+      employee.profileImage || "",
+      employee.employeeId || `A${Date.now()}`,
+    ]
+  })
+}
 
 const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 
@@ -59,22 +83,34 @@ function AttendancePage() {
     return new Date(base.getFullYear(), base.getMonth(), 1)
   })
   const [toastMessage, setToastMessage] = useState("")
-  const [attendanceRows, setAttendanceRows] = useState(() =>
-    normalizeAttendanceRows(readLocalStorage(ATTENDANCE_STORAGE_KEY, initialAttendanceRows)),
-  )
+  const [brokenAvatarById, setBrokenAvatarById] = useState({})
+  const [attendanceRows, setAttendanceRows] = useState(() => {
+    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
+    const savedRows = normalizeAttendanceRows(readLocalStorage(ATTENDANCE_STORAGE_KEY, initialAttendanceRows))
+    return buildAttendanceRowsFromEmployees(employees, savedRows)
+  })
 
   useEffect(() => {
     writeLocalStorage(ATTENDANCE_STORAGE_KEY, attendanceRows)
   }, [attendanceRows])
 
+  useEffect(() => {
+    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
+    setAttendanceRows((prev) => buildAttendanceRowsFromEmployees(employees, prev))
+  }, [])
+
   const filteredRows = useMemo(() => {
     return attendanceRows.filter((row) => {
       const q = searchQuery.toLowerCase()
-      const matchesSearch = searchQuery.trim() === "" || row.slice(0, 6).some((value) => value.toLowerCase().includes(q))
+      const matchesSearch = searchQuery.trim() === "" || row.slice(0, 7).some((value) => value.toLowerCase().includes(q))
       const matchesDepartment = departmentFilter === "All Departments" || row[1] === departmentFilter
       return matchesSearch && matchesDepartment
     })
-  }, [searchQuery, departmentFilter])
+  }, [attendanceRows, searchQuery, departmentFilter])
+  const departmentOptions = useMemo(
+    () => Array.from(new Set(attendanceRows.map((row) => row[1]).filter(Boolean))),
+    [attendanceRows],
+  )
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safeCurrentPage = Math.min(currentPage, totalPages)
@@ -121,8 +157,8 @@ function AttendancePage() {
     const exportDate = selectedDateTableLabel
     const fileDate = selectedDate
     const rowsToExport = [
-      ["Date", "Employee Name", "Department", "Designation", "Type", "Check In Time", "Status"],
-      ...filteredRows.map((row) => [exportDate, ...row.slice(0, 6)]),
+      ["Date", "Employee Name", "Department", "Designation", "Type", "Check In Time", "Check Out Time", "Status"],
+      ...filteredRows.map((row) => [exportDate, ...row.slice(0, 7)]),
     ]
     const csv = `\uFEFF${rowsToExport.map((row) => row.join(",")).join("\n")}`
 
@@ -163,46 +199,57 @@ function AttendancePage() {
   }
 
   const addAttendanceRecord = () => {
-    const name = window.prompt("Employee Name")
-    if (!name || name.trim() === "") return
-    const department = window.prompt("Department", "Design")
-    if (!department || department.trim() === "") return
-    const designation = window.prompt("Designation", "UI/UX Design")
-    if (!designation || designation.trim() === "") return
-    const type = window.prompt("Type (Office/Remote)", "Office")
-    if (!type || type.trim() === "") return
+    const employeeId = window.prompt("Employee ID")
+    if (!employeeId || employeeId.trim() === "") return
+    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
+    const matchedEmployee = employees.find((item) => (item.employeeId || "").toLowerCase() === employeeId.trim().toLowerCase())
+    if (!matchedEmployee) {
+      setToastMessage("Only added employees can have attendance records")
+      window.setTimeout(() => setToastMessage(""), 2200)
+      return
+    }
     const checkIn = window.prompt("Check In Time (e.g. 09:30 AM)", "09:30 AM")
     if (!checkIn || checkIn.trim() === "") return
+    const checkOut = window.prompt("Check Out Time (e.g. 06:30 PM)", "06:30 PM")
+    if (!checkOut || checkOut.trim() === "") return
     const status = window.prompt("Status (On Time/Late)", "On Time")
     if (!status || status.trim() === "") return
 
-    setAttendanceRows((prev) => [
-      [name.trim(), department.trim(), designation.trim(), type.trim(), checkIn.trim(), status.trim(), "https://i.pravatar.cc/80?img=30", `A${Date.now()}`],
-      ...prev,
-    ])
+    setAttendanceRows((prev) =>
+      prev.map((row) =>
+        row[8] === matchedEmployee.employeeId
+          ? [row[0], row[1], row[2], row[3], checkIn.trim(), checkOut.trim(), status.trim(), row[7], row[8]]
+          : row,
+      ),
+    )
   }
 
   const editAttendanceRecord = (id) => {
-    const current = attendanceRows.find((row) => row[7] === id)
+    const current = attendanceRows.find((row) => row[8] === id)
     if (!current) return
     const checkIn = window.prompt("Check In Time", current[4])
     if (!checkIn || checkIn.trim() === "") return
-    const status = window.prompt("Status (On Time/Late)", current[5])
+    const checkOut = window.prompt("Check Out Time", current[5])
+    if (!checkOut || checkOut.trim() === "") return
+    const status = window.prompt("Status (On Time/Late)", current[6])
     if (!status || status.trim() === "") return
 
-    setAttendanceRows((prev) => prev.map((row) => (row[7] === id ? [row[0], row[1], row[2], row[3], checkIn.trim(), status.trim(), row[6], row[7]] : row)))
+    setAttendanceRows((prev) =>
+      prev.map((row) => (row[8] === id ? [row[0], row[1], row[2], row[3], checkIn.trim(), checkOut.trim(), status.trim(), row[7], row[8]] : row)),
+    )
   }
 
   const deleteAttendanceRecord = (id) => {
     if (!window.confirm("Delete this attendance record?")) return
-    setAttendanceRows((prev) => prev.filter((row) => row[7] !== id))
+    setAttendanceRows((prev) => prev.filter((row) => row[8] !== id))
   }
 
   return (
-    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex w-full items-center gap-3 lg:w-auto">
-          <div className="relative w-full sm:w-[360px]">
+    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+      <div className="mb-5 flex flex-col gap-3">
+        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
+            <div className="relative w-full sm:w-[360px]">
             <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={searchQuery}
@@ -218,7 +265,7 @@ function AttendancePage() {
 
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 sm:w-auto"
           >
             Filter
             <SlidersHorizontal size={14} className="text-slate-400" />
@@ -226,28 +273,24 @@ function AttendancePage() {
           <button
             type="button"
             onClick={addAttendanceRecord}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
           >
             <Plus size={14} />
             Add Record
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+        <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
           <div className="relative">
             <select
               value={departmentFilter}
               onChange={(event) => setDepartmentFilter(event.target.value)}
-              className="appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-9 text-sm text-slate-700 outline-none"
+              className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-9 text-sm text-slate-700 outline-none sm:w-auto"
             >
               <option>All Departments</option>
-              <option>Design</option>
-              <option>Engineering</option>
-              <option>Sales</option>
-              <option>Marketing</option>
-              <option>HR</option>
-              <option>Analytics</option>
-              <option>Healthcare</option>
+              {departmentOptions.map((department) => (
+                <option key={department}>{department}</option>
+              ))}
             </select>
             <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
           </div>
@@ -260,7 +303,7 @@ function AttendancePage() {
               setCalendarMonth(new Date(parsed.getFullYear(), parsed.getMonth(), 1))
               setShowDateModal(true)
             }}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 sm:w-auto"
           >
             <CalendarDays size={14} className="text-slate-500" />
             <span>{selectedDateLabel}</span>
@@ -269,12 +312,13 @@ function AttendancePage() {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 sm:w-auto"
           >
             Export CSV
             <Download size={14} className="text-slate-500" />
           </button>
         </div>
+      </div>
       </div>
 
       {showDateModal && (
@@ -356,48 +400,63 @@ function AttendancePage() {
       )}
 
       <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[1080px] text-left">
-          <thead className="border-b border-slate-100 text-sm text-slate-400">
+        <table className="w-full min-w-[940px] text-left">
+          <thead className="border-b border-slate-100 text-xs text-slate-400 sm:text-sm">
             <tr>
               <th className="pb-4 font-medium">Date</th>
               <th className="pb-4 font-medium">Employee Name</th>
-              <th className="pb-4 font-medium">Department</th>
-              <th className="pb-4 font-medium">Designation</th>
-              <th className="pb-4 font-medium">Type</th>
+              <th className="hidden pb-4 font-medium md:table-cell">Department</th>
+              <th className="hidden pb-4 font-medium lg:table-cell">Designation</th>
+              <th className="hidden pb-4 font-medium sm:table-cell">Type</th>
               <th className="pb-4 font-medium">Check In Time</th>
+              <th className="pb-4 font-medium">Check Out Time</th>
               <th className="pb-4 font-medium">Status</th>
               <th className="pb-4 font-medium">Action</th>
             </tr>
           </thead>
-          <tbody className="text-sm">
+          <tbody className="text-xs sm:text-sm">
             {pagedRows.map((row) => (
-              <tr key={row[7]} className="border-b border-slate-100 last:border-0">
+              <tr key={row[8]} className="border-b border-slate-100 last:border-0">
                 <td className="py-3 text-slate-700">{selectedDateTableLabel}</td>
                 <td className="py-3 text-slate-800">
                   <span className="flex items-center gap-3">
-                    <img src={row[6]} alt={row[0]} className="h-8 w-8 rounded-full object-cover" />
+                    {row[7] && !brokenAvatarById[row[8]] ? (
+                      <img
+                        src={row[7]}
+                        alt={row[0]}
+                        className="h-8 w-8 rounded-full object-cover"
+                        onError={() => {
+                          setBrokenAvatarById((prev) => ({ ...prev, [row[8]]: true }))
+                        }}
+                      />
+                    ) : (
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                        <CiUser size={20} />
+                      </span>
+                    )}
                     <span className="font-medium">{row[0]}</span>
                   </span>
                 </td>
-                <td className="py-3 text-slate-700">{row[1]}</td>
-                <td className="py-3 text-slate-700">{row[2]}</td>
-                <td className="py-3 text-slate-700">{row[3]}</td>
+                <td className="hidden py-3 text-slate-700 md:table-cell">{row[1]}</td>
+                <td className="hidden py-3 text-slate-700 lg:table-cell">{row[2]}</td>
+                <td className="hidden py-3 text-slate-700 sm:table-cell">{row[3]}</td>
                 <td className="py-3 text-slate-700">{row[4]}</td>
+                <td className="py-3 text-slate-700">{row[5]}</td>
                 <td className="py-3">
                   <span
                     className={`rounded px-2 py-1 text-xs font-medium ${
-                      row[5] === "On Time" ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-400"
+                      row[6] === "On Time" ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-400"
                     }`}
                   >
-                    {row[5]}
+                    {row[6]}
                   </span>
                 </td>
                 <td className="py-3">
                   <div className="flex items-center gap-2 text-slate-500">
-                    <button type="button" onClick={() => editAttendanceRecord(row[7])}>
+                    <button type="button" onClick={() => editAttendanceRecord(row[8])}>
                       <Pencil size={15} />
                     </button>
-                    <button type="button" onClick={() => deleteAttendanceRecord(row[7])}>
+                    <button type="button" onClick={() => deleteAttendanceRecord(row[8])}>
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -407,7 +466,7 @@ function AttendancePage() {
 
             {pagedRows.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={9} className="py-10 text-center text-sm text-slate-500">
                   No attendance records found.
                 </td>
               </tr>

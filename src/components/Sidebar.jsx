@@ -20,9 +20,13 @@ const menuItems = [
   { label: "Settings", icon: Settings, to: "/settings" },
 ]
 
-function Sidebar({ pathname, onNavigate }) {
+function Sidebar({ pathname, onNavigate, mobile = false }) {
+  const asideClassName = mobile
+    ? "h-[calc(100dvh-72px)] w-[280px] shrink-0 overflow-y-auto border-r border-slate-200 bg-[#f7f7fa] p-5"
+    : "sticky top-[103px] hidden h-[calc(100dvh-103px)] w-[260px] shrink-0 self-start overflow-y-auto rounded-2xl border border-slate-200 bg-[#f7f7fa] p-5 xl:flex xl:flex-col"
+
   return (
-    <aside className="sticky top-[103px] hidden h-[calc(100dvh-103px)] w-[260px] shrink-0 self-start overflow-y-auto rounded-2xl border border-slate-200 bg-[#f7f7fa] p-5 xl:flex xl:flex-col">
+    <aside className={asideClassName}>
       <nav className="space-y-1 px-1">
         {menuItems.map((item) => {
           const Icon = item.icon
