@@ -204,6 +204,7 @@ function EmployeeOnboardingModal({
   initialData = null,
   departmentOptions = defaultDepartmentOptions,
   presetDepartment = "",
+  mode = "modal",
 }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [personalTouched, setPersonalTouched] = useState(false)
@@ -309,11 +310,11 @@ function EmployeeOnboardingModal({
     setPersonalTouched(false)
   }, [open, initialData, presetDepartment])
 
-  if (!open) return null
+  const isEmbedded = mode === "embedded"
+  if (!isEmbedded && !open) return null
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/65 p-4">
-      <div className="mx-auto max-h-[calc(100dvh-2rem)] max-w-5xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-800">
+  const content = (
+    <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 text-slate-800">
         <div className="mb-5 flex flex-wrap items-center gap-6 border-b border-slate-200 pb-3">
           {steps.map((step, index) => {
             const Icon = step.icon
@@ -593,6 +594,17 @@ function EmployeeOnboardingModal({
             {isLastStep ? (isEditMode ? "Save" : "Add") : "Next"}
           </button>
         </div>
+      </div>
+  )
+
+  if (isEmbedded) {
+    return <div className="min-h-[calc(100dvh-150px)]">{content}</div>
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/65 p-4">
+      <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        {content}
       </div>
     </div>
   )

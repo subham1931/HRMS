@@ -30,6 +30,7 @@ function Sidebar({ pathname, onNavigate, mobile = false }) {
       <nav className="space-y-1 px-1">
         {menuItems.map((item) => {
           const Icon = item.icon
+          const isActive = item.to === "/employees" ? pathname.startsWith("/employees") : pathname === item.to
 
           return (
             <button
@@ -37,7 +38,7 @@ function Sidebar({ pathname, onNavigate, mobile = false }) {
               type="button"
               onClick={() => onNavigate(item.to)}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] ${
-                pathname === item.to ? "bg-slate-100 font-semibold text-slate-800" : "text-slate-700"
+                isActive ? "bg-slate-100 font-semibold text-slate-800" : "text-slate-700"
               }`}
             >
               <Icon size={17} strokeWidth={1.75} />

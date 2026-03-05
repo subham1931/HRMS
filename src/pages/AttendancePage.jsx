@@ -278,19 +278,25 @@ function AttendancePage() {
 
         <div className="grid gap-3 xl:grid-cols-[1.8fr_1fr]">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 bg-[#e5f0d8] px-4 py-2 text-sm font-medium text-slate-700">Present</div>
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-[#f5f5f5]">
+              <div className="border-b border-slate-200 bg-[#d8e6c7] px-4 py-3 text-[18px] font-semibold leading-none text-slate-800">Present</div>
               <div className="p-4">
-                <p className="text-[44px] font-semibold leading-none text-slate-900">{attendanceSummary.present}</p>
-                <p className="mt-1 text-xs text-slate-500">Employees</p>
-                <div className="mt-3 flex items-center gap-4 text-xs">
-                  <span>
-                    <span className="font-semibold text-slate-700">{attendanceSummary.onTime}</span>
-                    <span className="ml-1 text-slate-500">On-Time</span>
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[56px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.present}</p>
+                    <p className="mt-1 text-sm leading-none text-slate-500">Employees</p>
+                  </div>
+                  <div className="pb-2 text-right">
+                    <span className="inline-flex rounded-xl bg-[#d8efe2] px-2.5 py-1 text-base font-semibold leading-none text-[#2ea875]">+4</span>
+                    <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-between rounded-xl bg-[#ececec] px-4 py-2 text-sm">
+                  <span className="text-slate-500">
+                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.onTime}</span> On-Time
                   </span>
-                  <span>
-                    <span className="font-semibold text-slate-700">{attendanceSummary.late}</span>
-                    <span className="ml-1 text-slate-500">Late</span>
+                  <span className="text-slate-500">
+                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.late}</span> Late
                   </span>
                 </div>
               </div>
