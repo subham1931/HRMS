@@ -9,6 +9,7 @@ import EmployeesPage from "./pages/EmployeesPage"
 import DepartmentsPage from "./pages/DepartmentsPage"
 import AttendancePage from "./pages/AttendancePage"
 import PayrollPage from "./pages/PayrollPage"
+import LeavesPage from "./pages/LeavesPage"
 import HolidaysPage from "./pages/HolidaysPage"
 import SettingsPage from "./pages/SettingsPage"
 import ProfilePage from "./pages/ProfilePage"
@@ -33,7 +34,7 @@ function App() {
     "/payroll": <PayrollPage />,
     "/jobs": <PlaceholderPage />,
     "/candidates": <PlaceholderPage />,
-    "/leaves": <PlaceholderPage />,
+    "/leaves": <LeavesPage />,
     "/holidays": <HolidaysPage />,
     "/settings": <SettingsPage />,
     "/notifications": <NotificationsPanel />,

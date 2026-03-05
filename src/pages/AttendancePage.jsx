@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Pencil, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react"
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Plus, Search, SlidersHorizontal, X } from "lucide-react"
 import { CiUser } from "react-icons/ci"
 import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
 
@@ -69,6 +69,27 @@ const toIsoDate = (dateObj) => {
   return `${year}-${month}-${day}`
 }
 
+const toMinutesFromLabel = (timeText) => {
+  const raw = (timeText || "").trim()
+  if (!raw || raw === "--" || !raw.includes(":")) return null
+  const [timePart, meridiemPart = ""] = raw.split(" ")
+  const [hourText, minuteText] = timePart.split(":")
+  let hour = Number(hourText)
+  const minute = Number(minuteText)
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null
+  const meridiem = meridiemPart.toUpperCase()
+  if (meridiem === "PM" && hour !== 12) hour += 12
+  if (meridiem === "AM" && hour === 12) hour = 0
+  return hour * 60 + minute
+}
+
+const formatDuration = (minutes) => {
+  if (minutes == null || minutes <= 0) return "--"
+  const hrs = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hrs}h ${mins}m`
+}
+
 function AttendancePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [pageSize, setPageSize] = useState(10)
@@ -111,6 +132,29 @@ function AttendancePage() {
     () => Array.from(new Set(attendanceRows.map((row) => row[1]).filter(Boolean))),
     [attendanceRows],
   )
+  const attendanceSummary = useMemo(() => {
+    let onTime = 0
+    let late = 0
+    let onLeave = 0
+    let absent = 0
+
+    attendanceRows.forEach((row) => {
+      const status = (row[6] || "").toLowerCase()
+      if (status === "on time") onTime += 1
+      else if (status === "late") late += 1
+      else if (status === "on leave") onLeave += 1
+      else if (status === "absent") absent += 1
+    })
+
+    const present = onTime + late
+    const leaveBreakdown = {
+      annual: Math.max(0, Math.ceil(onLeave * 0.5)),
+      sick: Math.max(0, Math.floor(onLeave * 0.33)),
+      others: Math.max(0, onLeave - Math.ceil(onLeave * 0.5) - Math.floor(onLeave * 0.33)),
+    }
+
+    return { present, onLeave, absent, onTime, late, leaveBreakdown }
+  }, [attendanceRows])
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safeCurrentPage = Math.min(currentPage, totalPages)
@@ -224,29 +268,101 @@ function AttendancePage() {
     )
   }
 
-  const editAttendanceRecord = (id) => {
-    const current = attendanceRows.find((row) => row[8] === id)
-    if (!current) return
-    const checkIn = window.prompt("Check In Time", current[4])
-    if (!checkIn || checkIn.trim() === "") return
-    const checkOut = window.prompt("Check Out Time", current[5])
-    if (!checkOut || checkOut.trim() === "") return
-    const status = window.prompt("Status (On Time/Late)", current[6])
-    if (!status || status.trim() === "") return
-
-    setAttendanceRows((prev) =>
-      prev.map((row) => (row[8] === id ? [row[0], row[1], row[2], row[3], checkIn.trim(), checkOut.trim(), status.trim(), row[7], row[8]] : row)),
-    )
-  }
-
-  const deleteAttendanceRecord = (id) => {
-    if (!window.confirm("Delete this attendance record?")) return
-    setAttendanceRows((prev) => prev.filter((row) => row[8] !== id))
-  }
-
   return (
     <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-      <div className="mb-5 flex flex-col gap-3">
+      <div className="mb-5 space-y-4">
+        <div>
+          <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">Attendance</h1>
+          <p className="mt-1 text-xs text-slate-500">Dashboard / Attendance</p>
+        </div>
+
+        <div className="grid gap-3 xl:grid-cols-[1.8fr_1fr]">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 bg-[#e5f0d8] px-4 py-2 text-sm font-medium text-slate-700">Present</div>
+              <div className="p-4">
+                <p className="text-[44px] font-semibold leading-none text-slate-900">{attendanceSummary.present}</p>
+                <p className="mt-1 text-xs text-slate-500">Employees</p>
+                <div className="mt-3 flex items-center gap-4 text-xs">
+                  <span>
+                    <span className="font-semibold text-slate-700">{attendanceSummary.onTime}</span>
+                    <span className="ml-1 text-slate-500">On-Time</span>
+                  </span>
+                  <span>
+                    <span className="font-semibold text-slate-700">{attendanceSummary.late}</span>
+                    <span className="ml-1 text-slate-500">Late</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 bg-[#39c9b3] px-4 py-2 text-sm font-medium text-white">On Leave</div>
+              <div className="p-4">
+                <p className="text-[44px] font-semibold leading-none text-slate-900">{attendanceSummary.onLeave}</p>
+                <p className="mt-1 text-xs text-slate-500">Employees</p>
+                <div className="mt-3 flex items-center gap-3 text-xs text-slate-600">
+                  <span>{attendanceSummary.leaveBreakdown.annual} Annual</span>
+                  <span>{attendanceSummary.leaveBreakdown.sick} Sick</span>
+                  <span>{attendanceSummary.leaveBreakdown.others} Others</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 bg-[#0f5c4d] px-4 py-2 text-sm font-medium text-white">Absent</div>
+              <div className="p-4">
+                <p className="text-[44px] font-semibold leading-none text-slate-900">{attendanceSummary.absent}</p>
+                <p className="mt-1 text-xs text-slate-500">Employees</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-[20px] font-semibold tracking-tight text-slate-800">Attendance Overview</h3>
+              <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-[#e8f1df] px-2.5 py-1 text-xs text-slate-700">
+                Last 6 Months
+                <ChevronDown size={12} />
+              </button>
+            </div>
+
+            <div className="grid w-full grid-cols-[44px_1fr] gap-2">
+              <div className="space-y-[9px] pt-[6px] text-[12px] text-slate-500">
+                {[100, 75, 50, 25, 0].map((tick) => (
+                  <p key={tick} className="h-[22px] text-right">{tick}%</p>
+                ))}
+              </div>
+              <div>
+                <div className="space-y-[9px]">
+                  {[0, 1, 2, 3, 4].map((row) => (
+                    <div key={`grid-row-${row}`} className="h-[22px] border-b border-slate-100" />
+                  ))}
+                </div>
+                <div className="-mt-[111px] grid grid-cols-6 items-end gap-3">
+                  {[
+                    { p: 72, l: 16, a: 12 },
+                    { p: 70, l: 24, a: 6 },
+                    { p: 75, l: 12, a: 13 },
+                    { p: 60, l: 20, a: 20 },
+                    { p: 68, l: 17, a: 15 },
+                    { p: 73, l: 22, a: 5 },
+                  ].map((item, index) => (
+                    <div key={`ov-${index}`} className="space-y-1">
+                      <div className="flex h-[132px] flex-col justify-end gap-[4px] rounded-[10px] bg-transparent">
+                        <span className="w-full rounded-[8px] bg-[#0f5c4d]" style={{ height: `${Math.max(6, item.a)}%` }} />
+                        <span className="w-full rounded-[8px] bg-[#39c9b3]" style={{ height: `${Math.max(8, item.l)}%` }} />
+                        <span className="w-full rounded-[8px] bg-[#d2e1c3]" style={{ height: `${Math.max(18, item.p)}%` }} />
+                      </div>
+                      <p className="text-center text-[12px] text-slate-500">{["Feb", "Mar", "Apr", "May", "Jun", "Jul"][index]}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
             <div className="relative w-full sm:w-[360px]">
@@ -258,14 +374,13 @@ function AttendancePage() {
                 setCurrentPage(1)
               }}
               className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-14 text-sm outline-none focus:border-violet-300"
-              placeholder="Search by name, role, department..."
+              placeholder="Search employee"
             />
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">⌘ K</span>
           </div>
 
           <button
             type="button"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-[#e8f1df] px-4 py-2.5 text-sm font-medium text-slate-700 sm:w-auto"
           >
             Filter
             <SlidersHorizontal size={14} className="text-slate-400" />
@@ -400,24 +515,22 @@ function AttendancePage() {
       )}
 
       <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[940px] text-left">
-          <thead className="border-b border-slate-100 text-xs text-slate-400 sm:text-sm">
+        <table className="w-full min-w-[1040px] text-left">
+          <thead className="text-xs text-slate-500 sm:text-sm">
             <tr>
-              <th className="pb-4 font-medium">Date</th>
-              <th className="pb-4 font-medium">Employee Name</th>
-              <th className="hidden pb-4 font-medium md:table-cell">Department</th>
-              <th className="hidden pb-4 font-medium lg:table-cell">Designation</th>
-              <th className="hidden pb-4 font-medium sm:table-cell">Type</th>
-              <th className="pb-4 font-medium">Check In Time</th>
-              <th className="pb-4 font-medium">Check Out Time</th>
-              <th className="pb-4 font-medium">Status</th>
-              <th className="pb-4 font-medium">Action</th>
+              <th className="rounded-l-xl bg-slate-100 px-3 py-2.5 font-medium">Name <span className="ml-1 text-[10px] text-slate-400">^</span></th>
+              <th className="bg-slate-100 px-3 py-2.5 font-medium">Job Title <span className="ml-1 text-[10px] text-slate-400">^</span></th>
+              <th className="bg-slate-100 px-3 py-2.5 font-medium">Date <span className="ml-1 text-[10px] text-slate-400">^</span></th>
+              <th className="bg-slate-100 px-3 py-2.5 font-medium">Work Model <span className="ml-1 text-[10px] text-slate-400">^</span></th>
+              <th className="bg-slate-100 px-3 py-2.5 font-medium">Check In - Out <span className="ml-1 text-[10px] text-slate-400">^</span></th>
+              <th className="bg-slate-100 px-3 py-2.5 font-medium">Duration <span className="ml-1 text-[10px] text-slate-400">^</span></th>
+              <th className="bg-slate-100 px-3 py-2.5 font-medium">Overtime <span className="ml-1 text-[10px] text-slate-400">^</span></th>
+              <th className="rounded-r-xl bg-slate-100 px-3 py-2.5 font-medium">Status <span className="ml-1 text-[10px] text-slate-400">^</span></th>
             </tr>
           </thead>
           <tbody className="text-xs sm:text-sm">
             {pagedRows.map((row) => (
               <tr key={row[8]} className="border-b border-slate-100 last:border-0">
-                <td className="py-3 text-slate-700">{selectedDateTableLabel}</td>
                 <td className="py-3 text-slate-800">
                   <span className="flex items-center gap-3">
                     {row[7] && !brokenAvatarById[row[8]] ? (
@@ -434,14 +547,38 @@ function AttendancePage() {
                         <CiUser size={20} />
                       </span>
                     )}
-                    <span className="font-medium">{row[0]}</span>
+                    <span>
+                      <span className="font-medium">{row[0]}</span>
+                      <span className="block text-[11px] text-slate-400">{row[8]}</span>
+                    </span>
                   </span>
                 </td>
-                <td className="hidden py-3 text-slate-700 md:table-cell">{row[1]}</td>
-                <td className="hidden py-3 text-slate-700 lg:table-cell">{row[2]}</td>
-                <td className="hidden py-3 text-slate-700 sm:table-cell">{row[3]}</td>
-                <td className="py-3 text-slate-700">{row[4]}</td>
-                <td className="py-3 text-slate-700">{row[5]}</td>
+                <td className="py-3 text-slate-700">
+                  <span>{row[2]}</span>
+                  <span className="block text-[11px] text-slate-400">{row[1]}</span>
+                </td>
+                <td className="py-3 text-slate-700">{selectedDateTableLabel}</td>
+                <td className="py-3 text-slate-700">{row[3]}</td>
+                <td className="py-3 text-slate-700">
+                  {row[4]} - {row[5]}
+                </td>
+                <td className="py-3 text-slate-700">
+                  {formatDuration(
+                    toMinutesFromLabel(row[4]) != null && toMinutesFromLabel(row[5]) != null
+                      ? toMinutesFromLabel(row[5]) - toMinutesFromLabel(row[4])
+                      : null,
+                  )}
+                </td>
+                <td className="py-3 text-slate-700">
+                  {(() => {
+                    const inMinutes = toMinutesFromLabel(row[4])
+                    const outMinutes = toMinutesFromLabel(row[5])
+                    if (inMinutes == null || outMinutes == null) return "--"
+                    const worked = outMinutes - inMinutes
+                    const overtime = worked - 8 * 60
+                    return overtime > 0 ? `${Math.floor(overtime / 60)}h ${overtime % 60}m` : "--"
+                  })()}
+                </td>
                 <td className="py-3">
                   <span
                     className={`rounded px-2 py-1 text-xs font-medium ${
@@ -451,22 +588,12 @@ function AttendancePage() {
                     {row[6]}
                   </span>
                 </td>
-                <td className="py-3">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <button type="button" onClick={() => editAttendanceRecord(row[8])}>
-                      <Pencil size={15} />
-                    </button>
-                    <button type="button" onClick={() => deleteAttendanceRecord(row[8])}>
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </td>
               </tr>
             ))}
 
             {pagedRows.length === 0 && (
               <tr>
-                <td colSpan={9} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
                   No attendance records found.
                 </td>
               </tr>
