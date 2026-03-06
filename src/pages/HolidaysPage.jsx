@@ -86,7 +86,7 @@ function HolidaysPage() {
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-3 text-sm outline-none focus:border-[#53c4ae]"
             placeholder="Search"
           />
         </div>
@@ -97,7 +97,7 @@ function HolidaysPage() {
             setShowAddModal(true)
             setFormError("")
           }}
-          className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white"
         >
           <Plus size={15} />
           Add New Holiday
@@ -120,7 +120,7 @@ function HolidaysPage() {
                   <span className="flex items-center gap-3">
                     <span
                       className={`inline-block h-8 w-0.5 rounded ${
-                        row.dateValue >= new Date(new Date().setHours(0, 0, 0, 0)) ? "bg-violet-500" : "bg-slate-200"
+                        row.dateValue >= new Date(new Date().setHours(0, 0, 0, 0)) ? "bg-[#53c4ae]" : "bg-slate-200"
                       }`}
                     />
                     {row.date}
@@ -143,7 +143,7 @@ function HolidaysPage() {
 
       <div className="mt-4 flex items-center gap-6 text-[13px] text-slate-700">
         <span className="inline-flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-violet-500" />
+          <span className="h-2 w-2 rounded-full bg-[#53c4ae]" />
           <span className="font-medium">Upcoming</span>
         </span>
         <span className="inline-flex items-center gap-2">
@@ -165,7 +165,7 @@ function HolidaysPage() {
                   type="date"
                   value={holidayDate}
                   onChange={(event) => setHolidayDate(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
                 />
               </label>
 
@@ -176,7 +176,7 @@ function HolidaysPage() {
                   value={holidayName}
                   onChange={(event) => setHolidayName(event.target.value)}
                   placeholder="Enter holiday name"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
                 />
               </label>
             </div>
@@ -222,7 +222,7 @@ function HolidaysPage() {
                   setHolidayName("")
                   setFormError("")
                 }}
-                className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white"
+                className="flex-1 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white"
               >
                 Save
               </button>

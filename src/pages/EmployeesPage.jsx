@@ -1,17 +1,41 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Activity, Minus, Plus, Search, SlidersHorizontal, UserMinus, UserRoundPlus, Users } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { CiUser } from "react-icons/ci"
 import EmployeeDetailsView from "../components/EmployeeDetailsView"
 import EmployeeFilterModal from "../components/EmployeeFilterModal"
-import EmployeeOnboardingModal from "../components/EmployeeOnboardingModal"
-import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
+import { readLocalStorage } from "../utils/localStorage"
 
 const EMPLOYEES_STORAGE_KEY = "hrms_employees"
 const DEPARTMENT_NAMES_STORAGE_KEY = "hrms_department_names"
 const defaultEmployees = []
 const normalizeEmployees = (rows) => rows
 const safePercent = (value) => `${Math.abs(value).toFixed(1)}%`
+const EMPLOYMENT_TYPE_LEGACY_VALUES = new Set([
+  "full-time",
+  "part-time",
+  "internship",
+  "freelance",
+  "contract",
+  "temporary",
+  "permanent",
+])
+const isValidEmploymentType = (value) => EMPLOYMENT_TYPE_LEGACY_VALUES.has((value || "").trim().toLowerCase())
+
+const getEmploymentTypeLabel = (row) => {
+  const direct = (row.employmentType || "").trim()
+  if (isValidEmploymentType(direct)) return direct
+  const legacy = (row.status || "").trim()
+  if (isValidEmploymentType(legacy)) return legacy
+  return "-"
+}
+const normalizeWorkModel = (value) => {
+  const raw = (value || "").trim().toLowerCase()
+  if (!raw) return ""
+  if (raw === "office") return "on-site"
+  if (raw === "work from home") return "remote"
+  return raw
+}
 
 const parseDateValue = (value) => {
   if (!value) return null
@@ -21,24 +45,19 @@ const parseDateValue = (value) => {
 
 function EmployeesPage() {
   const navigate = useNavigate()
-  const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false)
-  const [editingEmployee, setEditingEmployee] = useState(null)
+  const location = useLocation()
   const [showFilterModal, setShowFilterModal] = useState(false)
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState("")
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(() => location.state?.selectedEmployeeId || "")
   const [searchQuery, setSearchQuery] = useState("")
-  const [filters, setFilters] = useState({ departments: [], type: "" })
-  const [employees, setEmployees] = useState(() => normalizeEmployees(readLocalStorage(EMPLOYEES_STORAGE_KEY, defaultEmployees)))
-  const [departmentNames] = useState(() => readLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, []))
-  const [toastMessage, setToastMessage] = useState("")
-
-  useEffect(() => {
-    writeLocalStorage(EMPLOYEES_STORAGE_KEY, employees)
-  }, [employees])
+  const [filters, setFilters] = useState({ departments: [], employmentType: "", workModel: "" })
+  const [employees] = useState(() => normalizeEmployees(readLocalStorage(EMPLOYEES_STORAGE_KEY, defaultEmployees)))
 
   const filteredRows = useMemo(() => {
     return employees.filter((employee) => {
       const { name, employeeId, department, designation, type } = employee
-      const mappedType = type === "Remote" ? "Work from Home" : type
+      const employmentType = getEmploymentTypeLabel(employee)
+      const currentWorkModel = normalizeWorkModel(type)
+      const requestedWorkModel = normalizeWorkModel(filters.workModel)
 
       const matchesSearch =
         searchQuery.trim() === "" ||
@@ -48,9 +67,12 @@ function EmployeesPage() {
         department.toLowerCase().includes(searchQuery.toLowerCase()) ||
         type.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesDepartment = filters.departments.length === 0 || filters.departments.includes(department)
-      const matchesType = filters.type === "" || filters.type === mappedType
+      const matchesEmploymentType =
+        filters.employmentType === ""
+        || employmentType.toLowerCase() === filters.employmentType.toLowerCase()
+      const matchesWorkModel = requestedWorkModel === "" || currentWorkModel === requestedWorkModel
 
-      return matchesSearch && matchesDepartment && matchesType
+      return matchesSearch && matchesDepartment && matchesEmploymentType && matchesWorkModel
     })
   }, [employees, filters, searchQuery])
 
@@ -60,13 +82,20 @@ function EmployeesPage() {
       employees.find((item) => item.employeeId === selectedEmployeeId),
     [employees, filteredRows, selectedEmployeeId],
   )
-  const departmentOptions = useMemo(() => {
+  const filterDepartmentOptions = useMemo(() => {
+    const createdDepartments = readLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, [])
+      .map((item) => (item || "").trim())
+      .filter(Boolean)
     const fromEmployees = employees
       .map((item) => (item.department || "").trim())
-      .filter((value) => value !== "")
-    const fromDepartmentPage = (departmentNames || []).map((item) => (item || "").trim()).filter((value) => value !== "")
-    return Array.from(new Set([...fromDepartmentPage, ...fromEmployees]))
-  }, [departmentNames, employees])
+      .filter(Boolean)
+    return Array.from(new Set([...createdDepartments, ...fromEmployees]))
+  }, [employees])
+  const activeFilterCount = useMemo(() => (
+    (filters.departments?.length || 0)
+    + (filters.employmentType ? 1 : 0)
+    + (filters.workModel ? 1 : 0)
+  ), [filters.departments, filters.employmentType, filters.workModel])
   const heroStats = useMemo(() => {
     const now = new Date()
     const currentMonth = now.getMonth()
@@ -158,68 +187,10 @@ function EmployeesPage() {
     return { items, donutStops }
   }, [employees])
 
-  const addEmployee = (payload) => {
-    setEmployees((prev) => {
-      const uniqueEmployeeId = prev.some((item) => item.employeeId === payload.employeeId) ? `EMP${Date.now().toString().slice(-6)}` : payload.employeeId
-      const nextItem = {
-        id: uniqueEmployeeId,
-        name: payload.name,
-        employeeId: uniqueEmployeeId,
-        department: payload.department || "Design",
-        designation: payload.designation || "UI/UX Designer",
-        type: payload.type || "Office",
-        status: payload.status || "Permanent",
-        mobile: payload.mobile || "",
-        email: payload.email || "",
-        dob: payload.dob || "",
-        maritalStatus: payload.maritalStatus || "",
-        gender: payload.gender || "",
-        nationality: payload.nationality || "",
-        address: payload.address || "",
-        city: payload.city || "",
-        state: payload.state || "",
-        zipCode: payload.zipCode || "",
-        userName: payload.userName || "",
-        officeEmail: payload.officeEmail || "",
-        workingDays: payload.workingDays || "",
-        joiningDate: payload.joiningDate || "",
-        officeLocation: payload.officeLocation || "",
-        generatedPassword: payload.generatedPassword || "",
-        profileImage: payload.profileImage || "",
-        documents: payload.documents || {},
-      }
-      return [nextItem, ...prev]
-    })
-    setToastMessage("Employee added successfully")
-    window.setTimeout(() => setToastMessage(""), 2200)
-  }
-
   const editEmployeeProfile = (employeeId) => {
     const current = employees.find((item) => item.employeeId === employeeId)
     if (!current) return
-    setEditingEmployee(current)
-    setShowAddEmployeeModal(true)
-  }
-
-  const saveEditedEmployee = (payload) => {
-    const originalId = editingEmployee?.employeeId
-    if (!originalId) return
-    const currentEmployee = employees.find((item) => item.employeeId === originalId)
-    if (!currentEmployee) return
-    const updatedEmployee = {
-      ...currentEmployee,
-      ...payload,
-      id: payload.employeeId,
-      employeeId: payload.employeeId,
-    }
-    setEmployees((prev) =>
-      prev.map((item) => (item.employeeId === originalId ? updatedEmployee : item)),
-    )
-    if (selectedEmployeeId === originalId) {
-      setSelectedEmployeeId(payload.employeeId)
-    }
-    setEditingEmployee(null)
-    setShowAddEmployeeModal(false)
+    navigate("/employees/editemploye", { state: { employeeId } })
   }
 
   return (
@@ -352,10 +323,15 @@ function EmployeesPage() {
                   onClick={() => {
                     setShowFilterModal(true)
                   }}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-[#edf4e6] px-4 py-2.5 text-sm font-medium text-slate-700"
+                  className="relative inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-[#edf4e6] px-4 py-2.5 text-sm font-medium text-slate-700"
                 >
                   <SlidersHorizontal size={16} />
                   Filter
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -right-2 -top-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#53c4ae] px-1 text-[11px] font-semibold leading-none text-white">
+                      {activeFilterCount}
+                    </span>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -427,7 +403,7 @@ function EmployeesPage() {
                     </td>
                     <td className="px-3 py-3 text-slate-700">{row.designation}</td>
                     <td className="px-3 py-3 text-slate-700">{row.department}</td>
-                    <td className="px-3 py-3 text-slate-700">{row.status || "-"}</td>
+                    <td className="px-3 py-3 text-slate-700">{getEmploymentTypeLabel(row)}</td>
                     <td className="px-3 py-3 text-slate-700">{row.type || "-"}</td>
                     <td className="px-3 py-3 text-slate-700">{row.joiningDate || "-"}</td>
                     <td className="px-3 py-3">
@@ -448,32 +424,16 @@ function EmployeesPage() {
         )}
       </article>
 
-      <EmployeeOnboardingModal
-        open={showAddEmployeeModal}
-        initialData={editingEmployee}
-        departmentOptions={departmentOptions}
-        onClose={() => {
-          setShowAddEmployeeModal(false)
-          setEditingEmployee(null)
-        }}
-        onAddEmployee={addEmployee}
-        onEditEmployee={saveEditedEmployee}
-      />
       <EmployeeFilterModal
         open={showFilterModal}
         initialFilters={filters}
+        departmentOptions={filterDepartmentOptions}
         onClose={() => setShowFilterModal(false)}
         onApply={(nextFilters) => {
           setFilters(nextFilters)
           setShowFilterModal(false)
         }}
       />
-
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-lg">
-          {toastMessage}
-        </div>
-      )}
     </>
   )
 }

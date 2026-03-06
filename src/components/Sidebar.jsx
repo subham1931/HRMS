@@ -1,5 +1,4 @@
 import {
-  Building2,
   Calendar,
   CalendarCheck2,
   CalendarDays,
@@ -12,7 +11,6 @@ import {
 const menuItems = [
   { label: "Dashboard", icon: LayoutGrid, to: "/dashboard" },
   { label: "All Employees", icon: Users, to: "/employees" },
-  { label: "All Departments", icon: Building2, to: "/departments" },
   { label: "Attendance", icon: CalendarCheck2, to: "/attendance" },
   { label: "Payroll", icon: ClipboardList, to: "/payroll" },
   { label: "Leaves", icon: CalendarDays, to: "/leaves" },

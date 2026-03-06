@@ -278,9 +278,9 @@ function AttendancePage() {
 
         <div className="grid gap-3 xl:grid-cols-[1.8fr_1fr]">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-[#f5f5f5]">
+            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div className="border-b border-slate-200 bg-[#d8e6c7] px-4 py-3 text-[18px] font-semibold leading-none text-slate-800">Present</div>
-              <div className="p-4">
+              <div className="flex flex-1 flex-col p-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
                     <p className="text-[56px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.present}</p>
@@ -291,7 +291,7 @@ function AttendancePage() {
                     <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-between rounded-xl bg-[#ececec] px-4 py-2 text-sm">
+                <div className="mt-auto flex items-center justify-between rounded-xl bg-[#ececec] px-4 py-2 text-sm">
                   <span className="text-slate-500">
                     <span className="font-semibold text-[#155a4d]">{attendanceSummary.onTime}</span> On-Time
                   </span>
@@ -302,24 +302,46 @@ function AttendancePage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 bg-[#39c9b3] px-4 py-2 text-sm font-medium text-white">On Leave</div>
-              <div className="p-4">
-                <p className="text-[44px] font-semibold leading-none text-slate-900">{attendanceSummary.onLeave}</p>
-                <p className="mt-1 text-xs text-slate-500">Employees</p>
-                <div className="mt-3 flex items-center gap-3 text-xs text-slate-600">
-                  <span>{attendanceSummary.leaveBreakdown.annual} Annual</span>
-                  <span>{attendanceSummary.leaveBreakdown.sick} Sick</span>
-                  <span>{attendanceSummary.leaveBreakdown.others} Others</span>
+            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 bg-[#53c4ae] px-4 py-3 text-[18px] font-semibold leading-none text-white">On Leave</div>
+              <div className="flex flex-1 flex-col p-4">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[44px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.onLeave}</p>
+                    <p className="mt-1 text-xs leading-none text-slate-500">Employees</p>
+                  </div>
+                  <div className="pb-2 text-right">
+                    <span className="inline-flex rounded-xl bg-[#d8efe2] px-2.5 py-1 text-sm font-semibold leading-none text-[#2ea875]">+1</span>
+                    <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
+                  </div>
+                </div>
+                <div className="mt-auto flex items-center justify-between rounded-xl bg-[#ececec] px-3 py-2 text-xs">
+                  <span className="text-slate-500">
+                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.annual}</span> Annual Leave
+                  </span>
+                  <span className="text-slate-500">
+                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.sick}</span> Sick Leave
+                  </span>
+                  <span className="text-slate-500">
+                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.others}</span> Others
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 bg-[#0f5c4d] px-4 py-2 text-sm font-medium text-white">Absent</div>
-              <div className="p-4">
-                <p className="text-[44px] font-semibold leading-none text-slate-900">{attendanceSummary.absent}</p>
-                <p className="mt-1 text-xs text-slate-500">Employees</p>
+            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 bg-[#0f5c4d] px-4 py-3 text-[18px] font-semibold leading-none text-white">Absent</div>
+              <div className="flex flex-1 flex-col p-4">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[44px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.absent}</p>
+                    <p className="mt-1 text-xs leading-none text-slate-500">Employees</p>
+                  </div>
+                  <div className="pb-2 text-right">
+                    <span className="inline-flex rounded-xl bg-[#d8efe2] px-2.5 py-1 text-sm font-semibold leading-none text-[#2ea875]">+0</span>
+                    <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -379,7 +401,7 @@ function AttendancePage() {
                 setSearchQuery(event.target.value)
                 setCurrentPage(1)
               }}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-14 text-sm outline-none focus:border-violet-300"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-14 text-sm outline-none focus:border-[#53c4ae]"
               placeholder="Search employee"
             />
           </div>
@@ -394,7 +416,7 @@ function AttendancePage() {
           <button
             type="button"
             onClick={addAttendanceRecord}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
           >
             <Plus size={14} />
             Add Record
@@ -485,7 +507,7 @@ function AttendancePage() {
                     onClick={() => setTempDate(cell.iso)}
                     className={`h-8 rounded-md text-xs ${
                       cell.iso === tempDate
-                        ? "bg-violet-600 font-semibold text-white"
+                        ? "bg-[#53c4ae] font-semibold text-white"
                         : cell.inCurrentMonth
                           ? "text-slate-700 hover:bg-slate-100"
                           : "text-slate-300 hover:bg-slate-50"
@@ -511,7 +533,7 @@ function AttendancePage() {
                   setSelectedDate(tempDate)
                   setShowDateModal(false)
                 }}
-                className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white"
+                className="flex-1 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white"
               >
                 Apply
               </button>
@@ -644,7 +666,7 @@ function AttendancePage() {
               type="button"
               onClick={() => setCurrentPage(page)}
               className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-xs ${
-                safeCurrentPage === page ? "border border-violet-500 text-violet-600" : ""
+                safeCurrentPage === page ? "border border-[#53c4ae] text-[#2f6f63]" : ""
               }`}
             >
               {page}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import RegisterEmployeeForm from "../components/RegisterEmployeeForm"
 import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
@@ -48,6 +48,10 @@ function AddEmployeePage() {
       joiningDate: payload.joiningDate || "",
       officeLocation: payload.officeLocation || "",
       generatedPassword: payload.generatedPassword || "",
+      salary: payload.salary || "",
+      bankName: payload.bankName || "",
+      bankAccount: payload.bankAccount || "",
+      employmentType: payload.employmentType || "",
       profileImage: payload.profileImage || "",
       documents: payload.documents || {},
     }

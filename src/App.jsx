@@ -7,6 +7,7 @@ import TopNavbar from "./components/TopNavbar"
 import DashboardPage from "./pages/DashboardPage"
 import EmployeesPage from "./pages/EmployeesPage"
 import AddEmployeePage from "./pages/AddEmployeePage"
+import EditEmployeePage from "./pages/EditEmployeePage"
 import DepartmentsPage from "./pages/DepartmentsPage"
 import AttendancePage from "./pages/AttendancePage"
 import PayrollPage from "./pages/PayrollPage"
@@ -31,6 +32,7 @@ function App() {
     "/dashboard": <DashboardPage />,
     "/employees": <EmployeesPage />,
     "/employees/addemploye": <AddEmployeePage />,
+    "/employees/editemploye": <EditEmployeePage />,
     "/departments": <DepartmentsPage />,
     "/attendance": <AttendancePage />,
     "/payroll": <PayrollPage />,

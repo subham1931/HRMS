@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react"
 const stepLabels = [
   "Personal & Contact Information",
   "Employment & Payroll Details",
-  "Allowances, Benefits & Documents",
+  "Documents and Credentials",
 ]
 
 const countryCodes = [
@@ -25,64 +25,167 @@ const countryCodes = [
   "+996", "+998",
 ]
 
+const INDIA_STATE_CITIES = {
+  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Tirupati"],
+  "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Tawang", "Pasighat", "Ziro"],
+  Assam: ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Tezpur"],
+  Bihar: ["Patna", "Gaya", "Muzaffarpur", "Bhagalpur", "Purnia"],
+  Chhattisgarh: ["Raipur", "Bhilai", "Bilaspur", "Korba", "Durg"],
+  Goa: ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda"],
+  Gujarat: ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar"],
+  Haryana: ["Gurugram", "Faridabad", "Panipat", "Ambala", "Hisar"],
+  "Himachal Pradesh": ["Shimla", "Dharamshala", "Solan", "Mandi", "Kullu"],
+  Jharkhand: ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh"],
+  Karnataka: ["Bengaluru", "Mysuru", "Mangaluru", "Hubballi", "Belagavi"],
+  Kerala: ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Kannur"],
+  "Madhya Pradesh": ["Bhopal", "Indore", "Jabalpur", "Gwalior", "Ujjain"],
+  Maharashtra: ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane"],
+  Manipur: ["Imphal", "Thoubal", "Churachandpur", "Bishnupur", "Ukhrul"],
+  Meghalaya: ["Shillong", "Tura", "Nongpoh", "Jowai", "Baghmara"],
+  Mizoram: ["Aizawl", "Lunglei", "Champhai", "Kolasib", "Serchhip"],
+  Nagaland: ["Kohima", "Dimapur", "Mokokchung", "Tuensang", "Wokha"],
+  Odisha: ["Bhubaneswar", "Cuttack", "Rourkela", "Sambalpur", "Puri"],
+  Punjab: ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda"],
+  Rajasthan: ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer"],
+  Sikkim: ["Gangtok", "Namchi", "Gyalshing", "Mangan", "Rangpo"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem"],
+  Telangana: ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam"],
+  Tripura: ["Agartala", "Udaipur", "Dharmanagar", "Kailasahar", "Belonia"],
+  "Uttar Pradesh": ["Lucknow", "Kanpur", "Noida", "Ghaziabad", "Varanasi"],
+  Uttarakhand: ["Dehradun", "Haridwar", "Haldwani", "Rishikesh", "Roorkee"],
+  "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Siliguri", "Asansol"],
+  "Andaman and Nicobar Islands": ["Port Blair"],
+  Chandigarh: ["Chandigarh"],
+  "Dadra and Nagar Haveli and Daman and Diu": ["Daman", "Diu", "Silvassa"],
+  Delhi: ["New Delhi", "Dwarka", "Rohini", "Saket", "Karol Bagh"],
+  "Jammu and Kashmir": ["Srinagar", "Jammu", "Anantnag", "Baramulla", "Kathua"],
+  Ladakh: ["Leh", "Kargil", "Diskit", "Nubra", "Drass"],
+  Lakshadweep: ["Kavaratti", "Agatti", "Amini", "Andrott"],
+  Puducherry: ["Puducherry", "Karaikal", "Mahe", "Yanam"],
+}
+
 const inputClass =
   "w-full rounded-lg border border-transparent bg-[#f3f4f4] px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#53c4ae]"
 const ADD_DEPARTMENT_OPTION = "__add_new_department__"
+const EMPLOYMENT_TYPE_LEGACY_VALUES = new Set(["full-time", "part-time", "internship", "freelance", "contract", "temporary", "permanent"])
+const getValidEmploymentType = (...values) => {
+  const match = values.find((value) => EMPLOYMENT_TYPE_LEGACY_VALUES.has((value || "").toLowerCase()))
+  return match || ""
+}
 
-function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAddDepartment }) {
+const createDefaultForm = () => ({
+  firstName: "",
+  lastName: "",
+  dob: "",
+  gender: "",
+  email: "",
+  phoneCode: "+91",
+  phone: "",
+  address: "",
+  city: "",
+  state: "",
+  zipCode: "",
+  employeeId: `EMP-${Date.now().toString().slice(-4)}`,
+  joinDate: "2035-06-19",
+  jobTitle: "",
+  department: "",
+  employmentType: "",
+  workModel: "On-Site",
+  salary: "",
+  bankName: "e.g. Barclays UK",
+  bankAccount: "e.g. 12345678",
+  loginEmail: "",
+  activeEmployee: true,
+  sendWelcomeEmail: false,
+})
+
+const emptyDocs = { cv: "", id: "", contract: "", offerLetter: "" }
+
+const createInitialState = (initialData) => {
+  if (!initialData) {
+    return {
+      form: createDefaultForm(),
+      documents: { ...emptyDocs },
+      profileImage: "",
+    }
+  }
+
+  const parts = (initialData.name || "").trim().split(/\s+/)
+  const form = {
+    ...createDefaultForm(),
+    firstName: initialData.firstName || parts[0] || "",
+    lastName: initialData.lastName || parts.slice(1).join(" ") || "",
+    dob: initialData.dob || "",
+    gender: initialData.gender || "",
+    email: initialData.email || "",
+    phone: initialData.mobile || "",
+    address: initialData.address || "",
+    city: initialData.city || "",
+    state: initialData.state || "",
+    zipCode: initialData.zipCode || "",
+    employeeId: initialData.employeeId || createDefaultForm().employeeId,
+    joinDate: initialData.joiningDate || "",
+    jobTitle: initialData.designation || "",
+    department: initialData.department || "",
+    employmentType: getValidEmploymentType(initialData.employmentType, initialData.status),
+    workModel: initialData.type || "On-Site",
+    salary: initialData.salary || "",
+    bankName: initialData.bankName || "e.g. Barclays UK",
+    bankAccount: initialData.bankAccount || "e.g. 12345678",
+    activeEmployee: (initialData.status || "").toLowerCase() !== "inactive",
+  }
+  const incomingDocs = initialData.documents || {}
+  const mapDoc = (value) => (typeof value === "string" ? value : value?.name || "")
+  return {
+    form,
+    documents: {
+      cv: mapDoc(incomingDocs.cv),
+      id: mapDoc(incomingDocs.id),
+      contract: mapDoc(incomingDocs.contract),
+      offerLetter: mapDoc(incomingDocs.offerLetter),
+    },
+    profileImage: initialData.profileImage || "",
+  }
+}
+
+function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAddDepartment, initialData = null }) {
+  const initialState = createInitialState(initialData)
   const [stepIndex, setStepIndex] = useState(0)
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    dob: "",
-    gender: "",
-    email: "",
-    phoneCode: "+91",
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    employeeId: `EMP-${Date.now().toString().slice(-4)}`,
-    joinDate: "2035-06-19",
-    jobTitle: "",
-    department: "",
-    employmentType: "",
-    workModel: "On-Site",
-    salary: "",
-    bankName: "e.g. Barclays UK",
-    bankAccount: "e.g. 12345678",
-    taxId: "e.g. AB123456C",
-    activeEmployee: true,
-    sendWelcomeEmail: false,
-  })
-  const [allowances, setAllowances] = useState({
-    transportation: true,
-    meal: true,
-    internet: false,
-  })
-  const [benefits, setBenefits] = useState({
-    healthInsurance: true,
-    lifeInsurance: true,
-    companyDevice: true,
-    trainingProgram: true,
-    tuition: false,
-    fitnessMembership: true,
-    mentalHealthSupport: false,
-  })
-  const [documents, setDocuments] = useState({
-    cv: "",
-    id: "",
-    contract: "",
-    offerLetter: "",
-  })
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false)
+  const [newDepartmentName, setNewDepartmentName] = useState("")
+  const [departmentModalError, setDepartmentModalError] = useState("")
+  const [form, setForm] = useState(() => initialState.form)
+  const [documents, setDocuments] = useState(() => initialState.documents)
   const [errors, setErrors] = useState({})
   const inputRefs = useRef({})
   const profileInputRef = useRef(null)
-  const [profileImage, setProfileImage] = useState("")
+  const [profileImage, setProfileImage] = useState(() => initialState.profileImage)
 
   const resolvedDepartments = useMemo(() => departmentOptions, [departmentOptions])
-  const allBenefitsSelected = useMemo(() => Object.values(benefits).every(Boolean), [benefits])
+  const stateOptions = useMemo(() => Object.keys(INDIA_STATE_CITIES), [])
+  const cityOptions = useMemo(() => {
+    if (!form.state) return []
+    const cities = INDIA_STATE_CITIES[form.state] || []
+    if (form.city && !cities.includes(form.city)) {
+      return [form.city, ...cities]
+    }
+    return cities
+  }, [form.city, form.state])
+  const generatedUserName = useMemo(() => {
+    const first = (form.firstName || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "")
+    const last = (form.lastName || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "")
+    const base = first || last || "employee"
+    const dob = form.dob || ""
+    const day = dob.split("-")[2]
+    const idDigits = String(form.employeeId || "").replace(/[^0-9]/g, "").slice(-2)
+    const suffix = day || idDigits || "01"
+    return `${base}${suffix}`
+  }, [form.dob, form.employeeId, form.firstName, form.lastName])
+  const generatedOfficeEmail = useMemo(() => {
+    return `${generatedUserName}@meensou.com`
+  }, [generatedUserName])
+  const generatedPassword = useMemo(() => generatedUserName, [generatedUserName])
+  const isEditMode = Boolean(initialData)
 
   const setField = (key) => (event) => {
     const { value } = event.target
@@ -92,42 +195,48 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
   const handleDepartmentChange = (event) => {
     const { value } = event.target
     if (value === ADD_DEPARTMENT_OPTION) {
-      const nextDepartment = window.prompt("Enter new department name")
-      const normalized = (nextDepartment || "").trim()
-      if (!normalized) return
-      if (typeof onAddDepartment === "function") {
-        onAddDepartment(normalized)
-      }
-      setForm((prev) => ({ ...prev, department: normalized }))
-      setErrors((prev) => ({ ...prev, department: "" }))
+      setDepartmentModalError("")
+      setNewDepartmentName("")
+      setShowDepartmentModal(true)
       return
     }
     setForm((prev) => ({ ...prev, department: value }))
     setErrors((prev) => ({ ...prev, department: "" }))
   }
-
-  const validateStep = () => {
-    const nextErrors = {}
-    if (stepIndex === 0) {
-      if (!form.firstName.trim()) nextErrors.firstName = "First name is required"
-      if (!form.lastName.trim()) nextErrors.lastName = "Last name is required"
-      if (!form.phone.trim()) nextErrors.phone = "Mobile number is required"
-      if (!form.dob) nextErrors.dob = "Date of birth is required"
-      if (!form.gender) nextErrors.gender = "Gender is required"
-      if (!form.email.trim()) nextErrors.email = "Email is required"
-      if (!form.address.trim()) nextErrors.address = "Please provide a valid mailing address"
-      if (!form.city.trim()) nextErrors.city = "City is required"
-      if (!form.state.trim()) nextErrors.state = "State is required"
-      if (!form.zipCode.trim()) nextErrors.zipCode = "Zip code is required"
+  const handleStateChange = (event) => {
+    const nextState = event.target.value
+    const validCities = INDIA_STATE_CITIES[nextState] || []
+    setForm((prev) => ({
+      ...prev,
+      state: nextState,
+      city: validCities.includes(prev.city) ? prev.city : "",
+    }))
+    setErrors((prev) => ({ ...prev, state: "", city: "" }))
+  }
+  const handleCityChange = (event) => {
+    const { value } = event.target
+    setForm((prev) => ({ ...prev, city: value }))
+    setErrors((prev) => ({ ...prev, city: "" }))
+  }
+  const handleCreateDepartment = () => {
+    const normalized = newDepartmentName.trim()
+    if (!normalized) {
+      setDepartmentModalError("Department name is required")
+      return
     }
-    if (stepIndex === 1) {
-      if (!form.joinDate) nextErrors.joinDate = "Join date is required"
-      if (!form.jobTitle.trim()) nextErrors.jobTitle = "Job title is required"
-      if (!form.department.trim()) nextErrors.department = "Department is required"
-      if (!form.employmentType.trim()) nextErrors.employmentType = "Employment type is required"
+    const exists = resolvedDepartments.some((item) => item.toLowerCase() === normalized.toLowerCase())
+    if (exists) {
+      setDepartmentModalError("Department already exists")
+      return
     }
-    setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
+    if (typeof onAddDepartment === "function") {
+      onAddDepartment(normalized)
+    }
+    setForm((prev) => ({ ...prev, department: normalized }))
+    setErrors((prev) => ({ ...prev, department: "" }))
+    setShowDepartmentModal(false)
+    setNewDepartmentName("")
+    setDepartmentModalError("")
   }
 
   const handleSubmit = () => {
@@ -141,21 +250,24 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
       designation: form.jobTitle || "Employee",
       type: form.workModel || "On-Site",
       status: form.activeEmployee ? "Active" : "Inactive",
+      employmentType: form.employmentType,
       mobile: form.phone,
       email: form.email,
       dob: form.dob,
+      gender: form.gender,
       address: form.address,
       city: form.city,
       state: form.state,
       zipCode: form.zipCode,
+      salary: form.salary,
+      bankName: form.bankName,
+      bankAccount: form.bankAccount,
       profileImage,
-      officeEmail: form.email,
+      userName: generatedUserName,
+      officeEmail: generatedOfficeEmail || form.email,
+      generatedPassword,
       joiningDate: form.joinDate,
-      documents: {
-        ...documents,
-        allowances,
-        benefits,
-      },
+      documents: { ...documents },
     }
     onSubmit(payload)
   }
@@ -193,8 +305,9 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
   )
 
   return (
-    <div className="mx-auto rounded-2xl border border-slate-200 bg-white text-sm text-slate-800">
-      <div className="grid md:grid-cols-[240px_1fr]">
+    <>
+      <div className="mx-auto rounded-2xl border border-slate-200 bg-white text-sm text-slate-800">
+        <div className="grid md:grid-cols-[240px_1fr]">
         <aside className="border-r border-slate-200 p-6">
           <button
             type="button"
@@ -204,9 +317,11 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
             <ArrowLeft size={13} />
             Back
           </button>
-          <h2 className="text-2xl font-semibold leading-tight text-slate-800">Register New Employee</h2>
+          <h2 className="text-2xl font-semibold leading-tight text-slate-800">{isEditMode ? "Edit Employee" : "Register New Employee"}</h2>
           <p className="mt-2 text-xs text-slate-500">
-            Enter all required employment details to formally add a new member to your organization.
+            {isEditMode
+              ? "Update employee details and save profile changes."
+              : "Enter all required employment details to formally add a new member to your organization."}
           </p>
           <div className="mt-10">
             {stepLabels.map((label, index) => {
@@ -390,26 +505,49 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
                 </label>
                 <div className="grid gap-4 md:grid-cols-3">
                   <label className="space-y-1 text-sm text-slate-500">
-                    <span>City <span className="text-rose-500">*</span></span>
-                    <input
-                      required
-                      value={form.city}
-                      onChange={setField("city")}
-                      placeholder="Enter city"
-                      className={`${inputClass} ${errors.city ? "border-rose-400" : ""}`}
-                    />
-                    {errors.city ? <span className="text-xs text-rose-500">{errors.city}</span> : null}
+                    <span>State <span className="text-rose-500">*</span></span>
+                    <div className="relative">
+                      <select
+                        required
+                        value={form.state}
+                        onChange={handleStateChange}
+                        className={`${inputClass} appearance-none pr-8 ${errors.state ? "border-rose-400" : ""}`}
+                      >
+                        <option value="" disabled>
+                          Select state
+                        </option>
+                        {stateOptions.map((stateName) => (
+                          <option key={stateName} value={stateName}>
+                            {stateName}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    </div>
+                    {errors.state ? <span className="text-xs text-rose-500">{errors.state}</span> : null}
                   </label>
                   <label className="space-y-1 text-sm text-slate-500">
-                    <span>State <span className="text-rose-500">*</span></span>
-                    <input
-                      required
-                      value={form.state}
-                      onChange={setField("state")}
-                      placeholder="Enter state"
-                      className={`${inputClass} ${errors.state ? "border-rose-400" : ""}`}
-                    />
-                    {errors.state ? <span className="text-xs text-rose-500">{errors.state}</span> : null}
+                    <span>City <span className="text-rose-500">*</span></span>
+                    <div className="relative">
+                      <select
+                        required
+                        value={form.city}
+                        onChange={handleCityChange}
+                        disabled={!form.state}
+                        className={`${inputClass} appearance-none pr-8 ${errors.city ? "border-rose-400" : ""} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
+                      >
+                        <option value="" disabled>
+                          {form.state ? "Select city" : "Select state first"}
+                        </option>
+                        {cityOptions.map((cityName) => (
+                          <option key={`${form.state}-${cityName}`} value={cityName}>
+                            {cityName}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    </div>
+                    {errors.city ? <span className="text-xs text-rose-500">{errors.city}</span> : null}
                   </label>
                   <label className="space-y-1 text-sm text-slate-500">
                     <span>Zip Code <span className="text-rose-500">*</span></span>
@@ -528,120 +666,12 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
                     <input value={form.bankAccount} onChange={setField("bankAccount")} className={inputClass} />
                   </label>
                 </div>
-                <label className="space-y-1 text-sm text-slate-500">
-                  <span>Tax Identification Number (NPWP)</span>
-                  <input value={form.taxId} onChange={setField("taxId")} className={inputClass} />
-                </label>
               </>
             )}
 
             {stepIndex === 2 && (
               <>
-                <h4 className="text-base font-semibold text-slate-700">Allowances</h4>
-                <div className="space-y-2 text-sm text-slate-600">
-                  {[
-                    { key: "transportation", label: "Transportation" },
-                    { key: "meal", label: "Meal" },
-                    { key: "internet", label: "Internet (Remote & Hybrid only)" },
-                  ].map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setAllowances((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-                      className="inline-flex items-center gap-2"
-                    >
-                      <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border ${
-                        allowances[item.key] ? "border-[#53c4ae] bg-[#53c4ae]" : "border-slate-300 bg-white"
-                      }`}>
-                        {allowances[item.key] ? <Check size={10} className="text-white" /> : null}
-                      </span>
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <h4 className="pt-3 text-base font-semibold text-slate-700">Benefits</h4>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !allBenefitsSelected
-                    setBenefits((prev) => Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: next }), {}))
-                  }}
-                  className="inline-flex items-center gap-2 text-sm text-slate-600"
-                >
-                  <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border ${
-                    allBenefitsSelected ? "border-[#53c4ae] bg-[#53c4ae]" : "border-slate-300 bg-white"
-                  }`}>
-                    {allBenefitsSelected ? <Check size={10} className="text-white" /> : null}
-                  </span>
-                  Select All
-                </button>
-
-                <div className="mt-2 grid gap-5 border-t border-slate-200 pt-3 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-500">Insurance</p>
-                    {[
-                      { key: "healthInsurance", label: "Health Insurance" },
-                      { key: "lifeInsurance", label: "Life Insurance" },
-                    ].map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setBenefits((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-                        className="inline-flex items-center gap-2 text-sm text-slate-600"
-                      >
-                        <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border ${
-                          benefits[item.key] ? "border-[#53c4ae] bg-[#53c4ae]" : "border-slate-300 bg-white"
-                        }`}>
-                          {benefits[item.key] ? <Check size={10} className="text-white" /> : null}
-                        </span>
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-500">Work-Related Perks</p>
-                    <button
-                      type="button"
-                      onClick={() => setBenefits((prev) => ({ ...prev, companyDevice: !prev.companyDevice }))}
-                      className="inline-flex items-center gap-2 text-sm text-slate-600"
-                    >
-                      <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border ${
-                        benefits.companyDevice ? "border-[#53c4ae] bg-[#53c4ae]" : "border-slate-300 bg-white"
-                      }`}>
-                        {benefits.companyDevice ? <Check size={10} className="text-white" /> : null}
-                      </span>
-                      Company Device
-                    </button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-500">Development & Wellness</p>
-                    {[
-                      { key: "trainingProgram", label: "Training Program" },
-                      { key: "tuition", label: "Tuition" },
-                      { key: "fitnessMembership", label: "Fitness Membership" },
-                      { key: "mentalHealthSupport", label: "Mental Health Support" },
-                    ].map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setBenefits((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-                        className="inline-flex items-center gap-2 text-sm text-slate-600"
-                      >
-                        <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border ${
-                          benefits[item.key] ? "border-[#53c4ae] bg-[#53c4ae]" : "border-slate-300 bg-white"
-                        }`}>
-                          {benefits[item.key] ? <Check size={10} className="text-white" /> : null}
-                        </span>
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <h4 className="pt-3 text-base font-semibold text-slate-700">Documents</h4>
+                <h4 className="text-base font-semibold text-slate-700">Documents</h4>
                 <div className="space-y-3">
                   {uploadBox("cv", "CV & Portfolio (if Any)")}
                   {uploadBox("id", "ID")}
@@ -649,27 +679,72 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
                   {uploadBox("offerLetter", "Offer Letter")}
                 </div>
 
-                <div className="pt-3 text-sm text-slate-700">
-                  <button
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, activeEmployee: !prev.activeEmployee }))}
-                    className="flex items-center gap-2"
-                  >
-                    <span className={`relative h-4 w-7 rounded-full transition-colors ${form.activeEmployee ? "bg-[#53c4ae]" : "bg-slate-300"}`}>
-                      <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-transform ${form.activeEmployee ? "translate-x-3.5" : "translate-x-0.5"}`} />
-                    </span>
-                    Active Employee
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, sendWelcomeEmail: !prev.sendWelcomeEmail }))}
-                    className="mt-2 flex items-center gap-2"
-                  >
-                    <span className={`relative h-4 w-7 rounded-full transition-colors ${form.sendWelcomeEmail ? "bg-[#53c4ae]" : "bg-slate-300"}`}>
-                      <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-transform ${form.sendWelcomeEmail ? "translate-x-3.5" : "translate-x-0.5"}`} />
-                    </span>
-                    Send Welcome Email
-                  </button>
+                <h4 className="pt-3 text-base font-semibold text-slate-700">Credentials</h4>
+                <p className="text-sm text-slate-500">Set login access details for user account sign-in.</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-1 text-sm text-slate-500">
+                    <span>Username</span>
+                    <input
+                      value={generatedUserName}
+                      placeholder="Auto-generated from first name and DOB"
+                      readOnly
+                      className={`${inputClass} bg-slate-100 text-slate-600`}
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm text-slate-500">
+                    <span>Office Email</span>
+                    <input
+                      type="email"
+                      value={generatedOfficeEmail}
+                      placeholder="Auto-generated from first name"
+                      readOnly
+                      className={`${inputClass} bg-slate-100 text-slate-600`}
+                    />
+                  </label>
+                </div>
+                <label className="space-y-1 text-sm text-slate-500">
+                  <span>Password</span>
+                  <input
+                    type="text"
+                    value={generatedPassword}
+                    placeholder="Auto-generated from username"
+                    readOnly
+                    className={`${inputClass} bg-slate-100 text-slate-600`}
+                  />
+                </label>
+
+                <div className="pt-3">
+                  <div className="space-y-3 rounded-xl border border-slate-200 bg-[#f8faf9] p-3">
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, activeEmployee: !prev.activeEmployee }))}
+                      className="flex w-full items-center justify-between"
+                    >
+                      <span className="text-left">
+                        <span className="block text-sm font-medium text-slate-700">Active Employee</span>
+                        <span className="block text-xs text-slate-500">Mark this employee as currently active</span>
+                      </span>
+                      <span className={`relative h-5 w-9 rounded-full transition-colors ${form.activeEmployee ? "bg-[#53c4ae]" : "bg-slate-300"}`}>
+                        <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.activeEmployee ? "translate-x-4" : "translate-x-0"}`} />
+                      </span>
+                    </button>
+
+                    <div className="border-t border-slate-200" />
+
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, sendWelcomeEmail: !prev.sendWelcomeEmail }))}
+                      className="flex w-full items-center justify-between"
+                    >
+                      <span className="text-left">
+                        <span className="block text-sm font-medium text-slate-700">Send Welcome Email</span>
+                        <span className="block text-xs text-slate-500">Automatically notify employee after submit</span>
+                      </span>
+                      <span className={`relative h-5 w-9 rounded-full transition-colors ${form.sendWelcomeEmail ? "bg-[#53c4ae]" : "bg-slate-300"}`}>
+                        <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.sendWelcomeEmail ? "translate-x-4" : "translate-x-0"}`} />
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </>
             )}
@@ -690,7 +765,6 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
                 <button
                   type="button"
                   onClick={() => {
-                    if (!validateStep()) return
                     if (stepIndex === stepLabels.length - 1) {
                       handleSubmit()
                       return
@@ -699,14 +773,57 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
                   }}
                   className="rounded-xl bg-[#53c4ae] px-5 py-2 text-sm font-medium text-white"
                 >
-                  {stepIndex === stepLabels.length - 1 ? "Submit" : "Next"}
+                  {stepIndex === stepLabels.length - 1 ? (isEditMode ? "Update" : "Submit") : "Next"}
                 </button>
               </div>
             </div>
           </div>
-        </section>
+          </section>
+        </div>
       </div>
-    </div>
+      {showDepartmentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5">
+            <h4 className="text-base font-semibold text-slate-800">Add New Department</h4>
+            <p className="mt-1 text-sm text-slate-500">Create a department and save it for future employees.</p>
+            <label className="mt-4 block space-y-1">
+              <span className="text-sm text-slate-600">Department Name</span>
+              <input
+                value={newDepartmentName}
+                onChange={(event) => {
+                  setNewDepartmentName(event.target.value)
+                  setDepartmentModalError("")
+                }}
+                placeholder="Enter department name"
+                className={`${inputClass} ${departmentModalError ? "border-rose-400" : ""}`}
+                autoFocus
+              />
+              {departmentModalError ? <span className="text-xs text-rose-500">{departmentModalError}</span> : null}
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDepartmentModal(false)
+                  setNewDepartmentName("")
+                  setDepartmentModalError("")
+                }}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateDepartment}
+                className="rounded-lg bg-[#53c4ae] px-4 py-2 text-sm font-medium text-white"
+              >
+                Add Department
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
