@@ -167,8 +167,47 @@ function LeavesPage() {
     return { pending, approved, rejected, total: enrichedRequests.length, onLeaveToday, typeCount }
   }, [enrichedRequests])
 
-  const leaveTrend = [5.2, 4.7, 5.4, 6.1, 4.8]
-  const linePoints = leaveTrend.map((v, i) => `${24 + i * 46},${128 - v * 14}`).join(" ")
+  const weeklyLeaveOverview = useMemo(() => {
+    const now = new Date()
+    const monday = new Date(now)
+    const weekdayIndex = (now.getDay() + 6) % 7
+    monday.setDate(now.getDate() - weekdayIndex)
+    monday.setHours(0, 0, 0, 0)
+
+    const weekDays = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(monday)
+      date.setDate(monday.getDate() + index)
+      return {
+        label: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date),
+        key: toYMD(date),
+        count: 0,
+      }
+    })
+
+    enrichedRequests
+      .filter((item) => item.status === "Approved")
+      .forEach((item) => {
+        const start = new Date(`${item.startDate}T00:00:00`)
+        const end = new Date(`${item.endDate}T00:00:00`)
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return
+
+        weekDays.forEach((day) => {
+          const date = new Date(`${day.key}T00:00:00`)
+          if (start <= date && end >= date) {
+            day.count += 1
+          }
+        })
+      })
+
+    const max = Math.max(1, ...weekDays.map((item) => item.count))
+    const total = weekDays.reduce((sum, item) => sum + item.count, 0)
+
+    return {
+      max,
+      total,
+      days: weekDays,
+    }
+  }, [enrichedRequests])
 
   const calendarLabel = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(calendarMonth)
   const firstDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
@@ -289,21 +328,28 @@ function LeavesPage() {
                 <ChevronDown size={14} />
               </button>
             </div>
-            <svg viewBox="0 0 230 140" className="h-[170px] w-full">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <rect key={`b-${i}`} x={18 + i * 42} y={72 - (i % 2 === 0 ? 16 : 6)} width="24" height={64 + (i % 3) * 5} rx="6" fill="#d9dbda" />
-              ))}
-              <polyline points={linePoints} fill="none" stroke="#2eb79d" strokeWidth="2.5" />
-              {linePoints.split(" ").map((point) => {
-                const [x, y] = point.split(",")
-                return <circle key={point} cx={x} cy={y} r="3.5" fill="#2eb79d" />
-              })}
-              {["Mon", "Tue", "Wed", "Thu", "Fri"].map((d, i) => (
-                <text key={d} x={30 + i * 42} y="134" fontSize="10" fill="#7a8087">
-                  {d}
-                </text>
-              ))}
-            </svg>
+            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+              <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+                <span>Approved leaves by day</span>
+                <span className="rounded-full bg-[#e7f4ef] px-2 py-0.5 font-medium text-[#2f6f63]">
+                  {weeklyLeaveOverview.total} total
+                </span>
+              </div>
+              <div className="grid h-[148px] grid-cols-7 items-end gap-2">
+                {weeklyLeaveOverview.days.map((day) => {
+                  const height = `${Math.max(10, Math.round((day.count / weeklyLeaveOverview.max) * 100))}%`
+                  return (
+                    <div key={day.key} className="flex h-full flex-col items-center justify-end gap-1">
+                      <span className="text-[11px] font-semibold text-slate-700">{day.count}</span>
+                      <div className="flex h-[100px] w-full items-end justify-center rounded-md bg-slate-100/70 px-1">
+                        <span className="block w-full rounded-md bg-[#53c4ae] transition-all duration-300" style={{ height }} />
+                      </div>
+                      <span className="text-[10px] text-slate-500">{day.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-3 flex items-center justify-between">
