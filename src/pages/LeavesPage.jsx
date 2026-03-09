@@ -104,6 +104,8 @@ function LeavesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("All")
   const [overviewRange, setOverviewRange] = useState("week")
+  const [pageSize, setPageSize] = useState(10)
+  const [currentPage, setCurrentPage] = useState(1)
   const [employees] = useState(() => readLocalStorage(EMPLOYEES_STORAGE_KEY, []))
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date()
@@ -152,6 +154,13 @@ function LeavesPage() {
       return matchesStatus && matchesSearch
     })
   }, [enrichedRequests, searchQuery, statusFilter])
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const pagedRows = filteredRows.slice(startIndex, endIndex)
+  const from = filteredRows.length === 0 ? 0 : startIndex + 1
+  const to = Math.min(endIndex, filteredRows.length)
 
   const summary = useMemo(() => {
     const pending = enrichedRequests.filter((item) => item.status === "Pending").length
@@ -417,6 +426,13 @@ function LeavesPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => navigate("/leaves/calendar")}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                  View All
+                </button>
+                <button
+                  type="button"
                   onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
                 >
@@ -492,7 +508,10 @@ function LeavesPage() {
               <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value)
+                  setCurrentPage(1)
+                }}
                 className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-violet-300"
                 placeholder="Search employee, ID, etc"
               />
@@ -501,7 +520,10 @@ function LeavesPage() {
               <Filter size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <select
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value)
+                  setCurrentPage(1)
+                }}
                 className="appearance-none rounded-xl border border-slate-200 bg-[#e8f1df] py-2 pl-8 pr-8 text-sm text-slate-700 outline-none"
               >
                 {["All", "Pending", "Approved", "Rejected"].map((item) => (
@@ -513,14 +535,12 @@ function LeavesPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left">
+        <div className="overflow-hidden">
+          <table className="w-full text-left">
             <thead className="bg-slate-50 text-xs text-slate-500">
               <tr>
                 <th className="px-3 py-2.5 font-medium">Name</th>
-                <th className="px-3 py-2.5 font-medium">Job Title</th>
                 <th className="px-3 py-2.5 font-medium">Type</th>
-                <th className="px-3 py-2.5 font-medium">Submitted Date</th>
                 <th className="px-3 py-2.5 font-medium">Period</th>
                 <th className="px-3 py-2.5 font-medium">Duration</th>
                 <th className="px-3 py-2.5 font-medium">Reason</th>
@@ -528,7 +548,7 @@ function LeavesPage() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {filteredRows.map((item) => {
+              {pagedRows.map((item) => {
                 const durationDays = daysBetween(item.startDate, item.endDate)
                 return (
                   <tr key={item.id} className="border-b border-slate-100 last:border-0">
@@ -537,22 +557,17 @@ function LeavesPage() {
                         <img src={item.avatar} alt={item.employeeName} className="h-8 w-8 rounded-full object-cover" />
                         <div>
                           <p className="font-medium text-slate-800">{item.employeeName}</p>
-                          <p className="text-xs text-slate-500">{item.employeeId}</p>
+                          <p className="text-xs text-slate-500">{item.employeeId} · {item.department}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-700">
-                      <p>{item.jobTitle}</p>
-                      <p className="text-xs text-slate-500">{item.department}</p>
-                    </td>
                     <td className="px-3 py-2.5 text-slate-700">{item.leaveType}</td>
-                    <td className="px-3 py-2.5 text-slate-700">{formatDate(item.appliedAt)}</td>
                     <td className="px-3 py-2.5 text-slate-700">
                       {formatDate(item.startDate)} - {formatDate(item.endDate)}
                     </td>
                     <td className="px-3 py-2.5 text-slate-700">{durationDays} Day{durationDays > 1 ? "s" : ""}</td>
                     <td className="px-3 py-2.5">
-                      <span className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600">{item.reason}</span>
+                      <span className="inline-block max-w-[220px] truncate rounded bg-slate-100 px-2 py-1 text-xs text-slate-600">{item.reason}</span>
                     </td>
                     <td className="px-3 py-2.5">
                       <span
@@ -570,15 +585,68 @@ function LeavesPage() {
                   </tr>
                 )
               })}
-              {filteredRows.length === 0 && (
+              {pagedRows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
+                  <td colSpan={6} className="py-10 text-center text-sm text-slate-500">
                     No leave requests found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+          <div className="flex items-center gap-2">
+            <span>Showing</span>
+            <select
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value))
+                setCurrentPage(1)
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-slate-600 outline-none"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={30}>30</option>
+            </select>
+          </div>
+
+          <p>
+            Showing {from} to {to} out of {filteredRows.length} records
+          </p>
+
+          <div className="flex items-center gap-2 text-slate-700">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md"
+              aria-label="Previous page"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            {Array.from({ length: Math.min(totalPages, 4) }, (_, index) => index + 1).map((page) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => setCurrentPage(page)}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-xs ${
+                  safeCurrentPage === page ? "border border-[#53c4ae] text-[#2f6f63]" : ""
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md"
+              aria-label="Next page"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       </article>
     </div>

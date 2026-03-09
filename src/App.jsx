@@ -13,6 +13,7 @@ import AttendancePage from "./pages/AttendancePage"
 import PayrollPage from "./pages/PayrollPage"
 import LeavesPage from "./pages/LeavesPage"
 import LeaveRequestDetailsPage from "./pages/LeaveRequestDetailsPage"
+import LeaveCalendarPage from "./pages/LeaveCalendarPage"
 import HolidaysPage from "./pages/HolidaysPage"
 import SettingsPage from "./pages/SettingsPage"
 import ProfilePage from "./pages/ProfilePage"
@@ -40,12 +41,17 @@ function App() {
     "/jobs": <PlaceholderPage />,
     "/candidates": <PlaceholderPage />,
     "/leaves": <LeavesPage />,
+    "/leaves/calendar": <LeaveCalendarPage />,
     "/holidays": <HolidaysPage />,
     "/settings": <SettingsPage />,
     "/notifications": <NotificationsPanel />,
     "/profile": <ProfilePage />,
   }
-  const activeRouteContent = pathname.startsWith("/leaves/") ? <LeaveRequestDetailsPage /> : routeContent[pathname]
+  const activeRouteContent = pathname === "/leaves/calendar"
+    ? <LeaveCalendarPage />
+    : pathname.startsWith("/leaves/")
+      ? <LeaveRequestDetailsPage />
+      : routeContent[pathname]
 
   const handleNavigate = (nextPath) => {
     navigate(nextPath)

@@ -28,7 +28,11 @@ function Sidebar({ pathname, onNavigate, mobile = false }) {
       <nav className="space-y-1 px-1">
         {menuItems.map((item) => {
           const Icon = item.icon
-          const isActive = item.to === "/employees" ? pathname.startsWith("/employees") : pathname === item.to
+          const isActive = item.to === "/employees"
+            ? pathname.startsWith("/employees")
+            : item.to === "/leaves"
+              ? pathname.startsWith("/leaves")
+              : pathname === item.to
 
           return (
             <button
