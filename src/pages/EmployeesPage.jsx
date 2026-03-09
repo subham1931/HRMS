@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Activity, Minus, Plus, Search, SlidersHorizontal, UserMinus, UserRoundPlus, Users } from "lucide-react"
+import { Activity, Check, Minus, Plus, Search, SlidersHorizontal, UserMinus, UserRoundPlus, Users } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { CiUser } from "react-icons/ci"
 import EmployeeDetailsView from "../components/EmployeeDetailsView"
@@ -48,6 +48,7 @@ function EmployeesPage() {
   const location = useLocation()
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(() => location.state?.selectedEmployeeId || "")
+  const [selectedRowIds, setSelectedRowIds] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState({ departments: [], employmentType: "", workModel: "" })
   const [employees] = useState(() => normalizeEmployees(readLocalStorage(EMPLOYEES_STORAGE_KEY, defaultEmployees)))
@@ -91,6 +92,20 @@ function EmployeesPage() {
       .filter(Boolean)
     return Array.from(new Set([...createdDepartments, ...fromEmployees]))
   }, [employees])
+  const visibleEmployeeIds = useMemo(() => filteredRows.map((row) => row.employeeId), [filteredRows])
+  const allVisibleSelected = visibleEmployeeIds.length > 0 && visibleEmployeeIds.every((id) => selectedRowIds.includes(id))
+  const hasVisibleSelection = visibleEmployeeIds.some((id) => selectedRowIds.includes(id))
+  const toggleSelectAllVisible = () => {
+    setSelectedRowIds((prev) => {
+      if (allVisibleSelected) {
+        return prev.filter((id) => !visibleEmployeeIds.includes(id))
+      }
+      return Array.from(new Set([...prev, ...visibleEmployeeIds]))
+    })
+  }
+  const toggleSelectRow = (employeeId) => {
+    setSelectedRowIds((prev) => (prev.includes(employeeId) ? prev.filter((id) => id !== employeeId) : [...prev, employeeId]))
+  }
   const activeFilterCount = useMemo(() => (
     (filters.departments?.length || 0)
     + (filters.employmentType ? 1 : 0)
@@ -362,9 +377,18 @@ function EmployeesPage() {
               <thead className="text-xs text-slate-400">
                 <tr className="rounded-xl bg-[#f6f7f8]">
                   <th className="w-10 rounded-l-xl px-3 py-3 font-medium">
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-emerald-400 text-white">
-                      <Minus size={10} />
-                    </span>
+                    <button
+                      type="button"
+                      onClick={toggleSelectAllVisible}
+                      className={`inline-flex h-4 w-4 items-center justify-center rounded border ${
+                        allVisibleSelected || hasVisibleSelection
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-slate-300 bg-white text-slate-400"
+                      }`}
+                      aria-label="Select all employees"
+                    >
+                      {allVisibleSelected ? <Check size={10} /> : hasVisibleSelection ? <Minus size={10} /> : null}
+                    </button>
                   </th>
                   <th className="px-3 py-3 font-medium">Employee ID</th>
                   <th className="px-3 py-3 font-medium">Name</th>
@@ -386,7 +410,21 @@ function EmployeesPage() {
                     className="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50"
                   >
                     <td className="w-10 px-3 py-3">
-                      <span className="inline-flex h-4 w-4 rounded border border-slate-200 bg-white" />
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          toggleSelectRow(row.employeeId)
+                        }}
+                        className={`inline-flex h-4 w-4 items-center justify-center rounded border ${
+                          selectedRowIds.includes(row.employeeId)
+                            ? "border-emerald-500 bg-emerald-500 text-white"
+                            : "border-slate-300 bg-white text-transparent"
+                        }`}
+                        aria-label={`Select ${row.name}`}
+                      >
+                        <Check size={10} />
+                      </button>
                     </td>
                     <td className="px-3 py-3 text-slate-700">{row.employeeId}</td>
                     <td className="px-3 py-3 font-medium text-slate-800">
