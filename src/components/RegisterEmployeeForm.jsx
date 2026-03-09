@@ -323,31 +323,47 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
               ? "Update employee details and save profile changes."
               : "Enter all required employment details to formally add a new member to your organization."}
           </p>
-          <div className="mt-10">
-            {stepLabels.map((label, index) => {
-              const active = index === stepIndex
-              const done = index < stepIndex
-              return (
-                <div key={label} className="relative flex items-start gap-3 pb-7 last:pb-0">
-                  {index < stepLabels.length - 1 && (
-                    <span className="absolute left-[8px] bottom-[-28px] top-[9px] w-px overflow-hidden bg-slate-200">
+          <div className="relative mt-8 rounded-2xl bg-[#f8faf9] p-4">
+            <div className="space-y-5">
+              {stepLabels.map((label, index) => {
+                const active = index === stepIndex
+                const done = index < stepIndex
+                return (
+                  <div key={label} className="relative flex items-start gap-3">
+                    <div className="relative w-7 shrink-0">
+                      {index < stepLabels.length - 1 && (
+                        <span className="pointer-events-none absolute left-1/2 top-6 h-[calc(100%+24px)] w-[2px] -translate-x-1/2 bg-slate-200">
+                          <span
+                            className={`absolute inset-0 origin-top bg-[#53c4ae] transition-transform duration-500 ease-out ${
+                              done ? "scale-y-100" : "scale-y-0"
+                            }`}
+                          />
+                        </span>
+                      )}
                       <span
-                        className={`absolute inset-x-0 top-0 h-full origin-top bg-[#53c4ae] transition-transform duration-500 ease-out ${
-                          done ? "scale-y-100" : "scale-y-0"
+                        className={`relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors duration-300 ${
+                          done || active
+                            ? "border-[#53c4ae] bg-[#53c4ae] text-white"
+                            : "border-slate-300 bg-white text-slate-500"
                         }`}
-                      />
-                    </span>
-                  )}
-                  <span className={`relative z-10 mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full border transition-colors duration-300 ${
-                    active || done ? "border-[#53c4ae] bg-[#53c4ae]" : "border-slate-300 bg-white"
-                  }`}>
-                    {active && !done ? <span className="absolute inline-flex h-4 w-4 animate-ping rounded-full bg-[#53c4ae]/35" /> : null}
-                    {done ? <Check size={10} className="text-white" /> : null}
-                  </span>
-                  <p className={`text-sm leading-5 transition-colors duration-300 ${active || done ? "font-semibold text-slate-700" : "text-slate-400"}`}>{label}</p>
-                </div>
-              )
-            })}
+                      >
+                        {done ? <Check size={12} className="text-white" /> : index + 1}
+                      </span>
+                    </div>
+                    <div>
+                      <p className={`text-sm leading-5 transition-colors duration-300 ${active || done ? "font-semibold text-slate-700" : "text-slate-400"}`}>
+                        {label}
+                      </p>
+                      <p className={`text-xs ${active ? "text-[#2f6f63]" : "text-slate-400"}`}>
+                        {index === 0 && "Personal details"}
+                        {index === 1 && "Role and payroll setup"}
+                        {index === 2 && "Documents and access"}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </aside>
 
@@ -751,11 +767,7 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
           </div>
 
           <div className="mt-8 border-t border-slate-200 pt-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-6 text-sm font-medium text-[#2f6f63]">
-                <button type="button">Save as Draft</button>
-                <button type="button" onClick={onCancel}>Discard</button>
-              </div>
+            <div className="flex justify-end">
               <div className="flex items-center gap-2">
                 {stepIndex > 0 && (
                   <button type="button" onClick={() => setStepIndex((prev) => prev - 1)} className="rounded-xl bg-[#dceac7] px-5 py-2 text-sm font-medium text-slate-700">
@@ -773,7 +785,7 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
                   }}
                   className="rounded-xl bg-[#53c4ae] px-5 py-2 text-sm font-medium text-white"
                 >
-                  {stepIndex === stepLabels.length - 1 ? (isEditMode ? "Update" : "Submit") : "Next"}
+                  {stepIndex === stepLabels.length - 1 ? (isEditMode ? "Update" : "Register Employee") : "Next"}
                 </button>
               </div>
             </div>

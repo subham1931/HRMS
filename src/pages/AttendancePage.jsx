@@ -98,6 +98,7 @@ function AttendancePage() {
   const todayForInput = new Date().toISOString().split("T")[0]
   const [selectedDate, setSelectedDate] = useState(todayForInput)
   const [showDateModal, setShowDateModal] = useState(false)
+  const [overviewRange, setOverviewRange] = useState("week")
   const [tempDate, setTempDate] = useState(todayForInput)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const base = new Date()
@@ -155,6 +156,33 @@ function AttendancePage() {
 
     return { present, onLeave, absent, onTime, late, leaveBreakdown }
   }, [attendanceRows])
+  const attendanceOverviewBars = useMemo(() => {
+    const now = new Date()
+    const todayWeekIndex = (now.getDay() + 6) % 7 // Mon=0 ... Sun=6
+    const todayWeekOfMonthIndex = Math.floor((now.getDate() - 1) / 7) // Week 1 => 0
+    const currentMonthIndex = now.getMonth() // Jan=0 ... Dec=11
+    const labelsByRange = {
+      week: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      month: ["Week 1", "Week 2", "Week 3", "Week 4"],
+      year: Array.from({ length: 12 }, (_, index) =>
+        new Intl.DateTimeFormat("en-US", { month: "short" }).format(new Date(now.getFullYear(), index, 1))),
+    }
+    const labels = labelsByRange[overviewRange] || labelsByRange.month
+    const total = Math.max(1, attendanceRows.length)
+    const baseRate = Math.round((attendanceSummary.present / total) * 100)
+    const offsets = [-6, -3, 2, -8, -2, 4, -1, 3, -4, 1, 5, -2]
+    return labels.map((label, index) => {
+      const isFutureWeekDay = overviewRange === "week" && index > todayWeekIndex
+      const isFutureMonthWeek = overviewRange === "month" && index > todayWeekOfMonthIndex
+      const isFutureYearMonth = overviewRange === "year" && index > currentMonthIndex
+      return {
+        month: label,
+        rate: isFutureWeekDay || isFutureMonthWeek || isFutureYearMonth
+          ? null
+          : Math.max(48, Math.min(100, baseRate + offsets[index % offsets.length])),
+      }
+    })
+  }, [attendanceRows.length, attendanceSummary.present, overviewRange])
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safeCurrentPage = Math.min(currentPage, totalPages)
@@ -276,28 +304,32 @@ function AttendancePage() {
           <p className="mt-1 text-xs text-slate-500">Dashboard / Attendance</p>
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-[1.8fr_1fr]">
+        <div className="grid gap-3 xl:grid-cols-[1.55fr_1.25fr]">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div className="border-b border-slate-200 bg-[#d8e6c7] px-4 py-3 text-[18px] font-semibold leading-none text-slate-800">Present</div>
               <div className="flex flex-1 flex-col p-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-[56px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.present}</p>
-                    <p className="mt-1 text-sm leading-none text-slate-500">Employees</p>
+                    <p className="text-[44px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.present}</p>
+                    <p className="mt-1 text-xs leading-none text-slate-500">Employees</p>
                   </div>
                   <div className="pb-2 text-right">
-                    <span className="inline-flex rounded-xl bg-[#d8efe2] px-2.5 py-1 text-base font-semibold leading-none text-[#2ea875]">+4</span>
+                    <span className="inline-flex rounded-xl bg-[#d8efe2] px-2.5 py-1 text-sm font-semibold leading-none text-[#2ea875]">+4</span>
                     <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
                   </div>
                 </div>
-                <div className="mt-auto flex items-center justify-between rounded-xl bg-[#ececec] px-4 py-2 text-sm">
-                  <span className="text-slate-500">
-                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.onTime}</span> On-Time
-                  </span>
-                  <span className="text-slate-500">
-                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.late}</span> Late
-                  </span>
+                <div className="mt-auto rounded-xl bg-[#ececec] px-4 py-2 text-sm">
+                  <div className="space-y-1.5">
+                    <p className="flex items-center justify-between text-slate-500">
+                      <span>On-Time</span>
+                      <span className="font-semibold text-[#155a4d]">{attendanceSummary.onTime}</span>
+                    </p>
+                    <p className="flex items-center justify-between text-slate-500">
+                      <span>Late</span>
+                      <span className="font-semibold text-[#155a4d]">{attendanceSummary.late}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -315,16 +347,21 @@ function AttendancePage() {
                     <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
                   </div>
                 </div>
-                <div className="mt-auto flex items-center justify-between rounded-xl bg-[#ececec] px-3 py-2 text-xs">
-                  <span className="text-slate-500">
-                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.annual}</span> Annual Leave
-                  </span>
-                  <span className="text-slate-500">
-                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.sick}</span> Sick Leave
-                  </span>
-                  <span className="text-slate-500">
-                    <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.others}</span> Others
-                  </span>
+                <div className="mt-auto rounded-xl bg-[#ececec] px-3 py-2 text-xs">
+                  <div className="space-y-1.5">
+                    <p className="flex items-center justify-between text-slate-500">
+                      <span>Annual Leave</span>
+                      <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.annual}</span>
+                    </p>
+                    <p className="flex items-center justify-between text-slate-500">
+                      <span>Sick Leave</span>
+                      <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.sick}</span>
+                    </p>
+                    <p className="flex items-center justify-between text-slate-500">
+                      <span>Others</span>
+                      <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.others}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -349,43 +386,51 @@ function AttendancePage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-[20px] font-semibold tracking-tight text-slate-800">Attendance Overview</h3>
-              <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-[#e8f1df] px-2.5 py-1 text-xs text-slate-700">
-                Last 6 Months
-                <ChevronDown size={12} />
-              </button>
+              <div className="relative">
+                <select
+                  value={overviewRange}
+                  onChange={(event) => setOverviewRange(event.target.value)}
+                  className="appearance-none rounded-lg bg-[#e8f1df] px-2.5 py-1 pr-6 text-xs text-slate-700 outline-none"
+                >
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                </select>
+                <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-600" />
+              </div>
             </div>
 
-            <div className="grid w-full grid-cols-[44px_1fr] gap-2">
-              <div className="space-y-[9px] pt-[6px] text-[12px] text-slate-500">
-                {[100, 75, 50, 25, 0].map((tick) => (
-                  <p key={tick} className="h-[22px] text-right">{tick}%</p>
-                ))}
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+              <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+                <span>Monthly attendance rate</span>
+                <span className="rounded-full bg-[#e7f4ef] px-2 py-0.5 font-medium text-[#2f6f63]">
+                  Avg {Math.round(
+                    attendanceOverviewBars
+                      .filter((item) => item.rate != null)
+                      .reduce((sum, item, _, arr) => sum + item.rate / Math.max(1, arr.length), 0),
+                  )}%
+                </span>
               </div>
-              <div>
-                <div className="space-y-[9px]">
-                  {[0, 1, 2, 3, 4].map((row) => (
-                    <div key={`grid-row-${row}`} className="h-[22px] border-b border-slate-100" />
-                  ))}
-                </div>
-                <div className="-mt-[111px] grid grid-cols-6 items-end gap-3">
-                  {[
-                    { p: 72, l: 16, a: 12 },
-                    { p: 70, l: 24, a: 6 },
-                    { p: 75, l: 12, a: 13 },
-                    { p: 60, l: 20, a: 20 },
-                    { p: 68, l: 17, a: 15 },
-                    { p: 73, l: 22, a: 5 },
-                  ].map((item, index) => (
-                    <div key={`ov-${index}`} className="space-y-1">
-                      <div className="flex h-[132px] flex-col justify-end gap-[4px] rounded-[10px] bg-transparent">
-                        <span className="w-full rounded-[8px] bg-[#0f5c4d]" style={{ height: `${Math.max(6, item.a)}%` }} />
-                        <span className="w-full rounded-[8px] bg-[#39c9b3]" style={{ height: `${Math.max(8, item.l)}%` }} />
-                        <span className="w-full rounded-[8px] bg-[#d2e1c3]" style={{ height: `${Math.max(18, item.p)}%` }} />
-                      </div>
-                      <p className="text-center text-[12px] text-slate-500">{["Feb", "Mar", "Apr", "May", "Jun", "Jul"][index]}</p>
+              <div
+                className="grid h-[150px] items-end gap-3"
+                style={{ gridTemplateColumns: `repeat(${attendanceOverviewBars.length}, minmax(0, 1fr))` }}
+              >
+                {attendanceOverviewBars.map((item) => (
+                  <div key={item.month} className="flex h-full flex-col items-center justify-end gap-1">
+                    <span className="text-[11px] font-semibold text-slate-700">{item.rate == null ? "" : `${item.rate}%`}</span>
+                    <div className="flex h-[112px] w-full items-end overflow-hidden rounded-md bg-[#dfe7db]">
+                      {item.rate == null ? (
+                        <span className="block h-full w-full bg-[#eef3ea]" />
+                      ) : (
+                        <span
+                          className="block w-full rounded-md bg-[#53c4ae] transition-all duration-300"
+                          style={{ height: `${item.rate}%` }}
+                        />
+                      )}
                     </div>
-                  ))}
-                </div>
+                    <span className="text-[11px] text-slate-500">{item.month}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

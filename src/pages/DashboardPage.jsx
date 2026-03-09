@@ -15,11 +15,11 @@ const scheduleItems = [
 ]
 
 const employeeRows = [
-  ["Olivia Mason", "Marketing Executive", "19 Jun 2035", "08:55 AM", "05:05 PM", "On-Time", "https://i.pravatar.cc/80?img=48"],
-  ["Ethan Ray", "UI Designer", "19 Jun 2035", "09:14 AM", "05:20 PM", "Late", "https://i.pravatar.cc/80?img=54"],
-  ["Lina Armand", "Lab Analyst", "19 Jun 2035", "-", "-", "On Leave", "https://i.pravatar.cc/80?img=9"],
-  ["Jacob Yuen", "Site Supervisor", "19 Jun 2035", "-", "-", "Absent", "https://i.pravatar.cc/80?img=35"],
-  ["Mia Torres", "HR Officer", "19 Jun 2035", "08:59 AM", "05:10 PM", "On-Time", "https://i.pravatar.cc/80?img=47"],
+  ["Aarav Sharma", "Marketing Executive", "19 Jun 2035", "08:55 AM", "05:05 PM", "On-Time", "https://i.pravatar.cc/80?img=48"],
+  ["Ishaan Verma", "UI Designer", "19 Jun 2035", "09:14 AM", "05:20 PM", "Late", "https://i.pravatar.cc/80?img=54"],
+  ["Ananya Nair", "Lab Analyst", "19 Jun 2035", "-", "-", "On Leave", "https://i.pravatar.cc/80?img=9"],
+  ["Rohan Patel", "Site Supervisor", "19 Jun 2035", "-", "-", "Absent", "https://i.pravatar.cc/80?img=35"],
+  ["Priya Kulkarni", "HR Officer", "19 Jun 2035", "08:59 AM", "05:10 PM", "On-Time", "https://i.pravatar.cc/80?img=47"],
 ]
 
 const satisfactionRows = [

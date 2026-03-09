@@ -2,18 +2,18 @@ import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight, Search, Upload } from "lucide-react"
 
 const payrollRows = [
-  ["Leasie Watson", "$45000", "$3500", "-", "Completed", "https://i.pravatar.cc/80?img=32"],
-  ["Darlene Robertson", "$78000", "$6400", "$100", "Completed", "https://i.pravatar.cc/80?img=5"],
-  ["Jacob Jones", "$60000", "$5000", "$250", "Completed", "https://i.pravatar.cc/80?img=66"],
-  ["Kathryn Murphy", "$34000", "$2800", "-", "Pending", "https://i.pravatar.cc/80?img=41"],
-  ["Leslie Alexander", "$40000", "$3400", "-", "Pending", "https://i.pravatar.cc/80?img=51"],
-  ["Ronald Richards", "$45000", "$3500", "-", "Completed", "https://i.pravatar.cc/80?img=54"],
-  ["Guy Hawkins", "$55000", "$4000", "$50", "Pending", "https://i.pravatar.cc/80?img=58"],
-  ["Albert Flores", "$60000", "$5000", "$150", "Completed", "https://i.pravatar.cc/80?img=14"],
-  ["Savannah Nguyen", "$25000", "$2200", "-", "Pending", "https://i.pravatar.cc/80?img=48"],
-  ["Marvin McKinney", "$30000", "$2700", "-", "Completed", "https://i.pravatar.cc/80?img=61"],
-  ["Jerome Bell", "$78000", "$6400", "-", "Completed", "https://i.pravatar.cc/80?img=53"],
-  ["Jenny Wilson", "$45000", "$3500", "$100", "Pending", "https://i.pravatar.cc/80?img=25"],
+  ["Aarav Sharma", "$45000", "$3500", "-", "Completed", "https://i.pravatar.cc/80?img=32"],
+  ["Rohan Verma", "$78000", "$6400", "$100", "Completed", "https://i.pravatar.cc/80?img=5"],
+  ["Arjun Patel", "$60000", "$5000", "$250", "Completed", "https://i.pravatar.cc/80?img=66"],
+  ["Meera Joshi", "$34000", "$2800", "-", "Pending", "https://i.pravatar.cc/80?img=41"],
+  ["Rahul Desai", "$40000", "$3400", "-", "Pending", "https://i.pravatar.cc/80?img=51"],
+  ["Karan Malhotra", "$45000", "$3500", "-", "Completed", "https://i.pravatar.cc/80?img=54"],
+  ["Aditya Khanna", "$55000", "$4000", "$50", "Pending", "https://i.pravatar.cc/80?img=58"],
+  ["Ishaan Bhat", "$60000", "$5000", "$150", "Completed", "https://i.pravatar.cc/80?img=14"],
+  ["Priya Nair", "$25000", "$2200", "-", "Pending", "https://i.pravatar.cc/80?img=48"],
+  ["Aniket Tiwari", "$30000", "$2700", "-", "Completed", "https://i.pravatar.cc/80?img=61"],
+  ["Siddharth Mehra", "$78000", "$6400", "-", "Completed", "https://i.pravatar.cc/80?img=53"],
+  ["Nisha Rao", "$45000", "$3500", "$100", "Pending", "https://i.pravatar.cc/80?img=25"],
 ]
 
 function PayrollPage() {
