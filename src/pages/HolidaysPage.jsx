@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react"
-import { Plus, Search } from "lucide-react"
+import { useRef, useMemo, useState } from "react"
+import { Calendar, Plus, Search } from "lucide-react"
+import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
 
 const CURRENT_YEAR = new Date().getFullYear()
+const CUSTOM_HOLIDAYS_STORAGE_KEY = "hrms_custom_holidays"
 
 const yearlyHolidaySeed = [
   ["01-01", "New Year Day"],
@@ -48,8 +50,36 @@ function HolidaysPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [holidayDate, setHolidayDate] = useState("")
   const [holidayName, setHolidayName] = useState("")
-  const [customHolidays, setCustomHolidays] = useState([])
+  const [customHolidays, setCustomHolidays] = useState(() => {
+    const saved = readLocalStorage(CUSTOM_HOLIDAYS_STORAGE_KEY, [])
+    const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
+    const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "long" })
+    return (saved || [])
+      .map((item) => {
+        const dateISO = item?.dateISO || ""
+        const name = (item?.name || "").trim()
+        const dateValue = new Date(`${dateISO}T00:00:00`)
+        if (!dateISO || !name || Number.isNaN(dateValue.getTime())) return null
+        return {
+          dateISO,
+          dateValue,
+          date: dateFormatter.format(dateValue),
+          day: dayFormatter.format(dateValue),
+          name,
+        }
+      })
+      .filter(Boolean)
+  })
   const [formError, setFormError] = useState("")
+  const holidayDateInputRef = useRef(null)
+
+  const persistCustomHolidays = (rows) => {
+    const serializable = rows.map((item) => ({
+      dateISO: item.dateISO || toYMD(item.dateValue),
+      name: item.name,
+    }))
+    writeLocalStorage(CUSTOM_HOLIDAYS_STORAGE_KEY, serializable)
+  }
 
   const holidayRows = useMemo(() => {
     const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
@@ -153,20 +183,33 @@ function HolidaysPage() {
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/35 p-4">
-          <div className="mx-auto mt-10 w-full max-w-[420px] rounded-2xl bg-white p-5 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
+          <div className="w-full max-w-[420px] rounded-2xl bg-white p-5 shadow-xl">
             <h3 className="text-[18px] font-semibold text-slate-900">Add New Holiday</h3>
             <div className="my-4 border-t border-slate-200" />
 
             <div className="space-y-4">
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-slate-700">Date</span>
-                <input
-                  type="date"
-                  value={holidayDate}
-                  onChange={(event) => setHolidayDate(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
-                />
+                <div className="relative">
+                  <input
+                    ref={holidayDateInputRef}
+                    type="date"
+                    value={holidayDate}
+                    onChange={(event) => setHolidayDate(event.target.value)}
+                    onClick={(event) => event.currentTarget.showPicker?.()}
+                    onFocus={(event) => event.currentTarget.showPicker?.()}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 pr-10 text-sm outline-none focus:border-[#53c4ae]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => holidayDateInputRef.current?.showPicker?.()}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                    aria-label="Open date picker"
+                  >
+                    <Calendar size={16} />
+                  </button>
+                </div>
               </label>
 
               <label className="block">
@@ -208,15 +251,20 @@ function HolidaysPage() {
                   const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
                   const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "long" })
 
-                  setCustomHolidays((prev) => [
-                    ...prev,
-                    {
-                      dateValue,
-                      date: dateFormatter.format(dateValue),
-                      day: dayFormatter.format(dateValue),
-                      name: holidayName.trim(),
-                    },
-                  ])
+                  setCustomHolidays((prev) => {
+                    const next = [
+                      ...prev,
+                      {
+                        dateISO: holidayDate,
+                        dateValue,
+                        date: dateFormatter.format(dateValue),
+                        day: dayFormatter.format(dateValue),
+                        name: holidayName.trim(),
+                      },
+                    ]
+                    persistCustomHolidays(next)
+                    return next
+                  })
                   setShowAddModal(false)
                   setHolidayDate("")
                   setHolidayName("")
