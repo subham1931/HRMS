@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Filter, MoreHorizontal, Search, X } from "lucide-react"
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Filter, MoreHorizontal, Search } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
 
 const EMPLOYEES_STORAGE_KEY = "hrms_employees"
@@ -99,8 +100,10 @@ function normalizeRequests(rows) {
 }
 
 function LeavesPage() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("All")
+  const [overviewRange, setOverviewRange] = useState("week")
   const [employees] = useState(() => readLocalStorage(EMPLOYEES_STORAGE_KEY, []))
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date()
@@ -167,8 +170,72 @@ function LeavesPage() {
     return { pending, approved, rejected, total: enrichedRequests.length, onLeaveToday, typeCount }
   }, [enrichedRequests])
 
-  const weeklyLeaveOverview = useMemo(() => {
+  const leaveOverview = useMemo(() => {
     const now = new Date()
+    const addCountForOverlap = (item, matchesBucket) => {
+      const start = new Date(`${item.startDate}T00:00:00`)
+      const end = new Date(`${item.endDate}T00:00:00`)
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0
+      const cursor = new Date(start)
+      let count = 0
+      while (cursor <= end) {
+        if (matchesBucket(cursor)) count += 1
+        cursor.setDate(cursor.getDate() + 1)
+      }
+      return count
+    }
+
+    const approved = enrichedRequests.filter((item) => item.status === "Approved")
+
+    if (overviewRange === "month") {
+      const currentYear = now.getFullYear()
+      const currentMonth = now.getMonth()
+      const rows = Array.from({ length: 4 }, (_, index) => ({
+        label: `Week ${index + 1}`,
+        count: 0,
+      }))
+
+      approved.forEach((item) => {
+        rows.forEach((row, rowIndex) => {
+          const minDay = rowIndex * 7 + 1
+          const maxDay = rowIndex === 3 ? 31 : (rowIndex + 1) * 7
+          row.count += addCountForOverlap(
+            item,
+            (dateObj) =>
+              dateObj.getFullYear() === currentYear
+              && dateObj.getMonth() === currentMonth
+              && dateObj.getDate() >= minDay
+              && dateObj.getDate() <= maxDay,
+          )
+        })
+      })
+
+      const max = Math.max(1, ...rows.map((item) => item.count))
+      const total = rows.reduce((sum, item) => sum + item.count, 0)
+      return { title: "Approved leaves by week", max, total, days: rows }
+    }
+
+    if (overviewRange === "year") {
+      const currentYear = now.getFullYear()
+      const rows = Array.from({ length: 12 }, (_, index) => ({
+        label: new Intl.DateTimeFormat("en-US", { month: "short" }).format(new Date(currentYear, index, 1)),
+        count: 0,
+      }))
+
+      approved.forEach((item) => {
+        rows.forEach((row, rowIndex) => {
+          row.count += addCountForOverlap(
+            item,
+            (dateObj) => dateObj.getFullYear() === currentYear && dateObj.getMonth() === rowIndex,
+          )
+        })
+      })
+
+      const max = Math.max(1, ...rows.map((item) => item.count))
+      const total = rows.reduce((sum, item) => sum + item.count, 0)
+      return { title: "Approved leaves by month", max, total, days: rows }
+    }
+
     const monday = new Date(now)
     const weekdayIndex = (now.getDay() + 6) % 7
     monday.setDate(now.getDate() - weekdayIndex)
@@ -184,30 +251,16 @@ function LeavesPage() {
       }
     })
 
-    enrichedRequests
-      .filter((item) => item.status === "Approved")
-      .forEach((item) => {
-        const start = new Date(`${item.startDate}T00:00:00`)
-        const end = new Date(`${item.endDate}T00:00:00`)
-        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return
-
-        weekDays.forEach((day) => {
-          const date = new Date(`${day.key}T00:00:00`)
-          if (start <= date && end >= date) {
-            day.count += 1
-          }
-        })
+    approved.forEach((item) => {
+      weekDays.forEach((day) => {
+        day.count += addCountForOverlap(item, (dateObj) => toYMD(dateObj) === day.key)
       })
+    })
 
     const max = Math.max(1, ...weekDays.map((item) => item.count))
     const total = weekDays.reduce((sum, item) => sum + item.count, 0)
-
-    return {
-      max,
-      total,
-      days: weekDays,
-    }
-  }, [enrichedRequests])
+    return { title: "Approved leaves by day", max, total, days: weekDays }
+  }, [enrichedRequests, overviewRange])
 
   const calendarLabel = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(calendarMonth)
   const firstDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
@@ -225,8 +278,16 @@ function LeavesPage() {
         .slice(0, 3)
         .map((item) => ({
           id: item.id,
+          employeeId: item.employeeId,
           name: item.employeeName,
+          department: item.department,
+          jobTitle: item.jobTitle,
           type: item.leaveType,
+          status: item.status,
+          reason: item.reason,
+          startDate: item.startDate,
+          endDate: item.endDate,
+          appliedAt: item.appliedAt,
           period: `${formatDate(item.startDate)} - ${formatDate(item.endDate)}`,
           avatar: item.avatar,
         })),
@@ -245,21 +306,6 @@ function LeavesPage() {
       #d8e8d3 ${((summary.typeCount.annual + summary.typeCount.sick) / totalType) * 100}% ${((summary.typeCount.annual + summary.typeCount.sick + summary.typeCount.other) / totalType) * 100}%,
       #edf2ea ${((summary.typeCount.annual + summary.typeCount.sick + summary.typeCount.other) / totalType) * 100}% 100%
     )`,
-  }
-
-  const updateLeaveStatus = (id, nextStatus) => {
-    setLeaveRequests((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: nextStatus,
-              reviewedAt: new Date().toISOString(),
-              reviewedBy: "HR",
-            }
-          : item,
-      ),
-    )
   }
 
   return (
@@ -319,55 +365,47 @@ function LeavesPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_1fr]">
+        <div className="mt-4">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-slate-800">Leave Overview</h3>
-              <button type="button" className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1 text-sm text-slate-600">
-                This Week
-                <ChevronDown size={14} />
-              </button>
+              <div className="relative">
+                <select
+                  value={overviewRange}
+                  onChange={(event) => setOverviewRange(event.target.value)}
+                  className="appearance-none rounded-xl border border-slate-200 bg-white px-3 py-1 pr-7 text-sm text-slate-600 outline-none"
+                >
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
+              </div>
             </div>
             <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
               <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
-                <span>Approved leaves by day</span>
+                <span>{leaveOverview.title}</span>
                 <span className="rounded-full bg-[#e7f4ef] px-2 py-0.5 font-medium text-[#2f6f63]">
-                  {weeklyLeaveOverview.total} total
+                  {leaveOverview.total} total
                 </span>
               </div>
-              <div className="grid h-[148px] grid-cols-7 items-end gap-2">
-                {weeklyLeaveOverview.days.map((day) => {
-                  const height = `${Math.max(10, Math.round((day.count / weeklyLeaveOverview.max) * 100))}%`
+              <div
+                className="grid h-[148px] items-end gap-2"
+                style={{ gridTemplateColumns: `repeat(${leaveOverview.days.length}, minmax(0, 1fr))` }}
+              >
+                {leaveOverview.days.map((day) => {
+                  const height = `${Math.max(10, Math.round((day.count / leaveOverview.max) * 100))}%`
                   return (
-                    <div key={day.key} className="flex h-full flex-col items-center justify-end gap-1">
+                    <div key={day.key || day.label} className="flex h-full flex-col items-center justify-end gap-1">
                       <span className="text-[11px] font-semibold text-slate-700">{day.count}</span>
                       <div className="flex h-[100px] w-full items-end justify-center rounded-md bg-slate-100/70 px-1">
                         <span className="block w-full rounded-md bg-[#53c4ae] transition-all duration-300" style={{ height }} />
                       </div>
-                      <span className="text-[10px] text-slate-500">{day.label}</span>
+                      <span className="text-center text-[10px] text-slate-500">{day.label}</span>
                     </div>
                   )
                 })}
               </div>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-slate-800">Employee Leaves</h3>
-              <button type="button" className="text-slate-500">
-                <MoreHorizontal size={16} />
-              </button>
-            </div>
-            <div className="space-y-2.5">
-              {employeeLeaves.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 rounded-xl bg-white p-2.5">
-                  <img src={item.avatar} alt={item.name} className="h-9 w-9 rounded-full object-cover" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-800">{item.name}</p>
-                    <p className="truncate text-xs text-teal-500">{item.type} - {item.period}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -419,7 +457,30 @@ function LeavesPage() {
               <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> Public Holiday</span>
             </div>
           </div>
-          <div className="hidden lg:block" />
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-slate-800">Leave Request</h3>
+              <button type="button" className="text-slate-500">
+                <MoreHorizontal size={16} />
+              </button>
+            </div>
+            <div className="space-y-2.5">
+              {employeeLeaves.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => navigate(`/leaves/${encodeURIComponent(item.id)}`)}
+                  className="flex w-full items-center gap-3 rounded-xl bg-white p-2.5 text-left transition-colors hover:bg-slate-50"
+                >
+                  <img src={item.avatar} alt={item.name} className="h-9 w-9 rounded-full object-cover" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-800">{item.name}</p>
+                    <p className="truncate text-xs text-teal-500">{item.type} - {item.period}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </article>
 
@@ -494,33 +555,17 @@ function LeavesPage() {
                       <span className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600">{item.reason}</span>
                     </td>
                     <td className="px-3 py-2.5">
-                      {item.status === "Pending" ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateLeaveStatus(item.id, "Approved")}
-                            className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
-                          >
-                            <Check size={12} />
-                            Approve
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => updateLeaveStatus(item.id, "Rejected")}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ) : (
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                            item.status === "Approved" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-600"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      )}
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                          item.status === "Approved"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : item.status === "Rejected"
+                              ? "bg-rose-100 text-rose-600"
+                              : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {item.status}
+                      </span>
                     </td>
                   </tr>
                 )

@@ -12,6 +12,7 @@ import DepartmentsPage from "./pages/DepartmentsPage"
 import AttendancePage from "./pages/AttendancePage"
 import PayrollPage from "./pages/PayrollPage"
 import LeavesPage from "./pages/LeavesPage"
+import LeaveRequestDetailsPage from "./pages/LeaveRequestDetailsPage"
 import HolidaysPage from "./pages/HolidaysPage"
 import SettingsPage from "./pages/SettingsPage"
 import ProfilePage from "./pages/ProfilePage"
@@ -44,6 +45,7 @@ function App() {
     "/notifications": <NotificationsPanel />,
     "/profile": <ProfilePage />,
   }
+  const activeRouteContent = pathname.startsWith("/leaves/") ? <LeaveRequestDetailsPage /> : routeContent[pathname]
 
   const handleNavigate = (nextPath) => {
     navigate(nextPath)
@@ -88,7 +90,7 @@ function App() {
           <Sidebar pathname={pathname} onNavigate={handleNavigate} />
 
           <section className="min-w-0 flex-1 space-y-5 px-5 pb-5 pt-0">
-            {routeContent[pathname] ?? <DashboardPage />}
+            {activeRouteContent ?? <DashboardPage />}
           </section>
         </div>
       </div>
