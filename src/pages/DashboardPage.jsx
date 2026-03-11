@@ -1,6 +1,7 @@
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal, Star } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { listAttendanceRowsByDate } from "../services/attendance"
 
 const topStats = [
   { title: "Total Employees", value: "128", sub: "Employees", footer: "You're part of a growing team!" },
@@ -14,13 +15,21 @@ const scheduleItems = [
   { label: "Workplace Engagement", title: "Quarterly Policy Review Meeting", room: "Conference Room 1A", time: "03:00 PM" },
 ]
 
-const employeeRows = [
-  ["Aarav Sharma", "Marketing Executive", "19 Jun 2035", "08:55 AM", "05:05 PM", "On-Time", "https://i.pravatar.cc/80?img=48"],
-  ["Ishaan Verma", "UI Designer", "19 Jun 2035", "09:14 AM", "05:20 PM", "Late", "https://i.pravatar.cc/80?img=54"],
-  ["Ananya Nair", "Lab Analyst", "19 Jun 2035", "-", "-", "On Leave", "https://i.pravatar.cc/80?img=9"],
-  ["Rohan Patel", "Site Supervisor", "19 Jun 2035", "-", "-", "Absent", "https://i.pravatar.cc/80?img=35"],
-  ["Priya Kulkarni", "HR Officer", "19 Jun 2035", "08:59 AM", "05:10 PM", "On-Time", "https://i.pravatar.cc/80?img=47"],
-]
+const getInitials = (value = "") => (value || "A")
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0]?.toUpperCase() || "")
+  .join("")
+
+const getStatusClasses = (status) => {
+  const normalized = String(status || "").toLowerCase()
+  if (normalized === "on time") return "bg-emerald-100 text-emerald-700"
+  if (normalized === "late") return "bg-amber-100 text-amber-700"
+  if (normalized === "on leave") return "bg-slate-100 text-slate-700"
+  if (normalized === "absent") return "bg-rose-100 text-rose-700"
+  return "bg-slate-100 text-slate-700"
+}
 
 const satisfactionRows = [
   { label: "Compensation & Benefits", percent: "78% Satisfaction", score: 4.5 },
@@ -98,6 +107,9 @@ function DashboardPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
   const [showYearModal, setShowYearModal] = useState(false)
+  const [attendanceRows, setAttendanceRows] = useState([])
+  const [attendanceError, setAttendanceError] = useState("")
+  const [brokenAvatarById, setBrokenAvatarById] = useState({})
   const activeAttendanceRange = attendanceRangeData[attendanceRange]
   const currentDate = new Date()
   const currentYear = currentDate.getFullYear()
@@ -109,6 +121,43 @@ function DashboardPage() {
   const daysInPrevMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 0).getDate()
   const trailingDays = (7 - ((firstWeekday + daysInMonth) % 7)) % 7
   const scheduledDays = scheduledDayMap[calendarMonth.getMonth()] || []
+  const todayIso = new Date().toISOString().split("T")[0]
+  const todayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", year: "numeric" }).format(new Date(todayIso))
+
+  useEffect(() => {
+    let mounted = true
+    async function loadAttendancePreview() {
+      try {
+        setAttendanceError("")
+        const rows = await listAttendanceRowsByDate(todayIso)
+        if (!mounted) return
+        setAttendanceRows(rows.slice(0, 6))
+      } catch (error) {
+        if (!mounted) return
+        setAttendanceRows([])
+        setAttendanceError(error?.message || "Unable to load attendance.")
+      }
+    }
+    loadAttendancePreview()
+    return () => {
+      mounted = false
+    }
+  }, [todayIso])
+
+  const attendanceCounts = useMemo(() => {
+    let onTime = 0
+    let late = 0
+    let onLeave = 0
+    let absent = 0
+    attendanceRows.forEach((row) => {
+      const status = String(row[6] || "").toLowerCase()
+      if (status === "on time") onTime += 1
+      else if (status === "late") late += 1
+      else if (status === "on leave") onLeave += 1
+      else if (status === "absent") absent += 1
+    })
+    return { onTime, late, onLeave, absent }
+  }, [attendanceRows])
 
   const calendarCells = [
     ...Array.from({ length: firstWeekday }, (_, idx) => ({
@@ -486,11 +535,14 @@ function DashboardPage() {
                 View All
               </button>
             </div>
+            {attendanceError ? (
+              <p className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">{attendanceError}</p>
+            ) : null}
             <div className="mb-3 grid grid-cols-4 gap-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
-              <p><span className="block text-3xl font-semibold text-slate-900">82</span>On-Time</p>
-              <p><span className="block text-3xl font-semibold text-slate-900">11</span>Late</p>
-              <p><span className="block text-3xl font-semibold text-slate-900">6</span>On Leave</p>
-              <p><span className="block text-3xl font-semibold text-slate-900">3</span>Absent</p>
+              <p><span className="block text-3xl font-semibold text-slate-900">{attendanceCounts.onTime}</span>On-Time</p>
+              <p><span className="block text-3xl font-semibold text-slate-900">{attendanceCounts.late}</span>Late</p>
+              <p><span className="block text-3xl font-semibold text-slate-900">{attendanceCounts.onLeave}</span>On Leave</p>
+              <p><span className="block text-3xl font-semibold text-slate-900">{attendanceCounts.absent}</span>Absent</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[880px] text-left text-sm">
@@ -505,35 +557,41 @@ function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {employeeRows.map((row) => (
-                    <tr key={row[0]} className="border-b border-slate-100 last:border-0">
+                  {attendanceRows.map((row) => (
+                    <tr key={row[8]} className="border-b border-slate-100 last:border-0">
                       <td className="py-2.5">
                         <span className="flex items-center gap-2.5">
-                          <img src={row[6]} alt={row[0]} className="h-8 w-8 rounded-full object-cover" />
+                          {row[7] && !brokenAvatarById[row[8]] ? (
+                            <img
+                              src={row[7]}
+                              alt={row[0]}
+                              className="h-8 w-8 rounded-full object-cover"
+                              onError={() => setBrokenAvatarById((prev) => ({ ...prev, [row[8]]: true }))}
+                            />
+                          ) : (
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700">
+                              {getInitials(row[0]) || "A"}
+                            </span>
+                          )}
                           <span className="font-medium text-slate-800">{row[0]}</span>
                         </span>
                       </td>
-                      <td className="py-2.5 text-slate-700">{row[1]}</td>
                       <td className="py-2.5 text-slate-700">{row[2]}</td>
-                      <td className="py-2.5 text-slate-700">{row[3]}</td>
+                      <td className="py-2.5 text-slate-700">{todayLabel}</td>
                       <td className="py-2.5 text-slate-700">{row[4]}</td>
+                      <td className="py-2.5 text-slate-700">{row[5]}</td>
                       <td className="py-2.5">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs ${
-                            row[5] === "On-Time"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : row[5] === "Late"
-                                ? "bg-amber-100 text-amber-700"
-                                : row[5] === "On Leave"
-                                  ? "bg-slate-100 text-slate-700"
-                                  : "bg-rose-100 text-rose-700"
-                          }`}
-                        >
-                          {row[5]}
-                        </span>
+                        <span className={`rounded-full px-2.5 py-1 text-xs ${getStatusClasses(row[6])}`}>{row[6]}</span>
                       </td>
                     </tr>
                   ))}
+                  {attendanceRows.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-sm text-slate-500">
+                        No attendance records for today.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

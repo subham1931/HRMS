@@ -76,6 +76,20 @@ create policy "HR admins can read employees"
     )
   );
 
+drop policy if exists "Employees can read own row" on public.employees;
+create policy "Employees can read own row"
+  on public.employees
+  for select
+  to authenticated
+  using (lower(office_email) = lower(auth.jwt() ->> 'email'));
+
+drop policy if exists "Public mobile login can read employees" on public.employees;
+create policy "Public mobile login can read employees"
+  on public.employees
+  for select
+  to anon
+  using (coalesce(lower(employment_status), 'active') = 'active');
+
 drop policy if exists "HR admins can insert employees" on public.employees;
 create policy "HR admins can insert employees"
   on public.employees

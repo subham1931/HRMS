@@ -1,26 +1,8 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Plus, Search, SlidersHorizontal, X } from "lucide-react"
-import { CiUser } from "react-icons/ci"
+import { listAttendanceRowsByDate } from "../services/attendance"
 
 const initialAttendanceRows = []
-
-const buildAttendanceRowsFromEmployees = (employees, existingRows) => {
-  const existingMap = new Map((existingRows || []).map((row) => [row[8], row]))
-  return (employees || []).map((employee) => {
-    const existing = existingMap.get(employee.employeeId)
-    return [
-      employee.name || "Employee",
-      employee.department || "General",
-      employee.designation || "-",
-      employee.type || "Office",
-      existing?.[4] || "--",
-      existing?.[5] || "--",
-      existing?.[6] || "Not Marked",
-      employee.profileImage || "",
-      employee.employeeId || `A${Date.now()}`,
-    ]
-  })
-}
 
 const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 
@@ -52,6 +34,22 @@ const formatDuration = (minutes) => {
   return `${hrs}h ${mins}m`
 }
 
+const getInitials = (name) => (name || "A")
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0]?.toUpperCase() || "")
+  .join("")
+
+const getStatusClasses = (value) => {
+  const status = String(value || "").toLowerCase()
+  if (status === "on time") return "bg-emerald-50 text-emerald-600"
+  if (status === "late") return "bg-rose-50 text-rose-500"
+  if (status === "absent") return "bg-slate-100 text-slate-600"
+  if (status === "on leave") return "bg-amber-50 text-amber-600"
+  return "bg-slate-100 text-slate-500"
+}
+
 function AttendancePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [pageSize, setPageSize] = useState(10)
@@ -67,8 +65,29 @@ function AttendancePage() {
     return new Date(base.getFullYear(), base.getMonth(), 1)
   })
   const [toastMessage, setToastMessage] = useState("")
+  const [loadError, setLoadError] = useState("")
   const [brokenAvatarById, setBrokenAvatarById] = useState({})
-  const [attendanceRows, setAttendanceRows] = useState(() => buildAttendanceRowsFromEmployees([], initialAttendanceRows))
+  const [attendanceRows, setAttendanceRows] = useState(() => initialAttendanceRows)
+
+  useEffect(() => {
+    let mounted = true
+    async function loadRows() {
+      try {
+        setLoadError("")
+        const rows = await listAttendanceRowsByDate(selectedDate)
+        if (!mounted) return
+        setAttendanceRows(rows)
+      } catch (error) {
+        if (!mounted) return
+        setAttendanceRows([])
+        setLoadError(error?.message || "Unable to load attendance records.")
+      }
+    }
+    loadRows()
+    return () => {
+      mounted = false
+    }
+  }, [selectedDate])
 
   const filteredRows = useMemo(() => {
     return attendanceRows.filter((row) => {
@@ -220,33 +239,18 @@ function AttendancePage() {
   }
 
   const addAttendanceRecord = () => {
-    const employeeId = window.prompt("Employee ID")
-    if (!employeeId || employeeId.trim() === "") return
-    const matchedEmployee = attendanceRows.find((row) => (row[8] || "").toLowerCase() === employeeId.trim().toLowerCase())
-    if (!matchedEmployee) {
-      setToastMessage("Only added employees can have attendance records")
-      window.setTimeout(() => setToastMessage(""), 2200)
-      return
-    }
-    const checkIn = window.prompt("Check In Time (e.g. 09:30 AM)", "09:30 AM")
-    if (!checkIn || checkIn.trim() === "") return
-    const checkOut = window.prompt("Check Out Time (e.g. 06:30 PM)", "06:30 PM")
-    if (!checkOut || checkOut.trim() === "") return
-    const status = window.prompt("Status (On Time/Late)", "On Time")
-    if (!status || status.trim() === "") return
-
-    setAttendanceRows((prev) =>
-      prev.map((row) =>
-        row[8] === matchedEmployee[8]
-          ? [row[0], row[1], row[2], row[3], checkIn.trim(), checkOut.trim(), status.trim(), row[7], row[8]]
-          : row,
-      ),
-    )
+    setToastMessage("Attendance is synced from employee mobile check-in/check-out.")
+    window.setTimeout(() => setToastMessage(""), 2400)
   }
 
   return (
     <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
       <div className="mb-5 space-y-4">
+        {loadError ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+            {loadError}
+          </div>
+        ) : null}
         <div>
           <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">Attendance</h1>
           <p className="mt-1 text-xs text-slate-500">Dashboard / Attendance</p>
@@ -536,23 +540,23 @@ function AttendancePage() {
       )}
 
       <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[1040px] text-left">
-          <thead className="text-xs text-slate-500 sm:text-sm">
+        <table className="w-full min-w-[1120px] text-left">
+          <thead className="text-xs text-slate-500">
             <tr>
-              <th className="rounded-l-xl bg-slate-100 px-3 py-2.5 font-medium">Name <span className="ml-1 text-[10px] text-slate-400">^</span></th>
-              <th className="bg-slate-100 px-3 py-2.5 font-medium">Job Title <span className="ml-1 text-[10px] text-slate-400">^</span></th>
-              <th className="bg-slate-100 px-3 py-2.5 font-medium">Date <span className="ml-1 text-[10px] text-slate-400">^</span></th>
-              <th className="bg-slate-100 px-3 py-2.5 font-medium">Work Model <span className="ml-1 text-[10px] text-slate-400">^</span></th>
-              <th className="bg-slate-100 px-3 py-2.5 font-medium">Check In - Out <span className="ml-1 text-[10px] text-slate-400">^</span></th>
-              <th className="bg-slate-100 px-3 py-2.5 font-medium">Duration <span className="ml-1 text-[10px] text-slate-400">^</span></th>
-              <th className="bg-slate-100 px-3 py-2.5 font-medium">Overtime <span className="ml-1 text-[10px] text-slate-400">^</span></th>
-              <th className="rounded-r-xl bg-slate-100 px-3 py-2.5 font-medium">Status <span className="ml-1 text-[10px] text-slate-400">^</span></th>
+              <th className="w-[270px] rounded-l-xl bg-slate-100 px-3 py-3 font-semibold">Name</th>
+              <th className="w-[220px] bg-slate-100 px-3 py-3 font-semibold">Job Title</th>
+              <th className="w-[150px] bg-slate-100 px-3 py-3 font-semibold">Date</th>
+              <th className="w-[130px] bg-slate-100 px-3 py-3 font-semibold">Office</th>
+              <th className="w-[190px] bg-slate-100 px-3 py-3 font-semibold">Check In - Out</th>
+              <th className="w-[110px] bg-slate-100 px-3 py-3 font-semibold">Duration</th>
+              <th className="w-[110px] bg-slate-100 px-3 py-3 font-semibold">Overtime</th>
+              <th className="w-[120px] rounded-r-xl bg-slate-100 px-3 py-3 font-semibold">Status</th>
             </tr>
           </thead>
-          <tbody className="text-xs sm:text-sm">
+          <tbody className="text-sm">
             {pagedRows.map((row) => (
-              <tr key={row[8]} className="border-b border-slate-100 last:border-0">
-                <td className="py-3 text-slate-800">
+              <tr key={row[8]} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
+                <td className="px-3 py-3 text-slate-800">
                   <span className="flex items-center gap-3">
                     {row[7] && !brokenAvatarById[row[8]] ? (
                       <img
@@ -564,48 +568,44 @@ function AttendancePage() {
                         }}
                       />
                     ) : (
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                        <CiUser size={20} />
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700">
+                        {getInitials(row[0]) || "A"}
                       </span>
                     )}
                     <span>
-                      <span className="font-medium">{row[0]}</span>
-                      <span className="block text-[11px] text-slate-400">{row[8]}</span>
+                      <span className="block font-medium text-slate-800">{row[0]}</span>
+                      <span className="mt-0.5 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">{row[8]}</span>
                     </span>
                   </span>
                 </td>
-                <td className="py-3 text-slate-700">
-                  <span>{row[2]}</span>
-                  <span className="block text-[11px] text-slate-400">{row[1]}</span>
+                <td className="px-3 py-3 text-slate-700">
+                  <span className="block font-medium">{row[2]}</span>
+                  <span className="block text-xs text-slate-500">{row[1]}</span>
                 </td>
-                <td className="py-3 text-slate-700">{selectedDateTableLabel}</td>
-                <td className="py-3 text-slate-700">{row[3]}</td>
-                <td className="py-3 text-slate-700">
-                  {row[4]} - {row[5]}
+                <td className="whitespace-nowrap px-3 py-3 text-slate-700">{selectedDateTableLabel}</td>
+                <td className="px-3 py-3 text-slate-700">{row[3]}</td>
+                <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                  <span className="font-medium">{row[4]}</span>
+                  <span className="px-1.5 text-slate-400">-</span>
+                  <span className="font-medium">{row[5]}</span>
                 </td>
-                <td className="py-3 text-slate-700">
+                <td className="whitespace-nowrap px-3 py-3 text-slate-700">
                   {formatDuration(
                     toMinutesFromLabel(row[4]) != null && toMinutesFromLabel(row[5]) != null
                       ? toMinutesFromLabel(row[5]) - toMinutesFromLabel(row[4])
                       : null,
                   )}
                 </td>
-                <td className="py-3 text-slate-700">
+                <td className="whitespace-nowrap px-3 py-3 text-slate-700">
                   {(() => {
-                    const inMinutes = toMinutesFromLabel(row[4])
                     const outMinutes = toMinutesFromLabel(row[5])
-                    if (inMinutes == null || outMinutes == null) return "--"
-                    const worked = outMinutes - inMinutes
-                    const overtime = worked - 8 * 60
+                    if (outMinutes == null) return "--"
+                    const overtime = outMinutes - 18 * 60
                     return overtime > 0 ? `${Math.floor(overtime / 60)}h ${overtime % 60}m` : "--"
                   })()}
                 </td>
-                <td className="py-3">
-                  <span
-                    className={`rounded px-2 py-1 text-xs font-medium ${
-                      row[6] === "On Time" ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-400"
-                    }`}
-                  >
+                <td className="px-3 py-3">
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClasses(row[6])}`}>
                     {row[6]}
                   </span>
                 </td>
