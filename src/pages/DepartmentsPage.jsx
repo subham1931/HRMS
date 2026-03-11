@@ -473,29 +473,35 @@ function DepartmentsPage() {
         </>
       )}
 
-      <EmployeeFilterModal
-        open={showFilterModal}
-        initialFilters={filters}
-        onClose={() => setShowFilterModal(false)}
-        onApply={(nextFilters) => {
-          setFilters(nextFilters)
-          setShowFilterModal(false)
-        }}
-      />
-      <EmployeeOnboardingModal
-        open={Boolean(editingDepartmentEmployee)}
-        initialData={editingDepartmentEmployee?.data ?? null}
-        departmentOptions={departmentOptions}
-        onClose={() => setEditingDepartmentEmployee(null)}
-        onEditEmployee={saveEditedDepartmentEmployee}
-      />
-      <EmployeeOnboardingModal
-        open={showAddDepartmentEmployeeModal}
-        departmentOptions={departmentOptions}
-        presetDepartment={selectedDepartment.replace(" Department", "").trim()}
-        onClose={() => setShowAddDepartmentEmployeeModal(false)}
-        onAddEmployee={addDepartmentEmployeeFromModal}
-      />
+      {showFilterModal && (
+        <EmployeeFilterModal
+          open={showFilterModal}
+          initialFilters={filters}
+          onClose={() => setShowFilterModal(false)}
+          onApply={(nextFilters) => {
+            setFilters(nextFilters)
+            setShowFilterModal(false)
+          }}
+        />
+      )}
+      {Boolean(editingDepartmentEmployee) && (
+        <EmployeeOnboardingModal
+          open={Boolean(editingDepartmentEmployee)}
+          initialData={editingDepartmentEmployee?.data ?? null}
+          departmentOptions={departmentOptions}
+          onClose={() => setEditingDepartmentEmployee(null)}
+          onEditEmployee={saveEditedDepartmentEmployee}
+        />
+      )}
+      {showAddDepartmentEmployeeModal && (
+        <EmployeeOnboardingModal
+          open={showAddDepartmentEmployeeModal}
+          departmentOptions={departmentOptions}
+          presetDepartment={selectedDepartment.replace(" Department", "").trim()}
+          onClose={() => setShowAddDepartmentEmployeeModal(false)}
+          onAddEmployee={addDepartmentEmployeeFromModal}
+        />
+      )}
       {showAddDepartmentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
           <div className="w-full max-w-[430px] rounded-2xl bg-white p-5 shadow-xl">

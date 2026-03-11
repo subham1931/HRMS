@@ -5,6 +5,13 @@ import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
 const CURRENT_YEAR = new Date().getFullYear()
 const CUSTOM_HOLIDAYS_STORAGE_KEY = "hrms_custom_holidays"
 
+function toYMD(date) {
+  const y = date.getFullYear()
+  const m = `${date.getMonth() + 1}`.padStart(2, "0")
+  const d = `${date.getDate()}`.padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
 const yearlyHolidaySeed = [
   ["01-01", "New Year Day"],
   ["01-26", "Republic Day"],

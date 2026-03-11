@@ -462,16 +462,18 @@ function EmployeesPage() {
         )}
       </article>
 
-      <EmployeeFilterModal
-        open={showFilterModal}
-        initialFilters={filters}
-        departmentOptions={filterDepartmentOptions}
-        onClose={() => setShowFilterModal(false)}
-        onApply={(nextFilters) => {
-          setFilters(nextFilters)
-          setShowFilterModal(false)
-        }}
-      />
+      {showFilterModal && (
+        <EmployeeFilterModal
+          open={showFilterModal}
+          initialFilters={filters}
+          departmentOptions={filterDepartmentOptions}
+          onClose={() => setShowFilterModal(false)}
+          onApply={(nextFilters) => {
+            setFilters(nextFilters)
+            setShowFilterModal(false)
+          }}
+        />
+      )}
     </>
   )
 }

@@ -1,5 +1,5 @@
 import { BriefcaseBusiness, Calendar, ChevronDown, CircleUserRound, FileText, Lock, Upload } from "lucide-react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 
 const steps = [
   { id: "personal", label: "Personal Information", icon: CircleUserRound },
@@ -206,22 +206,65 @@ function EmployeeOnboardingModal({
   presetDepartment = "",
   mode = "modal",
 }) {
+  const initialState = useMemo(() => {
+    if (!initialData) {
+      return {
+        personalData: emptyPersonalData,
+        professionalData: {
+          ...emptyProfessionalData,
+          department: presetDepartment || "",
+        },
+        profilePreview: "",
+        uploadedDocs: {},
+      }
+    }
+
+    const parts = (initialData.name || "").trim().split(/\s+/)
+    const firstName = initialData.firstName || parts[0] || ""
+    const lastName = initialData.lastName || parts.slice(1).join(" ") || ""
+    return {
+      personalData: {
+        ...emptyPersonalData,
+        firstName,
+        lastName,
+        mobile: initialData.mobile || "",
+        email: initialData.email || "",
+        dob: initialData.dob || "",
+        maritalStatus: initialData.maritalStatus || "",
+        gender: initialData.gender || "",
+        nationality: initialData.nationality || "",
+        address: initialData.address || "",
+        city: initialData.city || "",
+        state: initialData.state || "",
+        zipCode: initialData.zipCode || "",
+      },
+      professionalData: {
+        ...emptyProfessionalData,
+        employeeId: initialData.employeeId || "",
+        userName: initialData.userName || "",
+        employeeType: initialData.type || "",
+        email: initialData.officeEmail || "",
+        department: initialData.department || "",
+        designation: initialData.designation || "",
+        workingDays: initialData.workingDays || "",
+        joiningDate: initialData.joiningDate || "",
+        officeLocation: initialData.officeLocation || "",
+      },
+      profilePreview: initialData.profileImage || "",
+      uploadedDocs: initialData.documents || {},
+    }
+  }, [initialData, presetDepartment])
+
   const [stepIndex, setStepIndex] = useState(0)
   const [personalTouched, setPersonalTouched] = useState(false)
-  const [profilePreview, setProfilePreview] = useState("")
+  const [profilePreview, setProfilePreview] = useState(() => initialState.profilePreview)
   const profileInputRef = useRef(null)
-  const [personalData, setPersonalData] = useState(emptyPersonalData)
-  const [professionalData, setProfessionalData] = useState(emptyProfessionalData)
-  const [uploadedDocs, setUploadedDocs] = useState({})
+  const [personalData, setPersonalData] = useState(() => initialState.personalData)
+  const [professionalData, setProfessionalData] = useState(() => initialState.professionalData)
+  const [uploadedDocs, setUploadedDocs] = useState(() => initialState.uploadedDocs)
 
   const currentStep = useMemo(() => steps[stepIndex], [stepIndex])
   const isLastStep = stepIndex === steps.length - 1
-  const requiredPersonalFields = useMemo(
-    () => ["firstName", "lastName", "mobile", "email", "dob", "maritalStatus", "gender", "nationality"],
-    [],
-  )
-  const isPersonalComplete = requiredPersonalFields.every((key) => personalData[key].toString().trim() !== "")
-
   const setField = (field) => (event) => {
     const { value } = event.target
     setPersonalData((prev) => ({ ...prev, [field]: value }))
@@ -261,54 +304,6 @@ function EmployeeOnboardingModal({
 
   const isFieldInvalid = (field) => personalTouched && personalData[field].toString().trim() === ""
   const isEditMode = Boolean(initialData)
-
-  useEffect(() => {
-    if (!open) return
-    if (initialData) {
-      const parts = (initialData.name || "").trim().split(/\s+/)
-      const firstName = initialData.firstName || parts[0] || ""
-      const lastName = initialData.lastName || parts.slice(1).join(" ") || ""
-      setPersonalData({
-        ...emptyPersonalData,
-        firstName,
-        lastName,
-        mobile: initialData.mobile || "",
-        email: initialData.email || "",
-        dob: initialData.dob || "",
-        maritalStatus: initialData.maritalStatus || "",
-        gender: initialData.gender || "",
-        nationality: initialData.nationality || "",
-        address: initialData.address || "",
-        city: initialData.city || "",
-        state: initialData.state || "",
-        zipCode: initialData.zipCode || "",
-      })
-      setProfessionalData({
-        ...emptyProfessionalData,
-        employeeId: initialData.employeeId || "",
-        userName: initialData.userName || "",
-        employeeType: initialData.type || "",
-        email: initialData.officeEmail || "",
-        department: initialData.department || "",
-        designation: initialData.designation || "",
-        workingDays: initialData.workingDays || "",
-        joiningDate: initialData.joiningDate || "",
-        officeLocation: initialData.officeLocation || "",
-      })
-      setProfilePreview(initialData.profileImage || "")
-      setUploadedDocs(initialData.documents || {})
-    } else {
-      setPersonalData(emptyPersonalData)
-      setProfessionalData({
-        ...emptyProfessionalData,
-        department: presetDepartment || "",
-      })
-      setProfilePreview("")
-      setUploadedDocs({})
-    }
-    setStepIndex(0)
-    setPersonalTouched(false)
-  }, [open, initialData, presetDepartment])
 
   const isEmbedded = mode === "embedded"
   if (!isEmbedded && !open) return null

@@ -30,18 +30,6 @@ const normalizeAttendanceRows = (rows) =>
     return [indianNameMap[row[0]] ?? row[0], row[1], row[2], row[3], row[4], "--", row[5], row[6], row[7]]
   })
 
-const toAttendanceRowFromEmployee = (employee) => [
-  employee.name || "Employee",
-  employee.department || "General",
-  employee.designation || "-",
-  employee.type || "Office",
-  "--",
-  "--",
-  "Not Marked",
-  employee.profileImage || "",
-  employee.employeeId || `A${Date.now()}`,
-]
-
 const buildAttendanceRowsFromEmployees = (employees, existingRows) => {
   const existingMap = new Map((existingRows || []).map((row) => [row[8], row]))
   return (employees || []).map((employee) => {
@@ -115,11 +103,6 @@ function AttendancePage() {
   useEffect(() => {
     writeLocalStorage(ATTENDANCE_STORAGE_KEY, attendanceRows)
   }, [attendanceRows])
-
-  useEffect(() => {
-    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
-    setAttendanceRows((prev) => buildAttendanceRowsFromEmployees(employees, prev))
-  }, [])
 
   const filteredRows = useMemo(() => {
     return attendanceRows.filter((row) => {

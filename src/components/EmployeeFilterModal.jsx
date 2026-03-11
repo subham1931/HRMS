@@ -1,16 +1,9 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 function EmployeeFilterModal({ open, initialFilters, departmentOptions = [], onClose, onApply }) {
   const [selectedDepartments, setSelectedDepartments] = useState(initialFilters.departments ?? [])
   const [selectedEmploymentType, setSelectedEmploymentType] = useState(initialFilters.employmentType ?? "")
   const [selectedWorkModel, setSelectedWorkModel] = useState(initialFilters.workModel ?? initialFilters.type ?? "")
-
-  useEffect(() => {
-    if (!open) return
-    setSelectedDepartments(initialFilters.departments ?? [])
-    setSelectedEmploymentType(initialFilters.employmentType ?? "")
-    setSelectedWorkModel(initialFilters.workModel ?? initialFilters.type ?? "")
-  }, [open, initialFilters])
 
   if (!open) return null
 

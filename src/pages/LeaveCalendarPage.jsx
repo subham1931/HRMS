@@ -86,7 +86,7 @@ function LeaveCalendarPage() {
     [rangeStart],
   )
 
-  const rows = useMemo(() => {
+  const rows = (() => {
     const start = new Date(rangeStart)
     const end = new Date(rangeDates[rangeDates.length - 1])
 
@@ -144,9 +144,9 @@ function LeaveCalendarPage() {
     return Array.from(rowsByEmployee.values())
       .map((item) => ({ ...item, segments: item.segments.sort((a, b) => a.startIndex - b.startIndex) }))
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [employees, leaveRequests, rangeStart, rangeDates])
+  })()
 
-  const displayRows = useMemo(() => (rows.length > 0 ? rows : makeStaticRows(rangeDates.length)), [rows, rangeDates.length])
+  const displayRows = rows.length > 0 ? rows : makeStaticRows(rangeDates.length)
 
   const rangeLabel = `${new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }).format(rangeDates[0])} - ${new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", year: "numeric" }).format(rangeDates[rangeDates.length - 1])}`
 

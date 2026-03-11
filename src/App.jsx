@@ -18,17 +18,61 @@ import HolidaysPage from "./pages/HolidaysPage"
 import SettingsPage from "./pages/SettingsPage"
 import ProfilePage from "./pages/ProfilePage"
 import PlaceholderPage from "./pages/PlaceholderPage"
+import LandingPage from "./pages/LandingPage"
+import SignInPage from "./pages/SignInPage"
+
+const AUTH_STORAGE_KEY = "hrms_is_authenticated"
+const PUBLIC_PATHS = new Set(["/", "/signin"])
 
 function App() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window === "undefined") return false
+    return window.localStorage.getItem(AUTH_STORAGE_KEY) === "true"
+  })
   useEffect(() => {
-    if (pathname === "/") {
+    if (pathname === "/signin" && isAuthenticated) {
       navigate("/dashboard", { replace: true })
+      return
     }
-  }, [navigate, pathname])
+    if (PUBLIC_PATHS.has(pathname)) return
+    if (!isAuthenticated) {
+      navigate("/signin", { replace: true })
+    }
+  }, [isAuthenticated, navigate, pathname])
+
+  const handleSignIn = () => {
+    window.localStorage.setItem(AUTH_STORAGE_KEY, "true")
+    setIsAuthenticated(true)
+    navigate("/dashboard", { replace: true })
+  }
+
+  const handleLogout = () => {
+    window.localStorage.removeItem(AUTH_STORAGE_KEY)
+    setIsAuthenticated(false)
+    setMobileSidebarOpen(false)
+    navigate("/signin", { replace: true })
+  }
+
+  const handlePublicNavigation = (nextPath) => {
+    navigate(nextPath)
+  }
+
+  if (pathname === "/") {
+    return <LandingPage onGetStarted={() => handlePublicNavigation("/signin")} />
+  }
+
+  if (pathname === "/signin") {
+    if (isAuthenticated) return null
+    return (
+      <SignInPage
+        onSignIn={handleSignIn}
+        onBackToLanding={() => handlePublicNavigation("/")}
+      />
+    )
+  }
 
   const routeContent = {
     "/dashboard": <DashboardPage />,
@@ -66,6 +110,7 @@ function App() {
           onNotificationClick={() => navigate("/notifications")}
           onProfileClick={() => navigate("/profile")}
           onMenuClick={() => setMobileSidebarOpen(true)}
+          onLogout={handleLogout}
         />
 
         {mobileSidebarOpen && (

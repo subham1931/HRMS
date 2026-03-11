@@ -111,7 +111,7 @@ function LeavesPage() {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
-  const [leaveRequests, setLeaveRequests] = useState(() => {
+  const [leaveRequests] = useState(() => {
     const saved = normalizeRequests(readLocalStorage(LEAVE_REQUESTS_STORAGE_KEY, []))
     if (saved.length > 0) return saved
     const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
