@@ -1,21 +1,30 @@
 import { useState } from "react"
-import { CheckCircle2, LockKeyhole, Mail } from "lucide-react"
+import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react"
 import TopNavbar from "../components/TopNavbar"
 
 function SignInPage({ onSignIn, onBackToLanding }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     const normalizedEmail = email.trim().toLowerCase()
     if (!normalizedEmail || !password.trim()) {
       setError("Please enter email and password.")
       return
     }
-    setError("")
-    onSignIn?.(normalizedEmail)
+    try {
+      setIsLoading(true)
+      setError("")
+      await onSignIn?.(normalizedEmail, password)
+    } catch (err) {
+      setError(err?.message || "Unable to sign in. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -62,6 +71,7 @@ function SignInPage({ onSignIn, onBackToLanding }) {
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="name@company.com"
+                    disabled={isLoading}
                     className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition-colors focus:border-emerald-400"
                   />
                 </div>
@@ -72,12 +82,22 @@ function SignInPage({ onSignIn, onBackToLanding }) {
                 <div className="relative">
                   <LockKeyhole size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Enter your password"
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition-colors focus:border-emerald-400"
+                    disabled={isLoading}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-sm outline-none transition-colors focus:border-emerald-400"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    disabled={isLoading}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 disabled:cursor-not-allowed"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </label>
 
@@ -85,9 +105,10 @@ function SignInPage({ onSignIn, onBackToLanding }) {
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
+                disabled={isLoading}
+                className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Sign In
+                {isLoading ? "Signing In..." : "Sign In"}
               </button>
             </form>
           </article>

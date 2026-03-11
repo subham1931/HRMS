@@ -1,13 +1,9 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Activity, Check, Minus, Plus, Search, SlidersHorizontal, UserMinus, UserRoundPlus, Users } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { CiUser } from "react-icons/ci"
 import EmployeeDetailsView from "../components/EmployeeDetailsView"
 import EmployeeFilterModal from "../components/EmployeeFilterModal"
-import { readLocalStorage } from "../utils/localStorage"
-
-const EMPLOYEES_STORAGE_KEY = "hrms_employees"
-const DEPARTMENT_NAMES_STORAGE_KEY = "hrms_department_names"
+import { listEmployeeRecords } from "../services/employees"
 const defaultEmployees = []
 const normalizeEmployees = (rows) => rows
 const safePercent = (value) => `${Math.abs(value).toFixed(1)}%`
@@ -42,6 +38,12 @@ const parseDateValue = (value) => {
   const parsed = new Date(value)
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
+const getInitials = (name) => (name || "A")
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((word) => word[0]?.toUpperCase() || "")
+  .join("")
 
 function EmployeesPage() {
   const navigate = useNavigate()
@@ -51,7 +53,26 @@ function EmployeesPage() {
   const [selectedRowIds, setSelectedRowIds] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState({ departments: [], employmentType: "", workModel: "" })
-  const [employees] = useState(() => normalizeEmployees(readLocalStorage(EMPLOYEES_STORAGE_KEY, defaultEmployees)))
+  const [employees, setEmployees] = useState(() => normalizeEmployees(defaultEmployees))
+  const [loadError, setLoadError] = useState("")
+
+  useEffect(() => {
+    let isMounted = true
+    listEmployeeRecords()
+      .then((rows) => {
+        if (!isMounted) return
+        setEmployees(normalizeEmployees(rows))
+        setLoadError("")
+      })
+      .catch((error) => {
+        if (!isMounted) return
+        setEmployees(normalizeEmployees(defaultEmployees))
+        setLoadError(error?.message || "Unable to load employees from database.")
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const filteredRows = useMemo(() => {
     return employees.filter((employee) => {
@@ -84,9 +105,7 @@ function EmployeesPage() {
     [employees, filteredRows, selectedEmployeeId],
   )
   const filterDepartmentOptions = useMemo(() => {
-    const createdDepartments = readLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, [])
-      .map((item) => (item || "").trim())
-      .filter(Boolean)
+    const createdDepartments = []
     const fromEmployees = employees
       .map((item) => (item.department || "").trim())
       .filter(Boolean)
@@ -211,6 +230,11 @@ function EmployeesPage() {
   return (
     <>
       <article className="rounded-2xl border border-slate-200 bg-white p-5">
+        {loadError ? (
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+            {loadError}
+          </div>
+        ) : null}
         {!selectedEmployee && (
           <>
             <div className="mb-6 space-y-4">
@@ -432,8 +456,8 @@ function EmployeesPage() {
                         {row.profileImage ? (
                           <img src={row.profileImage} alt={row.name} className="h-9 w-9 rounded-full object-cover" />
                         ) : (
-                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                            <CiUser size={24} />
+                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
+                            {getInitials(row.name) || "A"}
                           </span>
                         )}
                         {row.name}

@@ -1,10 +1,6 @@
 import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { readLocalStorage } from "../utils/localStorage"
-
-const EMPLOYEES_STORAGE_KEY = "hrms_employees"
-const LEAVE_REQUESTS_STORAGE_KEY = "hrms_leave_requests"
 const CHUNK_SIZE = 10
 
 function toYMD(date) {
@@ -69,8 +65,8 @@ function makeStaticRows(rangeLength) {
 function LeaveCalendarPage() {
   const navigate = useNavigate()
   const [rangeStart, setRangeStart] = useState(() => getMonthChunkStart(new Date()))
-  const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
-  const leaveRequests = readLocalStorage(LEAVE_REQUESTS_STORAGE_KEY, [])
+  const employees = []
+  const leaveRequests = []
 
   const rangeDates = useMemo(
     () => {

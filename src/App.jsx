@@ -20,19 +20,44 @@ import ProfilePage from "./pages/ProfilePage"
 import PlaceholderPage from "./pages/PlaceholderPage"
 import LandingPage from "./pages/LandingPage"
 import SignInPage from "./pages/SignInPage"
+import { getCurrentAdminSession, signInAdmin, signOutAdmin } from "./services/auth"
 
-const AUTH_STORAGE_KEY = "hrms_is_authenticated"
 const PUBLIC_PATHS = new Set(["/", "/signin"])
 
 function App() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (typeof window === "undefined") return false
-    return window.localStorage.getItem(AUTH_STORAGE_KEY) === "true"
-  })
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authReady, setAuthReady] = useState(false)
+  const [adminProfile, setAdminProfile] = useState(null)
+
   useEffect(() => {
+    let isMounted = true
+
+    async function bootstrapAuth() {
+      try {
+        const auth = await getCurrentAdminSession()
+        if (!isMounted) return
+        setIsAuthenticated(Boolean(auth?.session))
+        setAdminProfile(auth?.admin || null)
+      } catch {
+        if (!isMounted) return
+        setIsAuthenticated(false)
+        setAdminProfile(null)
+      } finally {
+        if (isMounted) setAuthReady(true)
+      }
+    }
+
+    bootstrapAuth()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!authReady) return
     if (pathname === "/signin" && isAuthenticated) {
       navigate("/dashboard", { replace: true })
       return
@@ -41,17 +66,19 @@ function App() {
     if (!isAuthenticated) {
       navigate("/signin", { replace: true })
     }
-  }, [isAuthenticated, navigate, pathname])
+  }, [authReady, isAuthenticated, navigate, pathname])
 
-  const handleSignIn = () => {
-    window.localStorage.setItem(AUTH_STORAGE_KEY, "true")
+  const handleSignIn = async (email, password) => {
+    const auth = await signInAdmin(email, password)
     setIsAuthenticated(true)
+    setAdminProfile(auth?.admin || null)
     navigate("/dashboard", { replace: true })
   }
 
-  const handleLogout = () => {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY)
+  const handleLogout = async () => {
+    await signOutAdmin()
     setIsAuthenticated(false)
+    setAdminProfile(null)
     setMobileSidebarOpen(false)
     navigate("/signin", { replace: true })
   }
@@ -62,6 +89,14 @@ function App() {
 
   if (pathname === "/") {
     return <LandingPage onGetStarted={() => handlePublicNavigation("/signin")} />
+  }
+
+  if (!authReady && !PUBLIC_PATHS.has(pathname)) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-100 text-slate-600">
+        <p className="text-sm">Checking session...</p>
+      </main>
+    )
   }
 
   if (pathname === "/signin") {
@@ -89,7 +124,7 @@ function App() {
     "/holidays": <HolidaysPage />,
     "/settings": <SettingsPage />,
     "/notifications": <NotificationsPanel />,
-    "/profile": <ProfilePage />,
+    "/profile": <ProfilePage adminProfile={adminProfile} />,
   }
   const activeRouteContent = pathname === "/leaves/calendar"
     ? <LeaveCalendarPage />
@@ -101,6 +136,9 @@ function App() {
     navigate(nextPath)
     setMobileSidebarOpen(false)
   }
+  const displayEmail = adminProfile?.email || ""
+  const displayName = adminProfile?.full_name || (displayEmail ? displayEmail.split("@")[0] : "Admin User")
+  const displayRole = (adminProfile?.role || "HR").toUpperCase()
 
   return (
     <main className="min-h-screen bg-[#f3f3f6] px-0 pb-0 pt-0 text-slate-900 lg:px-0 lg:pb-0 lg:pt-0">
@@ -111,6 +149,8 @@ function App() {
           onProfileClick={() => navigate("/profile")}
           onMenuClick={() => setMobileSidebarOpen(true)}
           onLogout={handleLogout}
+          userName={displayName}
+          userRole={displayRole}
         />
 
         {mobileSidebarOpen && (

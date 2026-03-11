@@ -12,13 +12,19 @@ function TopNavbar({
   onPublicAction,
   showPublicAction = true,
   onBrandClick,
+  userName = "Admin User",
+  userRole = "Admin",
+  userImage = "",
 }) {
-  const userName = "Priya Sharma"
-  const userRole = "HR Manager"
-  const userImage = "https://i.pravatar.cc/80?img=47"
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const mobileMenuRef = useRef(null)
   const isPublic = mode === "public"
+  const initials = (userName || "A")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() || "")
+    .join("")
 
   useEffect(() => {
     if (!mobileMenuOpen) return
@@ -94,7 +100,13 @@ function TopNavbar({
                 aria-label="Open profile menu"
                 aria-expanded={mobileMenuOpen}
               >
-                <img src={userImage} alt={userName} className="h-7 w-7 rounded-full object-cover" />
+                {userImage ? (
+                  <img src={userImage} alt={userName} className="h-7 w-7 rounded-full object-cover" />
+                ) : (
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700">
+                    {initials || "A"}
+                  </span>
+                )}
                 <ChevronDown size={13} className={`text-slate-400 transition-transform ${mobileMenuOpen ? "rotate-180" : ""}`} />
               </button>
 
@@ -105,7 +117,13 @@ function TopNavbar({
                 aria-label="Open profile menu"
                 aria-expanded={mobileMenuOpen}
               >
-                <img src={userImage} alt={userName} className="h-8 w-8 rounded-full object-cover" />
+                {userImage ? (
+                  <img src={userImage} alt={userName} className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
+                    {initials || "A"}
+                  </span>
+                )}
                 <span className="text-left">
                   <span className="block text-sm font-semibold leading-none">{userName}</span>
                   <span className="mt-1 block text-xs text-slate-500">{userRole}</span>

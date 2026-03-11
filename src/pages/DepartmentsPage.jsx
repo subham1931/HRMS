@@ -1,20 +1,16 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight, Eye, MoreVertical, Pencil, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react"
 import { CiUser } from "react-icons/ci"
 import EmployeeDetailsView from "../components/EmployeeDetailsView"
 import EmployeeFilterModal from "../components/EmployeeFilterModal"
 import EmployeeOnboardingModal from "../components/EmployeeOnboardingModal"
-import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
-
-const EMPLOYEES_STORAGE_KEY = "hrms_employees"
-const DEPARTMENT_NAMES_STORAGE_KEY = "hrms_department_names"
 
 function DepartmentsPage() {
   const [selectedDepartment, setSelectedDepartment] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedEmployee, setSelectedEmployee] = useState(null)
-  const [employees, setEmployees] = useState(() => readLocalStorage(EMPLOYEES_STORAGE_KEY, []))
-  const [departmentNames, setDepartmentNames] = useState(() => readLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, []))
+  const [employees, setEmployees] = useState([])
+  const [departmentNames, setDepartmentNames] = useState([])
   const [showAddDepartmentEmployeeModal, setShowAddDepartmentEmployeeModal] = useState(false)
   const [showAddDepartmentModal, setShowAddDepartmentModal] = useState(false)
   const [showUpdateDepartmentModal, setShowUpdateDepartmentModal] = useState(false)
@@ -26,13 +22,6 @@ function DepartmentsPage() {
   const [editingDepartmentEmployee, setEditingDepartmentEmployee] = useState(null)
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [filters, setFilters] = useState({ departments: [], type: "" })
-
-  useEffect(() => {
-    writeLocalStorage(EMPLOYEES_STORAGE_KEY, employees)
-  }, [employees])
-  useEffect(() => {
-    writeLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, departmentNames)
-  }, [departmentNames])
 
   const departments = useMemo(
     () => {

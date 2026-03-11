@@ -1,6 +1,13 @@
 import { Calendar, ChevronLeft, Mail, MapPin, PenLine, Phone } from "lucide-react"
 import { useMemo, useState } from "react"
 
+const getInitials = (value) => (value || "A")
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((word) => word[0]?.toUpperCase() || "")
+  .join("")
+
 function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
   const [performanceRange, setPerformanceRange] = useState("This Week")
   const isLegacyEmployee = Array.isArray(employee)
@@ -134,7 +141,11 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
           <div className="mx-auto h-24 w-24 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#d8efe8,#88d3c2)]">
             {employee?.profileImage ? (
               <img src={employee.profileImage} alt={name} className="h-full w-full object-cover" />
-            ) : null}
+            ) : (
+              <span className="inline-flex h-full w-full items-center justify-center text-3xl font-semibold text-emerald-700">
+                {getInitials(name) || "A"}
+              </span>
+            )}
           </div>
           <div className="mt-3 text-center">
             <p className="text-lg font-semibold leading-tight text-slate-800">{name}</p>

@@ -1,72 +1,58 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import RegisterEmployeeForm from "../components/RegisterEmployeeForm"
-import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
-
-const EMPLOYEES_STORAGE_KEY = "hrms_employees"
-const DEPARTMENT_NAMES_STORAGE_KEY = "hrms_department_names"
+import { createEmployeeRecord } from "../services/employees"
+import { createDepartment, listDepartments } from "../services/departments"
 
 function AddEmployeePage() {
   const navigate = useNavigate()
+  const [submitError, setSubmitError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [departmentOptions, setDepartmentOptions] = useState([])
 
-  const [departmentOptions, setDepartmentOptions] = useState(() => {
-    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
-    const departmentNames = readLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, [])
-    const fromEmployees = employees
-      .map((item) => (item.department || "").trim())
-      .filter((value) => value !== "")
-    const fromDepartmentPage = (departmentNames || []).map((item) => (item || "").trim()).filter((value) => value !== "")
-    return Array.from(new Set([...fromDepartmentPage, ...fromEmployees]))
-  })
+  useEffect(() => {
+    let isMounted = true
 
-  const handleAddEmployee = (payload) => {
-    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
-    const uniqueEmployeeId = employees.some((item) => item.employeeId === payload.employeeId)
-      ? `EMP${Date.now().toString().slice(-6)}`
-      : payload.employeeId
-    const nextItem = {
-      id: uniqueEmployeeId,
-      name: payload.name,
-      employeeId: uniqueEmployeeId,
-      department: payload.department || "Design",
-      designation: payload.designation || "UI/UX Designer",
-      type: payload.type || "Office",
-      status: payload.status || "Permanent",
-      mobile: payload.mobile || "",
-      email: payload.email || "",
-      dob: payload.dob || "",
-      maritalStatus: payload.maritalStatus || "",
-      gender: payload.gender || "",
-      nationality: payload.nationality || "",
-      address: payload.address || "",
-      city: payload.city || "",
-      state: payload.state || "",
-      zipCode: payload.zipCode || "",
-      userName: payload.userName || "",
-      officeEmail: payload.officeEmail || "",
-      workingDays: payload.workingDays || "",
-      joiningDate: payload.joiningDate || "",
-      officeLocation: payload.officeLocation || "",
-      generatedPassword: payload.generatedPassword || "",
-      salary: payload.salary || "",
-      bankName: payload.bankName || "",
-      bankAccount: payload.bankAccount || "",
-      employmentType: payload.employmentType || "",
-      profileImage: payload.profileImage || "",
-      documents: payload.documents || {},
+    async function loadDepartments() {
+      try {
+        const departments = await listDepartments()
+        if (!isMounted) return
+        setDepartmentOptions(departments)
+      } catch {
+        if (!isMounted) return
+        setDepartmentOptions([])
+      }
     }
 
-    writeLocalStorage(EMPLOYEES_STORAGE_KEY, [nextItem, ...employees])
-    navigate("/employees")
+    loadDepartments()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const handleAddEmployee = async (payload) => {
+    try {
+      setIsSubmitting(true)
+      setSubmitError("")
+      await createEmployeeRecord(payload)
+      navigate("/employees")
+    } catch (error) {
+      setSubmitError(error?.message || "Unable to create employee right now.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-  const handleAddDepartment = (departmentName) => {
+  const handleAddDepartment = async (departmentName) => {
     const normalized = (departmentName || "").trim()
     if (!normalized) return
-    const current = readLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, [])
-    const exists = current.some((item) => item.toLowerCase() === normalized.toLowerCase())
-    const next = exists ? current : [...current, normalized]
-    writeLocalStorage(DEPARTMENT_NAMES_STORAGE_KEY, next)
-    setDepartmentOptions((prev) => (prev.some((item) => item.toLowerCase() === normalized.toLowerCase()) ? prev : [...prev, normalized]))
+    try {
+      const savedName = await createDepartment(normalized)
+      setDepartmentOptions((prev) => (
+        prev.some((item) => item.toLowerCase() === savedName.toLowerCase()) ? prev : [...prev, savedName].sort()
+      ))
+    } catch (error) {
+      setSubmitError(error?.message || "Unable to create department right now.")
+    }
   }
 
   return (
@@ -75,6 +61,8 @@ function AddEmployeePage() {
       onCancel={() => navigate("/employees")}
       onSubmit={handleAddEmployee}
       onAddDepartment={handleAddDepartment}
+      submitError={submitError}
+      isSubmitting={isSubmitting}
     />
   )
 }

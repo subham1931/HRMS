@@ -1,13 +1,21 @@
 import { Mail, MapPin, Phone, UserRound } from "lucide-react"
 
-function ProfilePage() {
+function ProfilePage({ adminProfile = null }) {
+  const email = adminProfile?.email || "admin@hrms.test"
+  const image = adminProfile?.profile_image || adminProfile?.avatar_url || ""
+  const initials = (adminProfile?.full_name || "Admin User")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() || "")
+    .join("")
   const profile = {
-    name: "Priya Sharma",
-    role: "HR Manager",
-    email: "priya.sharma@mensou.com",
-    phone: "+91 98765 43210",
-    location: "Bangalore, India",
-    image: "https://i.pravatar.cc/240?img=47",
+    name: adminProfile?.full_name || "Admin User",
+    role: (adminProfile?.role || "HR").toUpperCase(),
+    email,
+    phone: adminProfile?.phone || "+91 98765 43210",
+    location: adminProfile?.address || "Bangalore, India",
+    image,
   }
 
   return (
@@ -18,7 +26,13 @@ function ProfilePage() {
 
       <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/40 p-4 sm:p-5">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <img src={profile.image} alt={profile.name} className="h-20 w-20 rounded-full object-cover sm:h-24 sm:w-24" />
+          {profile.image ? (
+            <img src={profile.image} alt={profile.name} className="h-20 w-20 rounded-full object-cover sm:h-24 sm:w-24" />
+          ) : (
+            <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-xl font-semibold text-emerald-700 sm:h-24 sm:w-24 sm:text-2xl">
+              {initials || "A"}
+            </span>
+          )}
           <div>
             <p className="text-[20px] font-semibold leading-tight text-slate-800">{profile.name}</p>
             <p className="mt-1 text-sm text-slate-500">{profile.role}</p>

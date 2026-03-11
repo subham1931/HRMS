@@ -44,7 +44,28 @@ const INDIA_STATE_CITIES = {
   Meghalaya: ["Shillong", "Tura", "Nongpoh", "Jowai", "Baghmara"],
   Mizoram: ["Aizawl", "Lunglei", "Champhai", "Kolasib", "Serchhip"],
   Nagaland: ["Kohima", "Dimapur", "Mokokchung", "Tuensang", "Wokha"],
-  Odisha: ["Bhubaneswar", "Cuttack", "Rourkela", "Sambalpur", "Puri"],
+  Odisha: [
+    "Bhubaneswar",
+    "Cuttack",
+    "Rourkela",
+    "Sambalpur",
+    "Puri",
+    "Berhampur",
+    "Balasore",
+    "Bhadrak",
+    "Baripada",
+    "Jeypore",
+    "Rayagada",
+    "Dhenkanal",
+    "Angul",
+    "Jharsuguda",
+    "Bargarh",
+    "Paradeep",
+    "Kendrapara",
+    "Jagatsinghpur",
+    "Koraput",
+    "Nabarangpur",
+  ],
   Punjab: ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda"],
   Rajasthan: ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer"],
   Sikkim: ["Gangtok", "Namchi", "Gyalshing", "Mangan", "Rangpo"],
@@ -72,6 +93,13 @@ const getValidEmploymentType = (...values) => {
   const match = values.find((value) => EMPLOYMENT_TYPE_LEGACY_VALUES.has((value || "").toLowerCase()))
   return match || ""
 }
+const todayIsoDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = `${now.getMonth() + 1}`.padStart(2, "0")
+  const day = `${now.getDate()}`.padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 const createDefaultForm = () => ({
   firstName: "",
@@ -86,7 +114,7 @@ const createDefaultForm = () => ({
   state: "",
   zipCode: "",
   employeeId: `EMP-${Date.now().toString().slice(-4)}`,
-  joinDate: "2035-06-19",
+  joinDate: todayIsoDate(),
   jobTitle: "",
   department: "",
   employmentType: "",
@@ -148,7 +176,15 @@ const createInitialState = (initialData) => {
   }
 }
 
-function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAddDepartment, initialData = null }) {
+function RegisterEmployeeForm({
+  departmentOptions = [],
+  onCancel,
+  onSubmit,
+  onAddDepartment,
+  initialData = null,
+  submitError = "",
+  isSubmitting = false,
+}) {
   const initialState = createInitialState(initialData)
   const [stepIndex, setStepIndex] = useState(0)
   const [showDepartmentModal, setShowDepartmentModal] = useState(false)
@@ -186,6 +222,26 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
   }, [generatedUserName])
   const generatedPassword = useMemo(() => generatedUserName, [generatedUserName])
   const isEditMode = Boolean(initialData)
+  const requiredFieldsByStep = {
+    0: ["firstName", "lastName", "phone", "email", "dob", "gender", "address", "state", "city", "zipCode"],
+    1: ["joinDate", "jobTitle", "department", "employmentType"],
+  }
+  const fieldLabels = {
+    firstName: "First Name",
+    lastName: "Last Name",
+    phone: "Mobile Number",
+    email: "Email Address",
+    dob: "Date of Birth",
+    gender: "Gender",
+    address: "Address",
+    state: "State",
+    city: "City",
+    zipCode: "Zip Code",
+    joinDate: "Join Date",
+    jobTitle: "Job Title",
+    department: "Department",
+    employmentType: "Employment Type",
+  }
 
   const setField = (key) => (event) => {
     const { value } = event.target
@@ -270,6 +326,26 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
       documents: { ...documents },
     }
     onSubmit(payload)
+  }
+  const validateStep = (step) => {
+    const requiredFields = requiredFieldsByStep[step] || []
+    if (requiredFields.length === 0) return true
+
+    const nextErrors = {}
+    requiredFields.forEach((field) => {
+      const raw = form[field]
+      if (!String(raw ?? "").trim()) {
+        nextErrors[field] = `${fieldLabels[field] || "This field"} is required.`
+      }
+    })
+    setErrors((prev) => {
+      const cleared = { ...prev }
+      requiredFields.forEach((field) => {
+        delete cleared[field]
+      })
+      return { ...cleared, ...nextErrors }
+    })
+    return Object.keys(nextErrors).length === 0
   }
 
   const uploadBox = (key, label) => (
@@ -778,17 +854,34 @@ function RegisterEmployeeForm({ departmentOptions = [], onCancel, onSubmit, onAd
                   type="button"
                   onClick={() => {
                     if (stepIndex === stepLabels.length - 1) {
+                      if (!validateStep(0)) {
+                        setStepIndex(0)
+                        return
+                      }
+                      if (!validateStep(1)) {
+                        setStepIndex(1)
+                        return
+                      }
                       handleSubmit()
                       return
                     }
+                    if (!validateStep(stepIndex)) return
                     setStepIndex((prev) => prev + 1)
                   }}
-                  className="rounded-xl bg-[#53c4ae] px-5 py-2 text-sm font-medium text-white"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-[#53c4ae] px-5 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {stepIndex === stepLabels.length - 1 ? (isEditMode ? "Update" : "Register Employee") : "Next"}
+                  {isSubmitting
+                    ? "Saving..."
+                    : stepIndex === stepLabels.length - 1
+                      ? (isEditMode ? "Update" : "Register Employee")
+                      : "Next"}
                 </button>
               </div>
             </div>
+            {submitError ? (
+              <p className="mt-2 text-right text-sm text-rose-500">{submitError}</p>
+            ) : null}
           </div>
           </section>
         </div>

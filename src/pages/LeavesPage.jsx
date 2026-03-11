@@ -1,10 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Filter, MoreHorizontal, Search } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
-
-const EMPLOYEES_STORAGE_KEY = "hrms_employees"
-const LEAVE_REQUESTS_STORAGE_KEY = "hrms_leave_requests"
 
 function formatDate(dateText) {
   if (!dateText) return "-"
@@ -106,21 +102,12 @@ function LeavesPage() {
   const [overviewRange, setOverviewRange] = useState("week")
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
-  const [employees] = useState(() => readLocalStorage(EMPLOYEES_STORAGE_KEY, []))
+  const [employees] = useState([])
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
-  const [leaveRequests] = useState(() => {
-    const saved = normalizeRequests(readLocalStorage(LEAVE_REQUESTS_STORAGE_KEY, []))
-    if (saved.length > 0) return saved
-    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
-    return normalizeRequests(makeDefaultLeaveRequests(employees))
-  })
-
-  useEffect(() => {
-    writeLocalStorage(LEAVE_REQUESTS_STORAGE_KEY, leaveRequests)
-  }, [leaveRequests])
+  const [leaveRequests] = useState(() => normalizeRequests(makeDefaultLeaveRequests([])))
 
   const enrichedRequests = useMemo(() => {
     const byId = new Map(employees.map((item) => [String(item.employeeId || "").trim().toLowerCase(), item]))

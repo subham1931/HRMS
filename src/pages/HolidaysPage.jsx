@@ -1,16 +1,7 @@
 import { useRef, useMemo, useState } from "react"
 import { Calendar, Plus, Search } from "lucide-react"
-import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
 
 const CURRENT_YEAR = new Date().getFullYear()
-const CUSTOM_HOLIDAYS_STORAGE_KEY = "hrms_custom_holidays"
-
-function toYMD(date) {
-  const y = date.getFullYear()
-  const m = `${date.getMonth() + 1}`.padStart(2, "0")
-  const d = `${date.getDate()}`.padStart(2, "0")
-  return `${y}-${m}-${d}`
-}
 
 const yearlyHolidaySeed = [
   ["01-01", "New Year Day"],
@@ -57,36 +48,9 @@ function HolidaysPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [holidayDate, setHolidayDate] = useState("")
   const [holidayName, setHolidayName] = useState("")
-  const [customHolidays, setCustomHolidays] = useState(() => {
-    const saved = readLocalStorage(CUSTOM_HOLIDAYS_STORAGE_KEY, [])
-    const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
-    const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "long" })
-    return (saved || [])
-      .map((item) => {
-        const dateISO = item?.dateISO || ""
-        const name = (item?.name || "").trim()
-        const dateValue = new Date(`${dateISO}T00:00:00`)
-        if (!dateISO || !name || Number.isNaN(dateValue.getTime())) return null
-        return {
-          dateISO,
-          dateValue,
-          date: dateFormatter.format(dateValue),
-          day: dayFormatter.format(dateValue),
-          name,
-        }
-      })
-      .filter(Boolean)
-  })
+  const [customHolidays, setCustomHolidays] = useState([])
   const [formError, setFormError] = useState("")
   const holidayDateInputRef = useRef(null)
-
-  const persistCustomHolidays = (rows) => {
-    const serializable = rows.map((item) => ({
-      dateISO: item.dateISO || toYMD(item.dateValue),
-      name: item.name,
-    }))
-    writeLocalStorage(CUSTOM_HOLIDAYS_STORAGE_KEY, serializable)
-  }
 
   const holidayRows = useMemo(() => {
     const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
@@ -269,7 +233,6 @@ function HolidaysPage() {
                         name: holidayName.trim(),
                       },
                     ]
-                    persistCustomHolidays(next)
                     return next
                   })
                   setShowAddModal(false)

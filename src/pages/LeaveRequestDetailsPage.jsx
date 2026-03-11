@@ -1,10 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { ArrowLeft, Check, ChevronDown, X } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
-
-const EMPLOYEES_STORAGE_KEY = "hrms_employees"
-const LEAVE_REQUESTS_STORAGE_KEY = "hrms_leave_requests"
 const YEARLY_LEAVE_QUOTA = {
   "Annual Leave": 20,
   "Sick Leave": 10,
@@ -66,12 +62,8 @@ function LeaveRequestDetailsPage() {
   const leaveId = decodeURIComponent(pathname.split("/").pop() || "")
   const [balanceRange, setBalanceRange] = useState("month")
 
-  const [employees] = useState(() => readLocalStorage(EMPLOYEES_STORAGE_KEY, []))
-  const [leaveRequests, setLeaveRequests] = useState(() => normalizeRequests(readLocalStorage(LEAVE_REQUESTS_STORAGE_KEY, [])))
-
-  useEffect(() => {
-    writeLocalStorage(LEAVE_REQUESTS_STORAGE_KEY, leaveRequests)
-  }, [leaveRequests])
+  const [employees] = useState([])
+  const [leaveRequests, setLeaveRequests] = useState(() => normalizeRequests([]))
 
   const leaveRequest = useMemo(() => {
     const base = leaveRequests.find((item) => item.id === leaveId)

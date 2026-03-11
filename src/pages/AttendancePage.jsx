@@ -1,34 +1,8 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Plus, Search, SlidersHorizontal, X } from "lucide-react"
 import { CiUser } from "react-icons/ci"
-import { readLocalStorage, writeLocalStorage } from "../utils/localStorage"
-
-const ATTENDANCE_STORAGE_KEY = "hrms_attendance"
-const EMPLOYEES_STORAGE_KEY = "hrms_employees"
-const indianNameMap = {
-  "Leasie Watson": "Aarav Sharma",
-  "Darlene Robertson": "Rohan Verma",
-  "Jacob Jones": "Arjun Patel",
-  "Kathryn Murphy": "Meera Joshi",
-  "Leslie Alexander": "Rahul Desai",
-  "Ronald Richards": "Karan Malhotra",
-  "Guy Hawkins": "Aditya Khanna",
-  "Albert Flores": "Ishaan Bhat",
-  "Savannah Nguyen": "Priya Nair",
-  "Marvin McKinney": "Aniket Tiwari",
-  "Jerome Bell": "Siddharth Mehra",
-  "Jenny Wilson": "Nisha Rao",
-}
 
 const initialAttendanceRows = []
-
-const normalizeAttendanceRows = (rows) =>
-  (rows || []).map((row) => {
-    if (row.length >= 9) {
-      return [indianNameMap[row[0]] ?? row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]]
-    }
-    return [indianNameMap[row[0]] ?? row[0], row[1], row[2], row[3], row[4], "--", row[5], row[6], row[7]]
-  })
 
 const buildAttendanceRowsFromEmployees = (employees, existingRows) => {
   const existingMap = new Map((existingRows || []).map((row) => [row[8], row]))
@@ -94,15 +68,7 @@ function AttendancePage() {
   })
   const [toastMessage, setToastMessage] = useState("")
   const [brokenAvatarById, setBrokenAvatarById] = useState({})
-  const [attendanceRows, setAttendanceRows] = useState(() => {
-    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
-    const savedRows = normalizeAttendanceRows(readLocalStorage(ATTENDANCE_STORAGE_KEY, initialAttendanceRows))
-    return buildAttendanceRowsFromEmployees(employees, savedRows)
-  })
-
-  useEffect(() => {
-    writeLocalStorage(ATTENDANCE_STORAGE_KEY, attendanceRows)
-  }, [attendanceRows])
+  const [attendanceRows, setAttendanceRows] = useState(() => buildAttendanceRowsFromEmployees([], initialAttendanceRows))
 
   const filteredRows = useMemo(() => {
     return attendanceRows.filter((row) => {
@@ -256,8 +222,7 @@ function AttendancePage() {
   const addAttendanceRecord = () => {
     const employeeId = window.prompt("Employee ID")
     if (!employeeId || employeeId.trim() === "") return
-    const employees = readLocalStorage(EMPLOYEES_STORAGE_KEY, [])
-    const matchedEmployee = employees.find((item) => (item.employeeId || "").toLowerCase() === employeeId.trim().toLowerCase())
+    const matchedEmployee = attendanceRows.find((row) => (row[8] || "").toLowerCase() === employeeId.trim().toLowerCase())
     if (!matchedEmployee) {
       setToastMessage("Only added employees can have attendance records")
       window.setTimeout(() => setToastMessage(""), 2200)
@@ -272,7 +237,7 @@ function AttendancePage() {
 
     setAttendanceRows((prev) =>
       prev.map((row) =>
-        row[8] === matchedEmployee.employeeId
+        row[8] === matchedEmployee[8]
           ? [row[0], row[1], row[2], row[3], checkIn.trim(), checkOut.trim(), status.trim(), row[7], row[8]]
           : row,
       ),
