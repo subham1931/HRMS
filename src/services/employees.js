@@ -29,9 +29,7 @@ function toEmployeeInsertRow(payload, userId, employeeCode) {
     password: payload.generatedPassword || "",
     dob: toNullableDate(payload.dob),
     joining_date: toNullableDate(payload.joiningDate),
-    marital_status: payload.maritalStatus || "",
     gender: payload.gender || "",
-    nationality: payload.nationality || "",
     address: payload.address || "",
     city: payload.city || "",
     state: payload.state || "",
@@ -102,9 +100,7 @@ function mapEmployeeRowToUi(row) {
     mobile: row.mobile || "",
     email: row.personal_email || "",
     dob: row.dob || "",
-    maritalStatus: row.marital_status || "",
     gender: row.gender || "",
-    nationality: row.nationality || "",
     address: row.address || "",
     city: row.city || "",
     state: row.state || "",
@@ -144,9 +140,7 @@ export async function listEmployeeRecords() {
       password,
       dob,
       joining_date,
-      marital_status,
       gender,
-      nationality,
       address,
       city,
       state,
@@ -162,4 +156,73 @@ export async function listEmployeeRecords() {
 
   if (error) throw new Error(error.message || "Failed to load employees.")
   return (data || []).map(mapEmployeeRowToUi)
+}
+
+export async function getEmployeeRecordByCode(employeeCode) {
+  assertSupabaseConfigured()
+  const code = String(employeeCode || "").trim()
+  if (!code) return null
+
+  const { data, error } = await supabase
+    .from("employees")
+    .select(`
+      id,
+      employee_code,
+      full_name,
+      first_name,
+      last_name,
+      department,
+      designation,
+      employment_type,
+      work_model,
+      employment_status,
+      mobile,
+      personal_email,
+      office_email,
+      username,
+      password,
+      dob,
+      joining_date,
+      gender,
+      address,
+      city,
+      state,
+      zip_code,
+      office_location,
+      salary_text,
+      bank_name,
+      bank_account,
+      profile_image_url,
+      documents
+    `)
+    .eq("employee_code", code)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message || "Failed to load employee.")
+  return data ? mapEmployeeRowToUi(data) : null
+}
+
+export async function updateEmployeeRecord(employeeCode, payload) {
+  assertSupabaseConfigured()
+  const code = String(employeeCode || "").trim()
+  if (!code) throw new Error("Missing employee ID for update.")
+
+  const row = toEmployeeInsertRow(payload, null, code)
+  delete row.created_by
+  delete row.employee_code
+
+  const { data, error } = await supabase
+    .from("employees")
+    .update(row)
+    .eq("employee_code", code)
+    .select("id, employee_code")
+    .maybeSingle()
+
+  if (error) throw new Error(error.message || "Failed to update employee.")
+  if (!data) throw new Error("Employee not found.")
+
+  return {
+    id: data.id,
+    employeeId: data.employee_code,
+  }
 }

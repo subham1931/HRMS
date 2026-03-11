@@ -16,12 +16,14 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
   const employeeId = isLegacyEmployee ? legacyEmployeeId : employee?.employeeId
   const department = isLegacyEmployee ? legacyDepartment : employee?.department
   const designation = isLegacyEmployee ? legacyDesignation : employee?.designation
-  const type = isLegacyEmployee ? legacyType : employee?.type
+  const employmentType = isLegacyEmployee ? legacyType : employee?.employmentType || "-"
   const joiningDate = isLegacyEmployee ? "Jan 03, 2020" : employee?.joiningDate || "-"
   const officeEmail = isLegacyEmployee ? `${name?.toLowerCase().replace(/\s+/g, ".")}@example.com` : employee?.officeEmail || employee?.email || "-"
   const mobile = isLegacyEmployee ? "-" : employee?.mobile || "-"
   const workModel = isLegacyEmployee ? "Hybrid" : employee?.type || "On-Site"
   const employmentStatus = isLegacyEmployee ? "Active" : employee?.status || "Active"
+  const officeLocation = isLegacyEmployee ? "-" : employee?.officeLocation || "-"
+  const username = isLegacyEmployee ? "-" : employee?.userName || "-"
 
   const leaveStats = [
     { label: "All Leaves", used: 14, total: 20, color: "#0f766e" },
@@ -156,14 +158,17 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-600">{employmentStatus}</span>
           </div>
           <div className="mt-4 space-y-2.5 rounded-xl bg-[#f8faf9] p-3 text-[13px]">
-            <p className="flex items-center justify-between text-slate-600"><span>Employment Type</span><span className="font-semibold text-slate-800">{type || "-"}</span></p>
+            <p className="flex items-center justify-between text-slate-600"><span>Employment Type</span><span className="font-semibold text-slate-800">{employmentType}</span></p>
             <p className="flex items-center justify-between text-slate-600"><span>Work Model</span><span className="font-semibold text-slate-800">{workModel}</span></p>
             <p className="flex items-center justify-between text-slate-600"><span>Status</span><span className="font-semibold text-slate-800">{employmentStatus}</span></p>
             <p className="flex items-center justify-between text-slate-600"><span>Join Date</span><span className="font-semibold text-slate-800">{joiningDate || "-"}</span></p>
+            <p className="flex items-center justify-between text-slate-600"><span>Office Location</span><span className="font-semibold text-slate-800">{officeLocation}</span></p>
           </div>
           <div className="mt-3 space-y-2 rounded-xl border border-slate-200 p-3">
             <p className="truncate text-[11px] text-slate-500">Office Email</p>
             <p className="truncate text-[13px] font-medium text-slate-700">{officeEmail}</p>
+            <p className="text-[11px] text-slate-500">Username</p>
+            <p className="text-[13px] font-medium text-slate-700">{username}</p>
             <p className="text-[11px] text-slate-500">Phone</p>
             <p className="text-[13px] font-medium text-slate-700">{mobile}</p>
           </div>
@@ -261,28 +266,30 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
               <h4 className="text-lg font-semibold text-slate-800">Personal Info</h4>
               <span className="text-slate-400">...</span>
             </div>
-            <div className="space-y-3">
+            <div className="flex h-[calc(100%-2.25rem)] flex-col">
               {visiblePersonalInfoRows.length === 0 ? (
                 <p className="text-sm text-slate-500">No personal info available.</p>
               ) : (
-                visiblePersonalInfoRows.map((item) => {
-                  const icon = item.label === "Date of Birth"
-                    ? <Calendar size={14} />
-                    : item.label === "Email Address"
-                      ? <Mail size={14} />
-                      : item.label === "Phone"
-                        ? <Phone size={14} />
-                        : <MapPin size={14} />
-                  return (
-                    <p key={item.label} className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="mt-0.5 text-slate-400">{icon}</span>
-                      <span>
-                        <span className="block text-xs text-slate-500">{item.label}</span>
-                        <span className="font-medium break-all">{item.value || "-"}</span>
-                      </span>
-                    </p>
-                  )
-                })
+                <div className="flex h-full flex-col justify-between">
+                  {visiblePersonalInfoRows.map((item) => {
+                    const icon = item.label === "Date of Birth"
+                      ? <Calendar size={14} />
+                      : item.label === "Email Address"
+                        ? <Mail size={14} />
+                        : item.label === "Phone"
+                          ? <Phone size={14} />
+                          : <MapPin size={14} />
+                    return (
+                      <div key={item.label} className="flex items-start gap-2 py-1 text-sm text-slate-700">
+                        <span className="mt-0.5 text-slate-400">{icon}</span>
+                        <span>
+                          <span className="block text-xs text-slate-500">{item.label}</span>
+                          <span className="font-medium break-all">{item.value || "-"}</span>
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
               )}
             </div>
           </aside>

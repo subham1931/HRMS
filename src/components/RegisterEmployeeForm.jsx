@@ -88,6 +88,7 @@ const INDIA_STATE_CITIES = {
 const inputClass =
   "w-full rounded-lg border border-transparent bg-[#f3f4f4] px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#53c4ae]"
 const ADD_DEPARTMENT_OPTION = "__add_new_department__"
+const ADD_OFFICE_OPTION = "__add_new_office__"
 const EMPLOYMENT_TYPE_LEGACY_VALUES = new Set(["full-time", "part-time", "internship", "freelance", "contract", "temporary", "permanent"])
 const getValidEmploymentType = (...values) => {
   const match = values.find((value) => EMPLOYMENT_TYPE_LEGACY_VALUES.has((value || "").toLowerCase()))
@@ -115,6 +116,7 @@ const createDefaultForm = () => ({
   zipCode: "",
   employeeId: `EMP-${Date.now().toString().slice(-4)}`,
   joinDate: todayIsoDate(),
+  officeLocation: "",
   jobTitle: "",
   department: "",
   employmentType: "",
@@ -153,6 +155,7 @@ const createInitialState = (initialData) => {
     zipCode: initialData.zipCode || "",
     employeeId: initialData.employeeId || createDefaultForm().employeeId,
     joinDate: initialData.joiningDate || "",
+    officeLocation: initialData.officeLocation || "",
     jobTitle: initialData.designation || "",
     department: initialData.department || "",
     employmentType: getValidEmploymentType(initialData.employmentType, initialData.status),
@@ -178,9 +181,11 @@ const createInitialState = (initialData) => {
 
 function RegisterEmployeeForm({
   departmentOptions = [],
+  officeOptions = [],
   onCancel,
   onSubmit,
   onAddDepartment,
+  onAddOffice,
   initialData = null,
   submitError = "",
   isSubmitting = false,
@@ -190,6 +195,9 @@ function RegisterEmployeeForm({
   const [showDepartmentModal, setShowDepartmentModal] = useState(false)
   const [newDepartmentName, setNewDepartmentName] = useState("")
   const [departmentModalError, setDepartmentModalError] = useState("")
+  const [showOfficeModal, setShowOfficeModal] = useState(false)
+  const [newOfficeName, setNewOfficeName] = useState("")
+  const [officeModalError, setOfficeModalError] = useState("")
   const [form, setForm] = useState(() => initialState.form)
   const [documents, setDocuments] = useState(() => initialState.documents)
   const [errors, setErrors] = useState({})
@@ -198,6 +206,7 @@ function RegisterEmployeeForm({
   const [profileImage, setProfileImage] = useState(() => initialState.profileImage)
 
   const resolvedDepartments = useMemo(() => departmentOptions, [departmentOptions])
+  const resolvedOffices = useMemo(() => officeOptions, [officeOptions])
   const stateOptions = useMemo(() => Object.keys(INDIA_STATE_CITIES), [])
   const cityOptions = useMemo(() => {
     if (!form.state) return []
@@ -259,6 +268,16 @@ function RegisterEmployeeForm({
     setForm((prev) => ({ ...prev, department: value }))
     setErrors((prev) => ({ ...prev, department: "" }))
   }
+  const handleOfficeChange = (event) => {
+    const { value } = event.target
+    if (value === ADD_OFFICE_OPTION) {
+      setOfficeModalError("")
+      setNewOfficeName("")
+      setShowOfficeModal(true)
+      return
+    }
+    setForm((prev) => ({ ...prev, officeLocation: value }))
+  }
   const handleStateChange = (event) => {
     const nextState = event.target.value
     const validCities = INDIA_STATE_CITIES[nextState] || []
@@ -294,6 +313,25 @@ function RegisterEmployeeForm({
     setNewDepartmentName("")
     setDepartmentModalError("")
   }
+  const handleCreateOffice = () => {
+    const normalized = newOfficeName.trim()
+    if (!normalized) {
+      setOfficeModalError("Office name is required")
+      return
+    }
+    const exists = resolvedOffices.some((item) => item.toLowerCase() === normalized.toLowerCase())
+    if (exists) {
+      setOfficeModalError("Office already exists")
+      return
+    }
+    if (typeof onAddOffice === "function") {
+      onAddOffice(normalized)
+    }
+    setForm((prev) => ({ ...prev, officeLocation: normalized }))
+    setShowOfficeModal(false)
+    setNewOfficeName("")
+    setOfficeModalError("")
+  }
 
   const handleSubmit = () => {
     const fullName = `${form.firstName} ${form.lastName}`.trim()
@@ -323,6 +361,7 @@ function RegisterEmployeeForm({
       officeEmail: generatedOfficeEmail || form.email,
       generatedPassword,
       joiningDate: form.joinDate,
+      officeLocation: form.officeLocation,
       documents: { ...documents },
     }
     onSubmit(payload)
@@ -717,6 +756,26 @@ function RegisterEmployeeForm({
                   </label>
                 </div>
 
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-1 text-sm text-slate-500">
+                    <span>Office Location</span>
+                    <div className="relative">
+                      <select
+                        value={form.officeLocation}
+                        onChange={handleOfficeChange}
+                        className={`${inputClass} appearance-none pr-8`}
+                      >
+                        <option value="">Select office location</option>
+                        {resolvedOffices.map((item) => (
+                          <option key={item} value={item}>{item}</option>
+                        ))}
+                        <option value={ADD_OFFICE_OPTION}>+ Add new office</option>
+                      </select>
+                      <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    </div>
+                  </label>
+                </div>
+
                 <div className="grid gap-2 md:grid-cols-3">
                   {["On-Site", "Hybrid", "Remote"].map((item) => (
                     <button
@@ -923,6 +982,48 @@ function RegisterEmployeeForm({
                 className="rounded-lg bg-[#53c4ae] px-4 py-2 text-sm font-medium text-white"
               >
                 Add Department
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showOfficeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5">
+            <h4 className="text-base font-semibold text-slate-800">Add New Office</h4>
+            <p className="mt-1 text-sm text-slate-500">Create an office location and save it for future employees.</p>
+            <label className="mt-4 block space-y-1">
+              <span className="text-sm text-slate-600">Office Name</span>
+              <input
+                value={newOfficeName}
+                onChange={(event) => {
+                  setNewOfficeName(event.target.value)
+                  setOfficeModalError("")
+                }}
+                placeholder="Enter office name"
+                className={`${inputClass} ${officeModalError ? "border-rose-400" : ""}`}
+                autoFocus
+              />
+              {officeModalError ? <span className="text-xs text-rose-500">{officeModalError}</span> : null}
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOfficeModal(false)
+                  setNewOfficeName("")
+                  setOfficeModalError("")
+                }}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateOffice}
+                className="rounded-lg bg-[#53c4ae] px-4 py-2 text-sm font-medium text-white"
+              >
+                Add Office
               </button>
             </div>
           </div>

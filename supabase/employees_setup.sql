@@ -21,9 +21,7 @@ create table if not exists public.employees (
   password text not null default '',
   dob date,
   joining_date date,
-  marital_status text not null default '',
   gender text not null default '',
-  nationality text not null default '',
   address text not null default '',
   city text not null default '',
   state text not null default '',
@@ -40,6 +38,8 @@ create table if not exists public.employees (
 );
 alter table public.employees add column if not exists password text not null default '';
 alter table public.employees drop column if exists generated_password;
+alter table public.employees drop column if exists marital_status;
+alter table public.employees drop column if exists nationality;
 
 create index if not exists employees_department_idx on public.employees(department);
 create index if not exists employees_status_idx on public.employees(employment_status);
