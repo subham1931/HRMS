@@ -9,9 +9,11 @@ import EmployeesPage from "./pages/EmployeesPage"
 import AddEmployeePage from "./pages/AddEmployeePage"
 import EditEmployeePage from "./pages/EditEmployeePage"
 import DepartmentsPage from "./pages/DepartmentsPage"
+import OfficesPage from "./pages/OfficesPage"
 import AttendancePage from "./pages/AttendancePage"
 import PayrollPage from "./pages/PayrollPage"
 import LeavesPage from "./pages/LeavesPage"
+import LeaveSetupPage from "./pages/LeaveSetupPage"
 import LeaveRequestDetailsPage from "./pages/LeaveRequestDetailsPage"
 import LeaveCalendarPage from "./pages/LeaveCalendarPage"
 import HolidaysPage from "./pages/HolidaysPage"
@@ -115,14 +117,17 @@ function App() {
     "/employees/addemploye": <AddEmployeePage />,
     "/employees/editemploye": <EditEmployeePage />,
     "/departments": <DepartmentsPage />,
+    "/offices": <OfficesPage />,
     "/attendance": <AttendancePage />,
     "/payroll": <PayrollPage />,
     "/jobs": <PlaceholderPage />,
     "/candidates": <PlaceholderPage />,
     "/leaves": <LeavesPage />,
+    "/setup/leaves": <LeaveSetupPage />,
     "/calendar": <LeaveCalendarPage />,
     "/leaves/calendar": <LeaveCalendarPage />,
     "/holidays": <HolidaysPage />,
+    "/setup": <SettingsPage />,
     "/settings": <SettingsPage />,
     "/notifications": <NotificationsPanel />,
     "/profile": <ProfilePage adminProfile={adminProfile} />,

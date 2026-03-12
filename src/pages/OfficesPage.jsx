@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Pencil, Plus, Search } from "lucide-react"
-import { createDepartment, listDepartmentDetails, updateDepartmentDetails } from "../services/departments"
+import { createOffice, listOfficeDetails, updateOfficeDetails } from "../services/offices"
 
 function formatDateTime(value) {
   if (!value) return "-"
@@ -15,53 +15,53 @@ function formatDateTime(value) {
   }).format(date)
 }
 
-function DepartmentsPage() {
-  const [departments, setDepartments] = useState([])
+function OfficesPage() {
+  const [offices, setOffices] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [showModal, setShowModal] = useState(false)
-  const [editingDepartment, setEditingDepartment] = useState(null)
-  const [departmentName, setDepartmentName] = useState("")
-  const [departmentActive, setDepartmentActive] = useState(true)
+  const [editingOffice, setEditingOffice] = useState(null)
+  const [officeName, setOfficeName] = useState("")
+  const [officeActive, setOfficeActive] = useState(true)
   const [formError, setFormError] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
-  const loadDepartments = useCallback(async () => {
+  const loadOffices = useCallback(async () => {
     setIsLoading(true)
     setLoadError("")
     try {
-      const rows = await listDepartmentDetails()
-      setDepartments(rows)
+      const rows = await listOfficeDetails()
+      setOffices(rows)
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Failed to load departments.")
+      setLoadError(error instanceof Error ? error.message : "Failed to load offices.")
     } finally {
       setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    loadDepartments()
-  }, [loadDepartments])
+    loadOffices()
+  }, [loadOffices])
 
   const filteredRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
-    if (!query) return departments
-    return departments.filter((item) => item.name.toLowerCase().includes(query))
-  }, [departments, searchQuery])
+    if (!query) return offices
+    return offices.filter((item) => item.name.toLowerCase().includes(query))
+  }, [offices, searchQuery])
 
   const openCreateModal = () => {
-    setEditingDepartment(null)
-    setDepartmentName("")
-    setDepartmentActive(true)
+    setEditingOffice(null)
+    setOfficeName("")
+    setOfficeActive(true)
     setFormError("")
     setShowModal(true)
   }
 
   const openUpdateModal = (row) => {
-    setEditingDepartment(row)
-    setDepartmentName(row.name || "")
-    setDepartmentActive(Boolean(row.isActive))
+    setEditingOffice(row)
+    setOfficeName(row.name || "")
+    setOfficeActive(Boolean(row.isActive))
     setFormError("")
     setShowModal(true)
   }
@@ -69,34 +69,34 @@ function DepartmentsPage() {
   const closeModal = () => {
     if (isSaving) return
     setShowModal(false)
-    setEditingDepartment(null)
-    setDepartmentName("")
-    setDepartmentActive(true)
+    setEditingOffice(null)
+    setOfficeName("")
+    setOfficeActive(true)
     setFormError("")
   }
 
   const handleSave = async () => {
-    const nextName = String(departmentName || "").trim()
+    const nextName = String(officeName || "").trim()
     if (!nextName) {
-      setFormError("Department name is required.")
+      setFormError("Office name is required.")
       return
     }
 
     setIsSaving(true)
     setFormError("")
     try {
-      if (editingDepartment?.id) {
-        await updateDepartmentDetails(editingDepartment.id, {
+      if (editingOffice?.id) {
+        await updateOfficeDetails(editingOffice.id, {
           name: nextName,
-          isActive: departmentActive,
+          isActive: officeActive,
         })
       } else {
-        await createDepartment(nextName)
+        await createOffice(nextName)
       }
       setShowModal(false)
-      await loadDepartments()
+      await loadOffices()
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Failed to save department.")
+      setFormError(error instanceof Error ? error.message : "Failed to save office.")
     } finally {
       setIsSaving(false)
     }
@@ -106,8 +106,8 @@ function DepartmentsPage() {
     <article className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Department Setup</h2>
-          <p className="text-sm text-slate-500">Create and update department details.</p>
+          <h2 className="text-lg font-semibold text-slate-900">Office Setup</h2>
+          <p className="text-sm text-slate-500">Create and update office locations.</p>
         </div>
         <button
           type="button"
@@ -115,7 +115,7 @@ function DepartmentsPage() {
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
         >
           <Plus size={16} />
-          Add Department
+          Add Office
         </button>
       </div>
 
@@ -126,7 +126,7 @@ function DepartmentsPage() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300"
-            placeholder="Search department"
+            placeholder="Search office"
           />
         </div>
       </div>
@@ -141,7 +141,7 @@ function DepartmentsPage() {
         <table className="w-full min-w-[760px] text-left">
           <thead className="border-b border-slate-100 text-sm text-slate-400">
             <tr>
-              <th className="pb-3 font-medium">Department</th>
+              <th className="pb-3 font-medium">Office</th>
               <th className="pb-3 font-medium">Status</th>
               <th className="pb-3 font-medium">Created</th>
               <th className="pb-3 font-medium">Last Updated</th>
@@ -178,14 +178,14 @@ function DepartmentsPage() {
             {!isLoading && filteredRows.length === 0 && (
               <tr>
                 <td colSpan={5} className="py-10 text-center text-sm text-slate-500">
-                  No departments found.
+                  No offices found.
                 </td>
               </tr>
             )}
             {isLoading && (
               <tr>
                 <td colSpan={5} className="py-10 text-center text-sm text-slate-500">
-                  Loading departments...
+                  Loading offices...
                 </td>
               </tr>
             )}
@@ -197,39 +197,39 @@ function DepartmentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
           <div className="w-full max-w-[430px] rounded-2xl bg-white p-5 shadow-xl">
             <h3 className="text-[20px] font-semibold tracking-tight text-slate-900">
-              {editingDepartment ? "Update Department" : "Add Department"}
+              {editingOffice ? "Update Office" : "Add Office"}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              {editingDepartment
-                ? "Update department details and status."
-                : "Create a new department for your organization."}
+              {editingOffice
+                ? "Update office details and status."
+                : "Create a new office location for your organization."}
             </p>
 
             <div className="mt-5 space-y-4">
               <label className="block space-y-1.5">
-                <span className="text-sm font-medium text-slate-600">Department Name</span>
+                <span className="text-sm font-medium text-slate-600">Office Name</span>
                 <input
-                  value={departmentName}
+                  value={officeName}
                   onChange={(event) => {
-                    setDepartmentName(event.target.value)
+                    setOfficeName(event.target.value)
                     if (formError) setFormError("")
                   }}
                   className={`w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none ${
                     formError ? "border-rose-400 focus:border-rose-500" : "border-slate-200 focus:border-violet-500"
                   }`}
-                  placeholder="Enter department name"
+                  placeholder="Enter office name"
                 />
               </label>
 
-              {editingDepartment && (
+              {editingOffice && (
                 <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                   <input
                     type="checkbox"
-                    checked={departmentActive}
-                    onChange={(event) => setDepartmentActive(event.target.checked)}
+                    checked={officeActive}
+                    onChange={(event) => setOfficeActive(event.target.checked)}
                     className="h-4 w-4 rounded border-slate-300 accent-violet-600"
                   />
-                  Active department
+                  Active office
                 </label>
               )}
             </div>
@@ -251,7 +251,7 @@ function DepartmentsPage() {
                 className="rounded-xl bg-[#53c4ae] px-5 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSaving}
               >
-                {isSaving ? "Saving..." : editingDepartment ? "Update Department" : "Create Department"}
+                {isSaving ? "Saving..." : editingOffice ? "Update Office" : "Create Office"}
               </button>
             </div>
           </div>
@@ -261,4 +261,4 @@ function DepartmentsPage() {
   )
 }
 
-export default DepartmentsPage
+export default OfficesPage

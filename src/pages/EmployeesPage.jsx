@@ -3,6 +3,7 @@ import { Activity, Check, Minus, Plus, Search, SlidersHorizontal, UserMinus, Use
 import { useLocation, useNavigate } from "react-router-dom"
 import EmployeeDetailsView from "../components/EmployeeDetailsView"
 import EmployeeFilterModal from "../components/EmployeeFilterModal"
+import { listDepartmentDetails } from "../services/departments"
 import { listEmployeeRecords } from "../services/employees"
 const defaultEmployees = []
 const normalizeEmployees = (rows) => rows
@@ -54,6 +55,7 @@ function EmployeesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState({ departments: [], employmentType: "", workModel: "" })
   const [employees, setEmployees] = useState(() => normalizeEmployees(defaultEmployees))
+  const [departmentMaster, setDepartmentMaster] = useState([])
   const [loadError, setLoadError] = useState("")
 
   useEffect(() => {
@@ -68,6 +70,22 @@ function EmployeesPage() {
         if (!isMounted) return
         setEmployees(normalizeEmployees(defaultEmployees))
         setLoadError(error?.message || "Unable to load employees from database.")
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    listDepartmentDetails()
+      .then((rows) => {
+        if (!isMounted) return
+        setDepartmentMaster(rows.map((item) => (item.name || "").trim()).filter(Boolean))
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setDepartmentMaster([])
       })
     return () => {
       isMounted = false
@@ -105,12 +123,12 @@ function EmployeesPage() {
     [employees, filteredRows, selectedEmployeeId],
   )
   const filterDepartmentOptions = useMemo(() => {
-    const createdDepartments = []
+    const createdDepartments = (departmentMaster || []).map((item) => (item || "").trim()).filter(Boolean)
     const fromEmployees = employees
       .map((item) => (item.department || "").trim())
       .filter(Boolean)
     return Array.from(new Set([...createdDepartments, ...fromEmployees]))
-  }, [employees])
+  }, [departmentMaster, employees])
   const visibleEmployeeIds = useMemo(() => filteredRows.map((row) => row.employeeId), [filteredRows])
   const allVisibleSelected = visibleEmployeeIds.length > 0 && visibleEmployeeIds.every((id) => selectedRowIds.includes(id))
   const hasVisibleSelection = visibleEmployeeIds.some((id) => selectedRowIds.includes(id))
@@ -190,17 +208,21 @@ function EmployeesPage() {
   }, [employees])
 
   const departmentBreakdown = useMemo(() => {
-    const counts = employees.reduce((acc, employee) => {
-      const name = (employee.department || "Unassigned").trim() || "Unassigned"
-      acc.set(name, (acc.get(name) || 0) + 1)
+    const counts = departmentMaster.reduce((acc, name) => {
+      const key = (name || "").trim()
+      if (key) acc.set(key, 0)
       return acc
     }, new Map())
+
+    employees.forEach((employee) => {
+      const name = (employee.department || "Unassigned").trim() || "Unassigned"
+      counts.set(name, (counts.get(name) || 0) + 1)
+    })
 
     const total = employees.length || 1
     const colors = ["#0f766e", "#22c3aa", "#dbe8c8", "#6b7c7a", "#a8b6b4", "#1f7667"]
     const items = Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
       .map(([name, count], index) => ({
         name,
         count,
@@ -219,7 +241,7 @@ function EmployeesPage() {
       : "#e2e8f0 0 100%"
 
     return { items, donutStops }
-  }, [employees])
+  }, [departmentMaster, employees])
 
   const editEmployeeProfile = (employeeId) => {
     const current = employees.find((item) => item.employeeId === employeeId)

@@ -87,7 +87,6 @@ const INDIA_STATE_CITIES = {
 
 const inputClass =
   "w-full rounded-lg border border-transparent bg-[#f3f4f4] px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#53c4ae]"
-const ADD_DEPARTMENT_OPTION = "__add_new_department__"
 const ADD_OFFICE_OPTION = "__add_new_office__"
 const EMPLOYMENT_TYPE_LEGACY_VALUES = new Set(["full-time", "part-time", "internship", "freelance", "contract", "temporary", "permanent"])
 const getValidEmploymentType = (...values) => {
@@ -184,7 +183,6 @@ function RegisterEmployeeForm({
   officeOptions = [],
   onCancel,
   onSubmit,
-  onAddDepartment,
   onAddOffice,
   initialData = null,
   submitError = "",
@@ -192,9 +190,6 @@ function RegisterEmployeeForm({
 }) {
   const initialState = createInitialState(initialData)
   const [stepIndex, setStepIndex] = useState(0)
-  const [showDepartmentModal, setShowDepartmentModal] = useState(false)
-  const [newDepartmentName, setNewDepartmentName] = useState("")
-  const [departmentModalError, setDepartmentModalError] = useState("")
   const [showOfficeModal, setShowOfficeModal] = useState(false)
   const [newOfficeName, setNewOfficeName] = useState("")
   const [officeModalError, setOfficeModalError] = useState("")
@@ -259,12 +254,6 @@ function RegisterEmployeeForm({
   }
   const handleDepartmentChange = (event) => {
     const { value } = event.target
-    if (value === ADD_DEPARTMENT_OPTION) {
-      setDepartmentModalError("")
-      setNewDepartmentName("")
-      setShowDepartmentModal(true)
-      return
-    }
     setForm((prev) => ({ ...prev, department: value }))
     setErrors((prev) => ({ ...prev, department: "" }))
   }
@@ -292,26 +281,6 @@ function RegisterEmployeeForm({
     const { value } = event.target
     setForm((prev) => ({ ...prev, city: value }))
     setErrors((prev) => ({ ...prev, city: "" }))
-  }
-  const handleCreateDepartment = () => {
-    const normalized = newDepartmentName.trim()
-    if (!normalized) {
-      setDepartmentModalError("Department name is required")
-      return
-    }
-    const exists = resolvedDepartments.some((item) => item.toLowerCase() === normalized.toLowerCase())
-    if (exists) {
-      setDepartmentModalError("Department already exists")
-      return
-    }
-    if (typeof onAddDepartment === "function") {
-      onAddDepartment(normalized)
-    }
-    setForm((prev) => ({ ...prev, department: normalized }))
-    setErrors((prev) => ({ ...prev, department: "" }))
-    setShowDepartmentModal(false)
-    setNewDepartmentName("")
-    setDepartmentModalError("")
   }
   const handleCreateOffice = () => {
     const normalized = newOfficeName.trim()
@@ -734,7 +703,6 @@ function RegisterEmployeeForm({
                         {resolvedDepartments.map((item) => (
                           <option key={item} value={item}>{item}</option>
                         ))}
-                        <option value={ADD_DEPARTMENT_OPTION}>+ Add new department</option>
                       </select>
                       <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     </div>
@@ -945,48 +913,6 @@ function RegisterEmployeeForm({
           </section>
         </div>
       </div>
-      {showDepartmentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5">
-            <h4 className="text-base font-semibold text-slate-800">Add New Department</h4>
-            <p className="mt-1 text-sm text-slate-500">Create a department and save it for future employees.</p>
-            <label className="mt-4 block space-y-1">
-              <span className="text-sm text-slate-600">Department Name</span>
-              <input
-                value={newDepartmentName}
-                onChange={(event) => {
-                  setNewDepartmentName(event.target.value)
-                  setDepartmentModalError("")
-                }}
-                placeholder="Enter department name"
-                className={`${inputClass} ${departmentModalError ? "border-rose-400" : ""}`}
-                autoFocus
-              />
-              {departmentModalError ? <span className="text-xs text-rose-500">{departmentModalError}</span> : null}
-            </label>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDepartmentModal(false)
-                  setNewDepartmentName("")
-                  setDepartmentModalError("")
-                }}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateDepartment}
-                className="rounded-lg bg-[#53c4ae] px-4 py-2 text-sm font-medium text-white"
-              >
-                Add Department
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {showOfficeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5">
