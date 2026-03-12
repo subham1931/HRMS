@@ -72,6 +72,8 @@ function AttendancePage() {
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [departmentFilter, setDepartmentFilter] = useState("All Departments")
+  const [statusFilter, setStatusFilter] = useState("All Status")
+  const [showFilterMenu, setShowFilterMenu] = useState(false)
   const todayForInput = new Date().toISOString().split("T")[0]
   const [selectedDate, setSelectedDate] = useState(todayForInput)
   const [showDateModal, setShowDateModal] = useState(false)
@@ -152,11 +154,16 @@ function AttendancePage() {
       const q = searchQuery.toLowerCase()
       const matchesSearch = searchQuery.trim() === "" || row.slice(0, 7).some((value) => value.toLowerCase().includes(q))
       const matchesDepartment = departmentFilter === "All Departments" || row[1] === departmentFilter
-      return matchesSearch && matchesDepartment
+      const matchesStatus = statusFilter === "All Status" || row[6] === statusFilter
+      return matchesSearch && matchesDepartment && matchesStatus
     })
-  }, [attendanceRows, searchQuery, departmentFilter])
+  }, [attendanceRows, searchQuery, departmentFilter, statusFilter])
   const departmentOptions = useMemo(
     () => Array.from(new Set(attendanceRows.map((row) => row[1]).filter(Boolean))),
+    [attendanceRows],
+  )
+  const statusOptions = useMemo(
+    () => Array.from(new Set(attendanceRows.map((row) => row[6]).filter(Boolean))),
     [attendanceRows],
   )
   const attendanceSummary = useMemo(() => {
@@ -507,17 +514,76 @@ function AttendancePage() {
             />
           </div>
 
-          <button
-            type="button"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-[#e8f1df] px-4 py-2.5 text-sm font-medium text-slate-700 sm:w-auto"
-          >
-            Filter
-            <SlidersHorizontal size={14} className="text-slate-400" />
-          </button>
+          <div className="relative w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setShowFilterMenu((prev) => !prev)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-[#e8f1df] px-4 py-2.5 text-sm font-medium text-slate-700 sm:w-auto"
+            >
+              Filter
+              <SlidersHorizontal size={14} className="text-slate-400" />
+            </button>
+            {showFilterMenu ? (
+              <div className="absolute left-0 top-[46px] z-20 w-full min-w-[240px] rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:w-[280px]">
+                <label className="block text-xs text-slate-500">
+                  Department
+                  <select
+                    value={departmentFilter}
+                    onChange={(event) => {
+                      setDepartmentFilter(event.target.value)
+                      setCurrentPage(1)
+                    }}
+                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none"
+                  >
+                    <option>All Departments</option>
+                    {departmentOptions.map((department) => (
+                      <option key={department}>{department}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-xs text-slate-500">
+                  Status
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => {
+                      setStatusFilter(event.target.value)
+                      setCurrentPage(1)
+                    }}
+                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none"
+                  >
+                    <option>All Status</option>
+                    {statusOptions.map((status) => (
+                      <option key={status}>{status}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDepartmentFilter("All Departments")
+                      setStatusFilter("All Status")
+                      setCurrentPage(1)
+                    }}
+                    className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowFilterMenu(false)}
+                    className="flex-1 rounded-lg bg-[#53c4ae] px-3 py-1.5 text-xs font-medium text-white"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={addAttendanceRecord}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
+            className="inline-flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
           >
             <Plus size={14} />
             Add Record
@@ -525,20 +591,6 @@ function AttendancePage() {
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
-          <div className="relative">
-            <select
-              value={departmentFilter}
-              onChange={(event) => setDepartmentFilter(event.target.value)}
-              className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-9 text-sm text-slate-700 outline-none sm:w-auto"
-            >
-              <option>All Departments</option>
-              {departmentOptions.map((department) => (
-                <option key={department}>{department}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          </div>
-
           <button
             type="button"
             onClick={() => {

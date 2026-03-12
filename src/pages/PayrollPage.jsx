@@ -1,33 +1,50 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight, Search, Upload } from "lucide-react"
+import { listPayrollRowsForMonth } from "../services/payroll"
 
-const payrollRows = [
-  ["Aarav Sharma", "$45000", "$3500", "-", "Completed", "https://i.pravatar.cc/80?img=32"],
-  ["Rohan Verma", "$78000", "$6400", "$100", "Completed", "https://i.pravatar.cc/80?img=5"],
-  ["Arjun Patel", "$60000", "$5000", "$250", "Completed", "https://i.pravatar.cc/80?img=66"],
-  ["Meera Joshi", "$34000", "$2800", "-", "Pending", "https://i.pravatar.cc/80?img=41"],
-  ["Rahul Desai", "$40000", "$3400", "-", "Pending", "https://i.pravatar.cc/80?img=51"],
-  ["Karan Malhotra", "$45000", "$3500", "-", "Completed", "https://i.pravatar.cc/80?img=54"],
-  ["Aditya Khanna", "$55000", "$4000", "$50", "Pending", "https://i.pravatar.cc/80?img=58"],
-  ["Ishaan Bhat", "$60000", "$5000", "$150", "Completed", "https://i.pravatar.cc/80?img=14"],
-  ["Priya Nair", "$25000", "$2200", "-", "Pending", "https://i.pravatar.cc/80?img=48"],
-  ["Aniket Tiwari", "$30000", "$2700", "-", "Completed", "https://i.pravatar.cc/80?img=61"],
-  ["Siddharth Mehra", "$78000", "$6400", "-", "Completed", "https://i.pravatar.cc/80?img=53"],
-  ["Nisha Rao", "$45000", "$3500", "$100", "Pending", "https://i.pravatar.cc/80?img=25"],
-]
+const getInitials = (name) => (name || "E")
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0]?.toUpperCase() || "")
+  .join("")
 
 function PayrollPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
+  const [payrollRows, setPayrollRows] = useState([])
+  const [loadError, setLoadError] = useState("")
+  const [brokenAvatarByCode, setBrokenAvatarByCode] = useState({})
+
+  useEffect(() => {
+    let mounted = true
+    async function loadPayrollRows() {
+      try {
+        setLoadError("")
+        const rows = await listPayrollRowsForMonth()
+        if (!mounted) return
+        setPayrollRows(rows)
+      } catch (error) {
+        if (!mounted) return
+        setPayrollRows([])
+        setLoadError(error?.message || "Unable to load payroll records.")
+      }
+    }
+    loadPayrollRows()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const filteredRows = useMemo(() => {
     return payrollRows.filter((row) => {
       if (searchQuery.trim() === "") return true
       const q = searchQuery.toLowerCase()
-      return row.slice(0, 5).some((value) => value.toLowerCase().includes(q))
+      return [row.employeeName, row.ctc, row.salaryPerMonth, row.deduction, row.status]
+        .some((value) => String(value || "").toLowerCase().includes(q))
     })
-  }, [searchQuery])
+  }, [payrollRows, searchQuery])
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safeCurrentPage = Math.min(currentPage, totalPages)
@@ -39,6 +56,11 @@ function PayrollPage() {
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4">
+      {loadError ? (
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+          {loadError}
+        </div>
+      ) : null}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div className="relative w-full max-w-[330px]">
           <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -72,23 +94,36 @@ function PayrollPage() {
           </thead>
           <tbody className="text-sm">
             {pagedRows.map((row) => (
-              <tr key={`${row[0]}-${row[2]}`} className="border-b border-slate-100 last:border-0">
+              <tr key={row.employeeCode || row.employeeName} className="border-b border-slate-100 last:border-0">
                 <td className="py-3 text-slate-800">
                   <span className="flex items-center gap-3">
-                    <img src={row[5]} alt={row[0]} className="h-8 w-8 rounded-full object-cover" />
-                    <span className="font-medium">{row[0]}</span>
+                    {row.profileImage && !brokenAvatarByCode[row.employeeCode] ? (
+                      <img
+                        src={row.profileImage}
+                        alt={row.employeeName}
+                        className="h-8 w-8 rounded-full object-cover"
+                        onError={() => {
+                          setBrokenAvatarByCode((prev) => ({ ...prev, [row.employeeCode]: true }))
+                        }}
+                      />
+                    ) : (
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700">
+                        {getInitials(row.employeeName)}
+                      </span>
+                    )}
+                    <span className="font-medium">{row.employeeName}</span>
                   </span>
                 </td>
-                <td className="py-3 text-slate-700">{row[1]}</td>
-                <td className="py-3 text-slate-700">{row[2]}</td>
-                <td className="py-3 text-slate-700">{row[3]}</td>
+                <td className="py-3 text-slate-700">{row.ctc}</td>
+                <td className="py-3 text-slate-700">{row.salaryPerMonth}</td>
+                <td className="py-3 text-slate-700">{row.deduction}</td>
                 <td className="py-3">
                   <span
                     className={`rounded px-2 py-1 text-xs font-medium ${
-                      row[4] === "Completed" ? "bg-emerald-50 text-emerald-500" : "bg-amber-50 text-amber-500"
+                      row.status === "Completed" ? "bg-emerald-50 text-emerald-500" : "bg-amber-50 text-amber-500"
                     }`}
                   >
-                    {row[4]}
+                    {row.status}
                   </span>
                 </td>
               </tr>

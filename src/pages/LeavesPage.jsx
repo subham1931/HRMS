@@ -280,6 +280,35 @@ function LeavesPage() {
     ...Array.from({ length: firstWeekday }, (_, idx) => ({ day: `p-${idx}`, value: "", muted: true })),
     ...Array.from({ length: daysInMonth }, (_, idx) => ({ day: idx + 1, value: idx + 1, muted: false })),
   ]
+  const leaveStatusByDayInCalendarMonth = useMemo(() => {
+    const dayStatusMap = new Map()
+    const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+    const monthEnd = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0)
+
+    enrichedRequests
+      .filter((item) => item.status === "Approved" || item.status === "Pending")
+      .forEach((item) => {
+        const status = item.status === "Approved" ? "approved" : "pending"
+        const start = new Date(`${item.startDate}T00:00:00`)
+        const end = new Date(`${item.endDate}T00:00:00`)
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return
+        const overlapStart = start > monthStart ? start : monthStart
+        const overlapEnd = end < monthEnd ? end : monthEnd
+        if (overlapStart > overlapEnd) return
+        const cursor = new Date(overlapStart)
+        while (cursor <= overlapEnd) {
+          const day = cursor.getDate()
+          const existing = dayStatusMap.get(day)
+          // Approved should take visual priority over pending.
+          if (existing !== "approved") {
+            dayStatusMap.set(day, status)
+          }
+          cursor.setDate(cursor.getDate() + 1)
+        }
+      })
+
+    return dayStatusMap
+  }, [calendarMonth, enrichedRequests])
 
   const employeeLeaves = useMemo(
     () =>
@@ -463,11 +492,13 @@ function LeavesPage() {
                 <span
                   key={cell.day}
                   className={`mx-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[12px] ${
-                    cell.value === new Date().getDate() && !cell.muted
-                      ? "bg-rose-500 text-white"
-                      : cell.muted
+                    cell.muted
                         ? "text-slate-300"
-                        : "text-slate-700"
+                        : leaveStatusByDayInCalendarMonth.get(Number(cell.value)) === "approved"
+                          ? "bg-[#2eb79d] text-white"
+                          : leaveStatusByDayInCalendarMonth.get(Number(cell.value)) === "pending"
+                            ? "bg-[#d4eee7] text-[#1f6f61]"
+                            : "text-slate-700"
                   }`}
                 >
                   {cell.value}
@@ -475,8 +506,8 @@ function LeavesPage() {
               ))}
             </div>
             <div className="mt-3 flex items-center gap-4 text-xs text-slate-600">
-              <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#2eb79d]" /> Leave</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> Public Holiday</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#2eb79d]" /> Approved Leave</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#d4eee7]" /> Pending Leave</span>
             </div>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">

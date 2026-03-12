@@ -1,86 +1,89 @@
-import { useRef, useMemo, useState } from "react"
-import { Calendar, Plus, Search } from "lucide-react"
-
-const CURRENT_YEAR = new Date().getFullYear()
-
-const yearlyHolidaySeed = [
-  ["01-01", "New Year Day"],
-  ["01-26", "Republic Day"],
-  ["01-30", "Martyrs' Day"],
-  ["02-14", "Valentine's Day"],
-  ["02-19", "Chhatrapati Shivaji Maharaj Jayanti"],
-  ["02-26", "Maha Shivaratri"],
-  ["03-08", "International Women's Day"],
-  ["03-14", "Holi"],
-  ["03-23", "Shaheed Diwas"],
-  ["03-31", "Eid al-Fitr"],
-  ["04-06", "Ram Navami"],
-  ["04-10", "Mahavir Jayanti"],
-  ["04-14", "Ambedkar Jayanti"],
-  ["04-18", "Good Friday"],
-  ["05-01", "Labor Day"],
-  ["05-12", "Buddha Purnima"],
-  ["06-21", "International Yoga Day"],
-  ["06-07", "Eid al-Adha"],
-  ["07-06", "Muharram"],
-  ["08-09", "Raksha Bandhan"],
-  ["08-15", "Independence Day"],
-  ["08-27", "Ganesh Chaturthi"],
-  ["09-05", "Milad-un-Nabi"],
-  ["09-16", "Onam"],
-  ["10-01", "Maha Navami"],
-  ["10-02", "Gandhi Jayanti"],
-  ["10-03", "Dussehra"],
-  ["10-20", "Diwali"],
-  ["10-21", "Govardhan Puja"],
-  ["10-22", "Bhai Dooj"],
-  ["11-01", "Kannada Rajyotsava"],
-  ["11-05", "Guru Nanak Jayanti"],
-  ["11-14", "Children's Day"],
-  ["11-24", "Guru Tegh Bahadur Martyrdom Day"],
-  ["12-18", "International Migrants Day"],
-  ["12-25", "Christmas Day"],
-  ["12-31", "New Year's Eve"],
-]
+import { useEffect, useRef, useMemo, useState } from "react"
+import { Calendar, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react"
+import { createHoliday, deleteHoliday, listHolidays, updateHoliday } from "../services/holidays"
 
 function HolidaysPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingHolidayId, setEditingHolidayId] = useState("")
   const [holidayDate, setHolidayDate] = useState("")
   const [holidayName, setHolidayName] = useState("")
-  const [customHolidays, setCustomHolidays] = useState([])
+  const [holidayRows, setHolidayRows] = useState([])
+  const [isSavingHoliday, setIsSavingHoliday] = useState(false)
+  const [deletingHolidayId, setDeletingHolidayId] = useState("")
+  const [openActionHolidayId, setOpenActionHolidayId] = useState("")
+  const [loadError, setLoadError] = useState("")
   const [formError, setFormError] = useState("")
   const holidayDateInputRef = useRef(null)
 
-  const holidayRows = useMemo(() => {
-    const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
-    const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "long" })
+  useEffect(() => {
+    let mounted = true
+    async function loadHolidayRows() {
+      try {
+        setLoadError("")
+        const rows = await listHolidays()
+        if (!mounted) return
+        const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
+        const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "long" })
+        setHolidayRows(
+          rows.map((item) => {
+            const dateValue = new Date(`${item.holidayDate}T00:00:00`)
+            return {
+              id: item.id,
+              dateValue,
+              dateISO: item.holidayDate,
+              date: dateFormatter.format(dateValue),
+              day: dayFormatter.format(dateValue),
+              name: item.holidayName,
+            }
+          }),
+        )
+      } catch (error) {
+        if (!mounted) return
+        setHolidayRows([])
+        setLoadError(error?.message || "Unable to load holidays.")
+      }
+    }
+    loadHolidayRows()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
-    const baseRows = yearlyHolidaySeed
-      .map(([monthDay, name]) => {
-        const dateValue = new Date(`${CURRENT_YEAR}-${monthDay}T00:00:00`)
-        return {
-          dateValue,
-          date: dateFormatter.format(dateValue),
-          day: dayFormatter.format(dateValue),
-          name,
-        }
-      })
-
-    return [...baseRows, ...customHolidays]
+  const sortedHolidayRows = useMemo(() => {
+    return [...holidayRows]
       .sort((a, b) => a.dateValue - b.dateValue)
-  }, [customHolidays])
+  }, [holidayRows])
 
   const filteredRows = useMemo(() => {
-    return holidayRows.filter((row) => {
+    return sortedHolidayRows.filter((row) => {
       if (searchQuery.trim() === "") return true
       const q = searchQuery.toLowerCase()
       return [row.date, row.day, row.name].some((value) => value.toLowerCase().includes(q))
     })
-  }, [holidayRows, searchQuery])
+  }, [sortedHolidayRows, searchQuery])
+
+  const buildRowFromHoliday = (holiday) => {
+    const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
+    const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "long" })
+    const dateValue = new Date(`${holiday.holidayDate}T00:00:00`)
+    return {
+      id: holiday.id,
+      dateISO: holiday.holidayDate,
+      dateValue,
+      date: dateFormatter.format(dateValue),
+      day: dayFormatter.format(dateValue),
+      name: holiday.holidayName,
+    }
+  }
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4">
+      {loadError ? (
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+          {loadError}
+        </div>
+      ) : null}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div className="relative w-full max-w-[330px]">
           <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -96,6 +99,9 @@ function HolidaysPage() {
           type="button"
           onClick={() => {
             setShowAddModal(true)
+            setEditingHolidayId("")
+            setHolidayDate("")
+            setHolidayName("")
             setFormError("")
           }}
           className="inline-flex items-center gap-2 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white"
@@ -112,11 +118,12 @@ function HolidaysPage() {
               <th className="pb-4 font-medium">Date</th>
               <th className="pb-4 font-medium">Day</th>
               <th className="pb-4 font-medium">Holiday Name</th>
+              <th className="pb-4 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {filteredRows.map((row) => (
-              <tr key={`${row.date}-${row.name}`} className="border-b border-slate-100 last:border-0">
+              <tr key={row.id || `${row.date}-${row.name}`} className="border-b border-slate-100 last:border-0">
                 <td className="py-2.5 text-slate-700">
                   <span className="flex items-center gap-3">
                     <span
@@ -129,11 +136,66 @@ function HolidaysPage() {
                 </td>
                 <td className="py-2.5 text-slate-700">{row.day}</td>
                 <td className="py-2.5 text-slate-700">{row.name}</td>
+                <td className="py-2.5 text-right">
+                  <span className="relative inline-flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenActionHolidayId((prev) => (prev === row.id ? "" : row.id || ""))
+                      }}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      aria-label="Open holiday actions"
+                    >
+                      <MoreHorizontal size={14} />
+                    </button>
+                    {openActionHolidayId === row.id ? (
+                      <span className="absolute right-0 top-9 z-20 w-[130px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingHolidayId(row.id || "")
+                            setHolidayDate(row.dateISO || "")
+                            setHolidayName(row.name || "")
+                            setFormError("")
+                            setShowAddModal(true)
+                            setOpenActionHolidayId("")
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                          <Pencil size={12} />
+                          Update
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deletingHolidayId === row.id}
+                          onClick={async () => {
+                            const shouldDelete = window.confirm(`Delete "${row.name}" holiday?`)
+                            if (!shouldDelete) return
+                            try {
+                              setDeletingHolidayId(row.id || "")
+                              await deleteHoliday(row.id)
+                              setHolidayRows((prev) => prev.filter((item) => item.id !== row.id))
+                              setOpenActionHolidayId("")
+                            } catch (error) {
+                              setLoadError(error?.message || "Unable to delete holiday.")
+                            } finally {
+                              setDeletingHolidayId("")
+                            }
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Trash2 size={12} />
+                          {deletingHolidayId === row.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </span>
+                    ) : null}
+                  </span>
+                </td>
               </tr>
             ))}
             {filteredRows.length === 0 && (
               <tr>
-                <td colSpan={3} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={4} className="py-10 text-center text-sm text-slate-500">
                   No holidays found.
                 </td>
               </tr>
@@ -156,7 +218,9 @@ function HolidaysPage() {
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
           <div className="w-full max-w-[420px] rounded-2xl bg-white p-5 shadow-xl">
-            <h3 className="text-[18px] font-semibold text-slate-900">Add New Holiday</h3>
+            <h3 className="text-[18px] font-semibold text-slate-900">
+              {editingHolidayId ? "Edit Holiday" : "Add New Holiday"}
+            </h3>
             <div className="my-4 border-t border-slate-200" />
 
             <div className="space-y-4">
@@ -202,6 +266,7 @@ function HolidaysPage() {
                 type="button"
                 onClick={() => {
                   setShowAddModal(false)
+                  setEditingHolidayId("")
                   setHolidayDate("")
                   setHolidayName("")
                   setFormError("")
@@ -212,37 +277,39 @@ function HolidaysPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   if (!holidayDate || !holidayName.trim()) {
                     setFormError("Please fill date and holiday name.")
                     return
                   }
 
-                  const dateValue = new Date(`${holidayDate}T00:00:00`)
-                  const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" })
-                  const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "long" })
-
-                  setCustomHolidays((prev) => {
-                    const next = [
-                      ...prev,
-                      {
-                        dateISO: holidayDate,
-                        dateValue,
-                        date: dateFormatter.format(dateValue),
-                        day: dayFormatter.format(dateValue),
-                        name: holidayName.trim(),
-                      },
-                    ]
-                    return next
-                  })
-                  setShowAddModal(false)
-                  setHolidayDate("")
-                  setHolidayName("")
-                  setFormError("")
+                  try {
+                    setIsSavingHoliday(true)
+                    const saved = editingHolidayId
+                      ? await updateHoliday(editingHolidayId, holidayDate, holidayName.trim())
+                      : await createHoliday(holidayDate, holidayName.trim())
+                    setHolidayRows((prev) => {
+                      const mapped = buildRowFromHoliday(saved)
+                      const withoutSameDate = prev.filter(
+                        (item) => item.dateISO !== saved.holidayDate && item.id !== saved.id,
+                      )
+                      return [...withoutSameDate, mapped]
+                    })
+                    setShowAddModal(false)
+                    setEditingHolidayId("")
+                    setHolidayDate("")
+                    setHolidayName("")
+                    setFormError("")
+                  } catch (error) {
+                    setFormError(error?.message || "Unable to save holiday.")
+                  } finally {
+                    setIsSavingHoliday(false)
+                  }
                 }}
-                className="flex-1 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white"
+                disabled={isSavingHoliday}
+                className="flex-1 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Save
+                {isSavingHoliday ? "Saving..." : editingHolidayId ? "Update" : "Save"}
               </button>
             </div>
           </div>

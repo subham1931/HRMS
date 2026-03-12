@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { listLeaveRequests } from "../services/leaves"
 const CHUNK_SIZE = 10
 
 function toYMD(date) {
@@ -32,41 +33,53 @@ function typeColor(type) {
   return "#c85cb4"
 }
 
-function makeStaticRows(rangeLength) {
-  const safeLength = Math.max(1, rangeLength)
-  const lastIndex = safeLength - 1
-  const sample = [
-    { name: "Aarav Sharma", segments: [{ start: 2, end: 5, color: "#e3a629", reason: "Family function" }] },
-    { name: "Ishaan Verma", segments: [] },
-    { name: "Priya Nair", segments: [{ start: 6, end: 6, color: "#3ea7e3", reason: "Medical checkup" }] },
-    { name: "Rohan Mehta", segments: [{ start: 7, end: 8, color: "#4f68ea", reason: "Sick leave" }] },
-    { name: "Ananya Iyer", segments: [{ start: 1, end: 4, color: "#e3a629", reason: "Vacation" }] },
-    { name: "Karthik Reddy", segments: [{ start: 5, end: 6, color: "#c85cb4", reason: "Personal work" }] },
-    { name: "Neha Kapoor", segments: [] },
-    { name: "Vikram Singh", segments: [{ start: 4, end: 5, color: "#4f68ea", reason: "Health issue" }] },
-    { name: "Sanya Gupta", segments: [{ start: 7, end: 7, color: "#ea5a77", reason: "Emergency leave" }] },
-    { name: "Arjun Patel", segments: [{ start: 0, end: 0, color: "#3ea7e3", reason: "Half day leave" }] },
-  ]
+const getInitials = (value) => (value || "E")
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0]?.toUpperCase() || "")
+  .join("")
 
-  return sample.map((item, index) => ({
-    id: `static-${index + 1}`,
-    name: item.name,
-    avatar: `https://i.pravatar.cc/80?img=${(index * 9 + 17) % 70}`,
-    segments: item.segments.map((segment, segIndex) => ({
-      id: `static-${index + 1}-${segIndex + 1}`,
-      startIndex: Math.min(lastIndex, Math.max(0, segment.start)),
-      endIndex: Math.min(lastIndex, Math.max(segment.start, segment.end)),
-      color: segment.color,
-      reason: segment.reason || "Leave",
-    })),
+function normalizeRequests(rows) {
+  return (rows || []).map((item, index) => ({
+    id: item.id || `leave-${Date.now()}-${index}`,
+    employeeId: item.employeeId || item.employeeCode || `EMP${1000 + index}`,
+    employeeName: item.employeeName || item.name || "Employee",
+    leaveType: item.leaveType || item.type || "Casual Leave",
+    startDate: item.startDate || "",
+    endDate: item.endDate || "",
+    reason: item.reason || "Leave",
+    status: item.status || "Pending",
+    avatar: item.avatar || item.profileImage || "",
   }))
 }
 
 function LeaveCalendarPage() {
   const navigate = useNavigate()
   const [rangeStart, setRangeStart] = useState(() => getMonthChunkStart(new Date()))
-  const employees = []
-  const leaveRequests = []
+  const [leaveRequests, setLeaveRequests] = useState([])
+  const [loadError, setLoadError] = useState("")
+  const [brokenAvatarById, setBrokenAvatarById] = useState({})
+
+  useEffect(() => {
+    let mounted = true
+    async function loadRequests() {
+      try {
+        setLoadError("")
+        const rows = await listLeaveRequests()
+        if (!mounted) return
+        setLeaveRequests(normalizeRequests(rows))
+      } catch (error) {
+        if (!mounted) return
+        setLeaveRequests([])
+        setLoadError(error?.message || "Unable to load leave calendar.")
+      }
+    }
+    loadRequests()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const rangeDates = useMemo(
     () => {
@@ -82,26 +95,16 @@ function LeaveCalendarPage() {
     [rangeStart],
   )
 
-  const rows = (() => {
+  const rows = useMemo(() => {
+    if (rangeDates.length === 0) return []
     const start = new Date(rangeStart)
     const end = new Date(rangeDates[rangeDates.length - 1])
-
-    const employeeMap = new Map(
-      (employees || []).map((item, index) => [
-        String(item.employeeId || item.id || `emp-${index}`).trim().toLowerCase(),
-        {
-          id: item.employeeId || item.id || `EMP-${index + 1}`,
-          name: item.name || "Employee",
-          avatar: item.profileImage || `https://i.pravatar.cc/80?img=${(index * 7 + 13) % 70}`,
-        },
-      ]),
-    )
-
     const rowsByEmployee = new Map()
 
     ;(leaveRequests || []).forEach((request, index) => {
       if (!request?.startDate || !request?.endDate) return
-      if (String(request.status || "").toLowerCase() === "rejected") return
+      const status = String(request.status || "").toLowerCase()
+      if (status === "rejected" || status === "canceled") return
 
       const leaveStart = parseDate(request.startDate)
       const leaveEnd = parseDate(request.endDate)
@@ -109,10 +112,10 @@ function LeaveCalendarPage() {
       if (leaveEnd < start || leaveStart > end) return
 
       const key = String(request.employeeId || request.employeeName || `employee-${index}`).trim().toLowerCase()
-      const profile = employeeMap.get(key) || {
+      const profile = {
         id: request.employeeId || `EMP-${1000 + index}`,
         name: request.employeeName || "Employee",
-        avatar: request.avatar || `https://i.pravatar.cc/80?img=${(index * 5 + 21) % 70}`,
+        avatar: request.avatar || "",
       }
 
       const startDate = leaveStart < start ? start : leaveStart
@@ -140,9 +143,7 @@ function LeaveCalendarPage() {
     return Array.from(rowsByEmployee.values())
       .map((item) => ({ ...item, segments: item.segments.sort((a, b) => a.startIndex - b.startIndex) }))
       .sort((a, b) => a.name.localeCompare(b.name))
-  })()
-
-  const displayRows = rows.length > 0 ? rows : makeStaticRows(rangeDates.length)
+  }, [leaveRequests, rangeDates, rangeStart])
 
   const rangeLabel = `${new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }).format(rangeDates[0])} - ${new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", year: "numeric" }).format(rangeDates[rangeDates.length - 1])}`
 
@@ -174,6 +175,11 @@ function LeaveCalendarPage() {
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      {loadError ? (
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+          {loadError}
+        </div>
+      ) : null}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -219,10 +225,23 @@ function LeaveCalendarPage() {
             </div>
           </div>
 
-          {displayRows.map((row) => (
+          {rows.map((row) => (
             <div key={row.id} className="flex border-b border-slate-100 last:border-b-0">
               <div className="flex w-[220px] items-center gap-2 border-r border-slate-200 px-3 py-3">
-                <img src={row.avatar} alt={row.name} className="h-7 w-7 rounded-full object-cover" />
+                {row.avatar && !brokenAvatarById[row.id] ? (
+                  <img
+                    src={row.avatar}
+                    alt={row.name}
+                    className="h-7 w-7 rounded-full object-cover"
+                    onError={() => {
+                      setBrokenAvatarById((prev) => ({ ...prev, [row.id]: true }))
+                    }}
+                  />
+                ) : (
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-semibold text-emerald-700">
+                    {getInitials(row.name)}
+                  </span>
+                )}
                 <p className="truncate text-sm font-medium text-slate-700">{row.name}</p>
               </div>
               <div className="relative flex-1">
@@ -250,6 +269,11 @@ function LeaveCalendarPage() {
               </div>
             </div>
           ))}
+          {rows.length === 0 ? (
+            <div className="px-4 py-10 text-center text-sm text-slate-500">
+              No leave records in this date range.
+            </div>
+          ) : null}
         </div>
       </div>
     </article>

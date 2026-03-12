@@ -55,51 +55,6 @@ const scheduledDayMap = {
   11: [4, 13, 22], // Dec
 }
 
-const attendanceRangeData = {
-  weekly: {
-    label: "This Week",
-    value: "92%",
-    growth: "+1.54%",
-    rowLabels: ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "After 12"],
-    columnLabels: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-    rows: [
-      ["bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#0f5c4d]"],
-      ["bg-[#35bda6]", "bg-[#40c3ad]", "bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#40c3ad]"],
-      ["bg-[#d2e1c3]", "bg-[#3cbfa8]", "bg-[#0f5c4d]", "bg-[#39bea7]", "bg-[#35bda6]"],
-      ["bg-[#d2e1c3]", "bg-[#d2e1c3]", "bg-[#3bbfa8]", "bg-[#d2e1c3]", "bg-[#d2e1c3]"],
-      ["bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]"],
-      ["bg-[#f1f3ef]", "bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#f1f3ef]"],
-    ],
-  },
-  monthly: {
-    label: "This Month",
-    value: "89%",
-    growth: "+1.20%",
-    rowLabels: [],
-    columnLabels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
-    rows: [
-      ["bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#35bda6]", "bg-[#0f5c4d]", "bg-[#3cbfa8]"],
-      ["bg-[#3cbfa8]", "bg-[#40c3ad]", "bg-[#35bda6]", "bg-[#0f5c4d]", "bg-[#35bda6]", "bg-[#39bea7]"],
-      ["bg-[#d2e1c3]", "bg-[#3cbfa8]", "bg-[#35bda6]", "bg-[#39bea7]", "bg-[#d2e1c3]", "bg-[#d2e1c3]"],
-      ["bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#3bbfa8]", "bg-[#d2e1c3]", "bg-[#d2e1c3]", "bg-[#f1f3ef]"],
-      ["bg-[#f1f3ef]", "bg-[#f1f3ef]", "bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#d2e1c3]"],
-    ],
-  },
-  yearly: {
-    label: "This Year",
-    value: "87%",
-    growth: "+0.86%",
-    rowLabels: [],
-    columnLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    rows: [
-      ["bg-[#0f5c4d]", "bg-[#35bda6]", "bg-[#0f5c4d]", "bg-[#39bea7]", "bg-[#40c3ad]", "bg-[#0f5c4d]", "bg-[#35bda6]", "bg-[#3bbfa8]", "bg-[#d2e1c3]", "bg-[#39bea7]", "bg-[#0f5c4d]", "bg-[#35bda6]"],
-      ["bg-[#3cbfa8]", "bg-[#40c3ad]", "bg-[#35bda6]", "bg-[#0f5c4d]", "bg-[#35bda6]", "bg-[#39bea7]", "bg-[#3cbfa8]", "bg-[#d2e1c3]", "bg-[#3bbfa8]", "bg-[#35bda6]", "bg-[#0f5c4d]", "bg-[#39bea7]"],
-      ["bg-[#d2e1c3]", "bg-[#3bbfa8]", "bg-[#39bea7]", "bg-[#35bda6]", "bg-[#d2e1c3]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#f1f3ef]"],
-      ["bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#f1f3ef]", "bg-[#f1f3ef]"],
-    ],
-  },
-}
-
 const WEEKLY_ROW_LABELS = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "After 12"]
 const WEEKLY_COLUMN_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri"]
 const HEATMAP_LEVEL_CLASSES = ["bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#40c3ad]", "bg-[#35bda6]", "bg-[#0f5c4d]"]
@@ -192,9 +147,191 @@ const buildWeeklyAttendanceRange = (records, previousRecords = []) => {
   }
 }
 
+const TEAM_PERFORMANCE_DEFAULT_MONTHS = 6
+const TEAM_WORKDAY_MINUTES = 8 * 60
+
+const getMonthStart = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth(), 1)
+const getMonthKey = (dateObj) => `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}`
+
+const formatPercentValue = (value) => `${Number(value || 0).toFixed(2)}%`
+
+const buildTeamPerformanceRange = (records = [], now = new Date(), monthsCount = TEAM_PERFORMANCE_DEFAULT_MONTHS) => {
+  const safeMonths = Math.max(1, Number(monthsCount || TEAM_PERFORMANCE_DEFAULT_MONTHS))
+  const monthStarts = Array.from({ length: safeMonths }, (_, idx) =>
+    new Date(now.getFullYear(), now.getMonth() - (safeMonths - 1 - idx), 1),
+  )
+  const base = monthStarts.map((monthDate) => ({
+    key: getMonthKey(monthDate),
+    label: new Intl.DateTimeFormat("en-US", { month: "short" }).format(monthDate),
+    longLabel: new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(monthDate),
+    workedMinutes: 0,
+    attendanceDays: 0,
+  }))
+  const indexByKey = new Map(base.map((item, idx) => [item.key, idx]))
+
+  ;(records || []).forEach((item) => {
+    const [year, month, day] = String(item?.attendance_date || "").split("-").map(Number)
+    if (!year || !month || !day) return
+    const dateObj = new Date(year, month - 1, day)
+    const key = getMonthKey(dateObj)
+    const index = indexByKey.get(key)
+    if (index == null) return
+
+    const workedMinutes = Number(item?.work_minutes || 0)
+    const hasCheckIn = Boolean(item?.check_in_at)
+    const status = String(item?.status || "").toLowerCase()
+    const isPresentStatus = status === "on time" || status === "late"
+    if (hasCheckIn || isPresentStatus) {
+      base[index].attendanceDays += 1
+      base[index].workedMinutes += Math.max(0, Number.isFinite(workedMinutes) ? workedMinutes : 0)
+    }
+  })
+
+  const points = base.map((item) => {
+    const expectedMinutes = item.attendanceDays * TEAM_WORKDAY_MINUTES
+    const value = expectedMinutes > 0
+      ? Math.min(100, (item.workedMinutes / expectedMinutes) * 100)
+      : 0
+    return {
+      ...item,
+      value: Number(value.toFixed(2)),
+    }
+  })
+
+  const currentValue = points[points.length - 1]?.value || 0
+  const previousValue = points[points.length - 2]?.value || 0
+  const growth = Number((currentValue - previousValue).toFixed(2))
+  const peakValue = Math.max(...points.map((point) => point.value), 0)
+  const peakIndex = points.findIndex((point) => point.value === peakValue)
+  const safePeakIndex = peakIndex >= 0 ? peakIndex : points.length - 1
+
+  return {
+    points,
+    value: formatPercentValue(currentValue),
+    growth,
+    peakIndex: safePeakIndex,
+    peakPoint: points[safePeakIndex] || {
+      value: 0,
+      longLabel: new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(now),
+    },
+  }
+}
+
+const buildTeamPerformanceChartPath = (points = []) => {
+  if (!points.length) return { linePath: "", areaPath: "", coordinates: [] }
+  const xStart = 34
+  const xEnd = 350
+  const yTop = 20
+  const yBottom = 152
+  const width = points.length > 1 ? (xEnd - xStart) / (points.length - 1) : 0
+  const coordinates = points.map((point, idx) => {
+    const x = xStart + idx * width
+    const y = yBottom - ((Math.max(0, Math.min(100, point.value)) / 100) * (yBottom - yTop))
+    return { x, y }
+  })
+  const linePath = coordinates
+    .map((coord, idx) => `${idx === 0 ? "M" : "L"} ${coord.x} ${coord.y}`)
+    .join(" ")
+  const areaPath = `${linePath} L ${xEnd} ${yBottom} L ${xStart} ${yBottom} Z`
+  return { linePath, areaPath, coordinates }
+}
+
+const buildMonthlyAttendanceRange = (records, previousRecords = [], now = new Date()) => {
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const weekCount = Math.max(1, Math.ceil(daysInMonth / 7))
+  const weekCounts = Array.from({ length: weekCount }, () => 0)
+
+  let onTimeCount = 0
+  let checkInCount = 0
+  records.forEach((item) => {
+    const dayDate = parseIsoDate(item.attendance_date)
+    if (dayDate.getMonth() !== now.getMonth() || dayDate.getFullYear() !== now.getFullYear()) return
+    const weekIndex = Math.min(weekCount - 1, Math.floor((dayDate.getDate() - 1) / 7))
+    if (!item.check_in_at) return
+    weekCounts[weekIndex] += 1
+    checkInCount += 1
+    if (String(item.status || "").toLowerCase() === "on time") onTimeCount += 1
+  })
+
+  let previousOnTime = 0
+  let previousCheckIns = 0
+  previousRecords.forEach((item) => {
+    if (!item.check_in_at) return
+    previousCheckIns += 1
+    if (String(item.status || "").toLowerCase() === "on time") previousOnTime += 1
+  })
+
+  const maxCount = Math.max(0, ...weekCounts)
+  const rows = [
+    weekCounts.map((count) => ({
+      className: getHeatmapClass(count, maxCount),
+      count,
+    })),
+  ]
+  const currentRate = checkInCount ? Math.round((onTimeCount / checkInCount) * 100) : 0
+  const previousRate = previousCheckIns ? (previousOnTime / previousCheckIns) * 100 : 0
+  const growth = currentRate - previousRate
+  const growthPrefix = growth >= 0 ? "+" : "-"
+
+  return {
+    label: "This Month",
+    value: `${currentRate}%`,
+    growth: `${growthPrefix}${Math.abs(growth).toFixed(2)}%`,
+    rowLabels: [],
+    columnLabels: Array.from({ length: weekCount }, (_, idx) => `Week ${idx + 1}`),
+    rows,
+  }
+}
+
+const buildYearlyAttendanceRange = (records, previousRecords = [], now = new Date()) => {
+  const monthCounts = Array.from({ length: 12 }, () => 0)
+  let onTimeCount = 0
+  let checkInCount = 0
+
+  records.forEach((item) => {
+    const dayDate = parseIsoDate(item.attendance_date)
+    if (dayDate.getFullYear() !== now.getFullYear()) return
+    if (!item.check_in_at) return
+    monthCounts[dayDate.getMonth()] += 1
+    checkInCount += 1
+    if (String(item.status || "").toLowerCase() === "on time") onTimeCount += 1
+  })
+
+  let previousOnTime = 0
+  let previousCheckIns = 0
+  previousRecords.forEach((item) => {
+    if (!item.check_in_at) return
+    previousCheckIns += 1
+    if (String(item.status || "").toLowerCase() === "on time") previousOnTime += 1
+  })
+
+  const maxCount = Math.max(0, ...monthCounts)
+  const rows = [
+    monthCounts.map((count) => ({
+      className: getHeatmapClass(count, maxCount),
+      count,
+    })),
+  ]
+  const currentRate = checkInCount ? Math.round((onTimeCount / checkInCount) * 100) : 0
+  const previousRate = previousCheckIns ? (previousOnTime / previousCheckIns) * 100 : 0
+  const growth = currentRate - previousRate
+  const growthPrefix = growth >= 0 ? "+" : "-"
+
+  return {
+    label: "This Year",
+    value: `${currentRate}%`,
+    growth: `${growthPrefix}${Math.abs(growth).toFixed(2)}%`,
+    rowLabels: [],
+    columnLabels: Array.from({ length: 12 }, (_, idx) =>
+      new Intl.DateTimeFormat("en-US", { month: "short" }).format(new Date(now.getFullYear(), idx, 1))),
+    rows,
+  }
+}
+
 function DashboardPage() {
   const navigate = useNavigate()
   const [attendanceRange, setAttendanceRange] = useState("weekly")
+  const [teamPerformanceMonths, setTeamPerformanceMonths] = useState(TEAM_PERFORMANCE_DEFAULT_MONTHS)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
@@ -209,11 +346,16 @@ function DashboardPage() {
     internship: 0,
   })
   const [weeklyAttendanceRange, setWeeklyAttendanceRange] = useState(() => buildWeeklyAttendanceRange([]))
+  const [monthlyAttendanceRange, setMonthlyAttendanceRange] = useState(() => buildMonthlyAttendanceRange([]))
+  const [yearlyAttendanceRange, setYearlyAttendanceRange] = useState(() => buildYearlyAttendanceRange([]))
+  const [teamPerformanceRange, setTeamPerformanceRange] = useState(() => buildTeamPerformanceRange([], new Date(), TEAM_PERFORMANCE_DEFAULT_MONTHS))
   const [attendanceError, setAttendanceError] = useState("")
   const [brokenAvatarById, setBrokenAvatarById] = useState({})
   const activeAttendanceRange = attendanceRange === "weekly"
     ? weeklyAttendanceRange
-    : attendanceRangeData[attendanceRange]
+    : attendanceRange === "monthly"
+      ? monthlyAttendanceRange
+      : yearlyAttendanceRange
   const currentDate = new Date()
   const currentYear = currentDate.getFullYear()
   const calendarLabel = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(calendarMonth)
@@ -286,6 +428,82 @@ function DashboardPage() {
     }
   }, [])
 
+  useEffect(() => {
+    let mounted = true
+    async function loadMonthlyReport() {
+      try {
+        const today = new Date()
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+        const previousMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+
+        const allRows = await listAttendanceRecordsInRange(toIsoLocal(previousMonthStart), toIsoLocal(monthEnd))
+        if (!mounted) return
+
+        const currentRows = allRows.filter((item) => item.attendance_date >= toIsoLocal(monthStart))
+        const previousRows = allRows.filter((item) => item.attendance_date <= toIsoLocal(previousMonthEnd))
+        setMonthlyAttendanceRange(buildMonthlyAttendanceRange(currentRows, previousRows, today))
+      } catch {
+        if (!mounted) return
+        setMonthlyAttendanceRange(buildMonthlyAttendanceRange([], [], new Date()))
+      }
+    }
+
+    loadMonthlyReport()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    async function loadYearlyReport() {
+      try {
+        const today = new Date()
+        const yearStart = new Date(today.getFullYear(), 0, 1)
+        const yearEnd = new Date(today.getFullYear(), 11, 31)
+        const previousYearStart = new Date(today.getFullYear() - 1, 0, 1)
+        const previousYearEnd = new Date(today.getFullYear() - 1, 11, 31)
+
+        const allRows = await listAttendanceRecordsInRange(toIsoLocal(previousYearStart), toIsoLocal(yearEnd))
+        if (!mounted) return
+
+        const currentRows = allRows.filter((item) => item.attendance_date >= toIsoLocal(yearStart))
+        const previousRows = allRows.filter((item) => item.attendance_date <= toIsoLocal(previousYearEnd))
+        setYearlyAttendanceRange(buildYearlyAttendanceRange(currentRows, previousRows, today))
+      } catch {
+        if (!mounted) return
+        setYearlyAttendanceRange(buildYearlyAttendanceRange([], [], new Date()))
+      }
+    }
+
+    loadYearlyReport()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    async function loadTeamPerformance() {
+      try {
+        const today = new Date()
+        const startMonth = getMonthStart(new Date(today.getFullYear(), today.getMonth() - (teamPerformanceMonths - 1), 1))
+        const allRows = await listAttendanceRecordsInRange(toIsoLocal(startMonth), toIsoLocal(today))
+        if (!mounted) return
+        setTeamPerformanceRange(buildTeamPerformanceRange(allRows, today, teamPerformanceMonths))
+      } catch {
+        if (!mounted) return
+        setTeamPerformanceRange(buildTeamPerformanceRange([], new Date(), teamPerformanceMonths))
+      }
+    }
+    loadTeamPerformance()
+    return () => {
+      mounted = false
+    }
+  }, [teamPerformanceMonths])
+
   const attendanceCounts = useMemo(() => {
     let onTime = 0
     let late = 0
@@ -345,6 +563,20 @@ function DashboardPage() {
       inCurrentMonth: false,
     })),
   ]
+  const teamPerformanceChart = useMemo(
+    () => buildTeamPerformanceChartPath(teamPerformanceRange.points),
+    [teamPerformanceRange.points],
+  )
+  const peakCoord = teamPerformanceChart.coordinates[teamPerformanceRange.peakIndex] || { x: 34, y: 152 }
+  const growthPrefix = teamPerformanceRange.growth >= 0 ? "↗ +" : "↘ "
+  const growthBadgeClass = teamPerformanceRange.growth >= 0
+    ? "bg-[#dce8c8] text-emerald-700"
+    : "bg-rose-100 text-rose-700"
+  const growthLabel = teamPerformanceRange.growth > 0
+    ? "Increased vs last month"
+    : teamPerformanceRange.growth < 0
+      ? "Decreased vs last month"
+      : "No change vs last month"
 
   const renderRatingStars = (rating) => {
     const full = Math.floor(rating)
@@ -398,6 +630,7 @@ function DashboardPage() {
             <article className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
+                  <h3 className="text-[18px] font-semibold text-slate-800">Attendance Calendar</h3>
                   <div className="relative">
                     <button
                       type="button"
@@ -449,6 +682,20 @@ function DashboardPage() {
                     {cell.value}
                   </span>
                 ))}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-600">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-700" />
+                  Today
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#39c9b3]" />
+                  Scheduled Day
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[oklch(87.9%_0.169_91.605)]" />
+                  Public Holiday
+                </span>
               </div>
             </article>
 
@@ -526,63 +773,79 @@ function DashboardPage() {
             <article className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-slate-800">Team Performance</h3>
-                <button type="button" className="inline-flex items-center gap-1 rounded-xl bg-[#dce8c8] px-2.5 py-1 text-xs font-medium text-slate-700">
-                  Last 6 Months <ChevronDown size={12} />
-                </button>
+                <div className="relative">
+                  <select
+                    value={String(teamPerformanceMonths)}
+                    onChange={(event) => setTeamPerformanceMonths(Number(event.target.value) || TEAM_PERFORMANCE_DEFAULT_MONTHS)}
+                    className="appearance-none rounded-xl bg-[#dce8c8] py-1 pl-2.5 pr-6 text-xs font-medium text-slate-700 outline-none"
+                  >
+                    <option value="3">Last 3 Months</option>
+                    <option value="6">Last 6 Months</option>
+                    <option value="12">Last 12 Months</option>
+                  </select>
+                  <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-600" />
+                </div>
               </div>
-              <p className="text-[38px] font-semibold leading-none text-slate-800">89.52%</p>
+              <p className="text-[38px] font-semibold leading-none text-slate-800">{teamPerformanceRange.value}</p>
               <div className="mt-2 flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-[#dce8c8] px-2 py-0.5 text-xs font-medium text-emerald-700">↗ +3.84%</span>
-                <span className="text-[13px] text-slate-500">Increased vs last week</span>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${growthBadgeClass}`}>
+                  {growthPrefix}{Math.abs(teamPerformanceRange.growth).toFixed(2)}%
+                </span>
+                <span className="text-[13px] text-slate-500">{growthLabel}</span>
               </div>
 
-              <svg viewBox="0 0 360 185" className="mt-3 h-[170px] w-full">
-                {[0, 25, 50, 75, 100].map((tick, idx) => {
-                  const y = 20 + idx * 33
-                  return (
-                    <g key={tick}>
-                      <text x="0" y={y + 4} fontSize="10" fill="#7f8a8f">
-                        {tick}%
+              <div className="mt-3 w-full overflow-x-auto">
+                <svg viewBox="0 0 360 185" className="h-[170px] min-w-[360px] w-full">
+                  {[0, 25, 50, 75, 100].map((tick, idx) => {
+                    const y = 20 + idx * 33
+                    return (
+                      <g key={tick}>
+                        <text x="0" y={y + 4} fontSize="10" fill="#7f8a8f">
+                          {tick}%
+                        </text>
+                        <line x1="34" y1={y} x2="350" y2={y} stroke="#e4e8eb" strokeWidth="1" />
+                      </g>
+                    )
+                  })}
+
+                  <defs>
+                    <linearGradient id="teamPerfFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#35bda6" stopOpacity="0.18" />
+                      <stop offset="100%" stopColor="#35bda6" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+
+                  <path
+                    d={teamPerformanceChart.linePath}
+                    fill="none"
+                    stroke="#35bda6"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d={teamPerformanceChart.areaPath}
+                    fill="url(#teamPerfFill)"
+                  />
+
+                  <line x1={peakCoord.x} y1={peakCoord.y} x2={peakCoord.x} y2="152" stroke="#9ca4aa" strokeDasharray="4 4" />
+                  <circle cx={peakCoord.x} cy={peakCoord.y} r="5.5" fill="#35bda6" />
+
+                  <g transform={`translate(${Math.max(190, peakCoord.x - 26)},8)`}>
+                    <rect width="62" height="42" rx="9" fill="white" stroke="#e4e8eb" />
+                    <text x="10" y="16" fontSize="10" fill="#76828a">{teamPerformanceRange.peakPoint.longLabel}</text>
+                    <text x="10" y="32" fontSize="18" fontWeight="600" fill="#0f5c4d">{teamPerformanceRange.peakPoint.value.toFixed(1)}%</text>
+                  </g>
+
+                  {teamPerformanceRange.points.map((item, idx) => {
+                    const coord = teamPerformanceChart.coordinates[idx]
+                    return (
+                      <text key={item.label} x={coord?.x ?? 66} y="178" fontSize="11" fill="#7f8a8f" textAnchor="middle">
+                        {item.label}
                       </text>
-                      <line x1="34" y1={y} x2="350" y2={y} stroke="#e4e8eb" strokeWidth="1" />
-                    </g>
-                  )
-                })}
-
-                <defs>
-                  <linearGradient id="teamPerfFill" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#35bda6" stopOpacity="0.18" />
-                    <stop offset="100%" stopColor="#35bda6" stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
-
-                <path
-                  d="M 34 95 C 58 79, 76 66, 97 73 C 121 80, 145 76, 160 58 C 176 40, 198 47, 220 46 C 239 45, 260 30, 276 29 C 296 28, 308 50, 323 61 C 336 70, 345 58, 350 50"
-                  fill="none"
-                  stroke="#35bda6"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M 34 95 C 58 79, 76 66, 97 73 C 121 80, 145 76, 160 58 C 176 40, 198 47, 220 46 C 239 45, 260 30, 276 29 C 296 28, 308 50, 323 61 C 336 70, 345 58, 350 50 L 350 152 L 34 152 Z"
-                  fill="url(#teamPerfFill)"
-                />
-
-                <line x1="276" y1="29" x2="276" y2="152" stroke="#9ca4aa" strokeDasharray="4 4" />
-                <circle cx="276" cy="29" r="5.5" fill="#35bda6" />
-
-                <g transform="translate(250,8)">
-                  <rect width="62" height="42" rx="9" fill="white" stroke="#e4e8eb" />
-                  <text x="10" y="16" fontSize="10" fill="#76828a">May 2035</text>
-                  <text x="10" y="32" fontSize="18" fontWeight="600" fill="#0f5c4d">95.2%</text>
-                </g>
-
-                {["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((month, idx) => (
-                  <text key={month} x={66 + idx * 52} y="178" fontSize="11" fill="#7f8a8f">
-                    {month}
-                  </text>
-                ))}
-              </svg>
+                    )
+                  })}
+                </svg>
+              </div>
             </article>
           </div>
 

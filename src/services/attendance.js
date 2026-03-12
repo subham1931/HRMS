@@ -58,7 +58,7 @@ export async function listAttendanceRecordsInRange(startDate, endDate) {
 
   const { data, error } = await supabase
     .from("attendance_records")
-    .select("attendance_date, check_in_at, status")
+    .select("attendance_date, check_in_at, status, work_minutes")
     .gte("attendance_date", start)
     .lte("attendance_date", end)
 
