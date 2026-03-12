@@ -120,6 +120,7 @@ function App() {
     "/jobs": <PlaceholderPage />,
     "/candidates": <PlaceholderPage />,
     "/leaves": <LeavesPage />,
+    "/calendar": <LeaveCalendarPage />,
     "/leaves/calendar": <LeaveCalendarPage />,
     "/holidays": <HolidaysPage />,
     "/settings": <SettingsPage />,

@@ -1,176 +1,188 @@
 import { useEffect, useMemo, useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { useLocation, useNavigate } from "react-router-dom"
+import { listHolidays } from "../services/holidays"
 import { listLeaveRequests } from "../services/leaves"
-const CHUNK_SIZE = 10
+import { createCalendarEvent, listCalendarEventsInRange } from "../services/calendarEvents"
 
-function toYMD(date) {
-  const y = date.getFullYear()
-  const m = `${date.getMonth() + 1}`.padStart(2, "0")
-  const d = `${date.getDate()}`.padStart(2, "0")
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+const toIsoDate = (dateObj) => {
+  const y = dateObj.getFullYear()
+  const m = `${dateObj.getMonth() + 1}`.padStart(2, "0")
+  const d = `${dateObj.getDate()}`.padStart(2, "0")
   return `${y}-${m}-${d}`
 }
 
-function parseDate(value) {
-  const date = new Date(`${value}T00:00:00`)
-  return Number.isNaN(date.getTime()) ? null : date
-}
+const getMonthCalendarCells = (monthCursor) => {
+  const firstDay = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1)
+  const firstWeekday = firstDay.getDay()
+  const daysInCurrentMonth = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0).getDate()
+  const daysInPrevMonth = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 0).getDate()
+  const cells = []
 
-function getMonthChunkStart(date) {
-  const next = new Date(date.getFullYear(), date.getMonth(), 1)
-  const day = date.getDate()
-  const startDay = day <= 10 ? 1 : day <= 20 ? 11 : 21
-  next.setDate(startDay)
-  next.setHours(0, 0, 0, 0)
-  return next
-}
+  for (let i = firstWeekday - 1; i >= 0; i -= 1) {
+    const day = daysInPrevMonth - i
+    const dateObj = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, day)
+    cells.push({ key: `p-${day}`, value: day, dateObj, inCurrentMonth: false })
+  }
 
-function typeColor(type) {
-  const value = (type || "").toLowerCase()
-  if (value.includes("annual")) return "#e3a629"
-  if (value.includes("sick")) return "#4f68ea"
-  if (value.includes("casual")) return "#3ea7e3"
-  return "#c85cb4"
-}
+  for (let day = 1; day <= daysInCurrentMonth; day += 1) {
+    const dateObj = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), day)
+    cells.push({ key: `c-${day}`, value: day, dateObj, inCurrentMonth: true })
+  }
 
-const getInitials = (value) => (value || "E")
-  .split(" ")
-  .filter(Boolean)
-  .slice(0, 2)
-  .map((part) => part[0]?.toUpperCase() || "")
-  .join("")
+  const trailing = (7 - (cells.length % 7)) % 7
+  for (let day = 1; day <= trailing; day += 1) {
+    const dateObj = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, day)
+    cells.push({ key: `n-${day}`, value: day, dateObj, inCurrentMonth: false })
+  }
 
-function normalizeRequests(rows) {
-  return (rows || []).map((item, index) => ({
-    id: item.id || `leave-${Date.now()}-${index}`,
-    employeeId: item.employeeId || item.employeeCode || `EMP${1000 + index}`,
-    employeeName: item.employeeName || item.name || "Employee",
-    leaveType: item.leaveType || item.type || "Casual Leave",
-    startDate: item.startDate || "",
-    endDate: item.endDate || "",
-    reason: item.reason || "Leave",
-    status: item.status || "Pending",
-    avatar: item.avatar || item.profileImage || "",
-  }))
+  return cells
 }
 
 function LeaveCalendarPage() {
   const navigate = useNavigate()
-  const [rangeStart, setRangeStart] = useState(() => getMonthChunkStart(new Date()))
-  const [leaveRequests, setLeaveRequests] = useState([])
+  const { pathname } = useLocation()
+  const isStandaloneCalendar = pathname === "/calendar"
+  const [calendarMode, setCalendarMode] = useState("all")
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
+  const [holidayRows, setHolidayRows] = useState([])
+  const [leaveRows, setLeaveRows] = useState([])
+  const [calendarEvents, setCalendarEvents] = useState([])
   const [loadError, setLoadError] = useState("")
-  const [brokenAvatarById, setBrokenAvatarById] = useState({})
+  const [showAddEventModal, setShowAddEventModal] = useState(false)
+  const [eventDate, setEventDate] = useState("")
+  const [eventTitle, setEventTitle] = useState("")
+  const [eventType, setEventType] = useState("meeting")
+  const [eventFormError, setEventFormError] = useState("")
+  const [isSavingEvent, setIsSavingEvent] = useState(false)
 
   useEffect(() => {
     let mounted = true
-    async function loadRequests() {
+    async function loadCalendarData() {
       try {
         setLoadError("")
-        const rows = await listLeaveRequests()
+        const [holidayData, leaveData] = await Promise.all([
+          listHolidays(),
+          listLeaveRequests(),
+        ])
         if (!mounted) return
-        setLeaveRequests(normalizeRequests(rows))
+        setHolidayRows(holidayData || [])
+        setLeaveRows(leaveData || [])
       } catch (error) {
         if (!mounted) return
-        setLeaveRequests([])
-        setLoadError(error?.message || "Unable to load leave calendar.")
+        setHolidayRows([])
+        setLeaveRows([])
+        setLoadError(error?.message || "Unable to load holidays.")
       }
     }
-    loadRequests()
+    loadCalendarData()
     return () => {
       mounted = false
     }
   }, [])
 
-  const rangeDates = useMemo(
-    () => {
-      const daysInMonth = new Date(rangeStart.getFullYear(), rangeStart.getMonth() + 1, 0).getDate()
-      const startDay = rangeStart.getDate()
-      const rangeLength = Math.min(CHUNK_SIZE, daysInMonth - startDay + 1)
-      return Array.from({ length: rangeLength }, (_, index) => {
-        const date = new Date(rangeStart)
-        date.setDate(rangeStart.getDate() + index)
-        return date
-      })
-    },
-    [rangeStart],
+  useEffect(() => {
+    let mounted = true
+    async function loadEvents() {
+      try {
+        const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+        const monthEnd = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0)
+        const rows = await listCalendarEventsInRange(toIsoDate(monthStart), toIsoDate(monthEnd))
+        if (!mounted) return
+        setCalendarEvents(rows || [])
+      } catch {
+        if (!mounted) return
+        setCalendarEvents([])
+      }
+    }
+    loadEvents()
+    return () => {
+      mounted = false
+    }
+  }, [calendarMonth])
+
+  const monthLabel = useMemo(
+    () => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(calendarMonth),
+    [calendarMonth],
+  )
+  const calendarCells = useMemo(() => getMonthCalendarCells(calendarMonth), [calendarMonth])
+
+  const scheduleEvents = useMemo(
+    () =>
+      calendarEvents.map((item) => ({
+        id: item.id,
+        date: item.eventDate,
+        title: item.eventTitle,
+        type: item.eventType,
+      })),
+    [calendarEvents],
   )
 
-  const rows = useMemo(() => {
-    if (rangeDates.length === 0) return []
-    const start = new Date(rangeStart)
-    const end = new Date(rangeDates[rangeDates.length - 1])
-    const rowsByEmployee = new Map()
+  const holidayEvents = useMemo(
+    () =>
+      holidayRows.map((item) => ({
+        id: `holiday-${item.id}`,
+        date: item.holidayDate,
+        title: item.holidayName,
+        type: "holiday",
+      })),
+    [holidayRows],
+  )
+  const leaveEvents = useMemo(
+    () =>
+      leaveRows
+        .filter((item) => {
+          const status = String(item.status || "").toLowerCase()
+          return status !== "rejected" && status !== "canceled"
+        })
+        .flatMap((item) => {
+          const start = new Date(`${item.startDate}T00:00:00`)
+          const end = new Date(`${item.endDate}T00:00:00`)
+          if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return []
+          const entries = []
+          const cursor = new Date(start)
+          while (cursor <= end) {
+            entries.push({
+              id: `leave-${item.id}-${toIsoDate(cursor)}`,
+              leaveId: item.id,
+              date: toIsoDate(cursor),
+              title: `${item.employeeName || "Employee"} · ${item.leaveType || "Leave"}`,
+              type: "leave",
+            })
+            cursor.setDate(cursor.getDate() + 1)
+          }
+          return entries
+        }),
+    [leaveRows],
+  )
 
-    ;(leaveRequests || []).forEach((request, index) => {
-      if (!request?.startDate || !request?.endDate) return
-      const status = String(request.status || "").toLowerCase()
-      if (status === "rejected" || status === "canceled") return
-
-      const leaveStart = parseDate(request.startDate)
-      const leaveEnd = parseDate(request.endDate)
-      if (!leaveStart || !leaveEnd) return
-      if (leaveEnd < start || leaveStart > end) return
-
-      const key = String(request.employeeId || request.employeeName || `employee-${index}`).trim().toLowerCase()
-      const profile = {
-        id: request.employeeId || `EMP-${1000 + index}`,
-        name: request.employeeName || "Employee",
-        avatar: request.avatar || "",
-      }
-
-      const startDate = leaveStart < start ? start : leaveStart
-      const endDate = leaveEnd > end ? end : leaveEnd
-      const startIndex = Math.max(
-        0,
-        Math.floor((new Date(toYMD(startDate)) - new Date(toYMD(start))) / (1000 * 60 * 60 * 24)),
-      )
-      const endIndex = Math.min(
-        rangeDates.length - 1,
-        Math.floor((new Date(toYMD(endDate)) - new Date(toYMD(start))) / (1000 * 60 * 60 * 24)),
-      )
-
-      const current = rowsByEmployee.get(key) || { ...profile, segments: [] }
-      current.segments.push({
-        id: request.id || `${key}-${index}`,
-        startIndex,
-        endIndex,
-        color: typeColor(request.leaveType || request.type),
-        reason: request.reason || request.leaveType || request.type || "Leave",
-      })
-      rowsByEmployee.set(key, current)
+  const eventsByDate = useMemo(() => {
+    const map = new Map()
+    const sourceEvents = calendarMode === "team"
+      ? [...scheduleEvents, ...holidayEvents]
+      : calendarMode === "leaves"
+        ? leaveEvents
+        : [...scheduleEvents, ...holidayEvents, ...leaveEvents]
+    sourceEvents.forEach((event) => {
+      const key = String(event.date || "")
+      if (!key) return
+      const existing = map.get(key) || []
+      map.set(key, [...existing, event])
     })
+    return map
+  }, [scheduleEvents, holidayEvents, leaveEvents, calendarMode])
 
-    return Array.from(rowsByEmployee.values())
-      .map((item) => ({ ...item, segments: item.segments.sort((a, b) => a.startIndex - b.startIndex) }))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [leaveRequests, rangeDates, rangeStart])
-
-  const rangeLabel = `${new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }).format(rangeDates[0])} - ${new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", year: "numeric" }).format(rangeDates[rangeDates.length - 1])}`
-
-  const moveToPreviousChunk = () => {
-    const startDay = rangeStart.getDate()
-    if (startDay === 21) {
-      setRangeStart(new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 11))
-      return
-    }
-    if (startDay === 11) {
-      setRangeStart(new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1))
-      return
-    }
-    setRangeStart(new Date(rangeStart.getFullYear(), rangeStart.getMonth() - 1, 21))
-  }
-
-  const moveToNextChunk = () => {
-    const startDay = rangeStart.getDate()
-    if (startDay === 1) {
-      setRangeStart(new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 11))
-      return
-    }
-    if (startDay === 11) {
-      setRangeStart(new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 21))
-      return
-    }
-    setRangeStart(new Date(rangeStart.getFullYear(), rangeStart.getMonth() + 1, 1))
+  const todayIso = toIsoDate(new Date())
+  const getEventClass = (type) => {
+    if (type === "holiday") return "bg-emerald-100 text-emerald-800 border border-emerald-200"
+    if (type === "meeting") return "bg-blue-100 text-blue-800 border border-blue-200"
+    if (type === "leave") return "bg-amber-100 text-amber-800 border border-amber-200"
+    return "bg-violet-100 text-violet-800 border border-violet-200"
   }
 
   return (
@@ -180,102 +192,238 @@ function LeaveCalendarPage() {
           {loadError}
         </div>
       ) : null}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate("/leaves")}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700"
-        >
-          Back to Leaves
-        </button>
+
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3 sm:items-center">
+        <div>
+          <h3 className="text-2xl font-semibold text-slate-800">Team Calendar</h3>
+          <p className="text-sm text-slate-500">Meetings, tasks, and holidays in one monthly view</p>
+        </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={moveToPreviousChunk}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
-            aria-label="Previous range"
+            onClick={() => {
+              const today = new Date()
+              setEventDate(toIsoDate(today))
+              setEventTitle("")
+              setEventType("meeting")
+              setEventFormError("")
+              setShowAddEventModal(true)
+            }}
+            className="inline-flex items-center gap-1 rounded-lg bg-[#53c4ae] px-3 py-1.5 text-xs font-medium text-white"
+          >
+            <Plus size={12} />
+            Add Event
+          </button>
+          {!isStandaloneCalendar ? (
+            <button
+              type="button"
+              onClick={() => navigate("/leaves")}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700"
+            >
+              Back to Leaves
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
+            aria-label="Previous month"
           >
             <ChevronLeft size={14} />
           </button>
           <button
             type="button"
-            onClick={moveToNextChunk}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
-            aria-label="Next range"
+            onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
+            aria-label="Next month"
           >
             <ChevronRight size={14} />
           </button>
-          <span className="text-sm text-slate-500">{rangeLabel}</span>
+        </div>
+      </div>
+      <div className="mb-3 inline-flex w-full flex-wrap rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-medium sm:w-auto">
+        {[
+          { key: "team", label: "Team" },
+          { key: "leaves", label: "Leaves" },
+          { key: "all", label: "All" },
+        ].map((mode) => (
+          <button
+            key={mode.key}
+            type="button"
+            onClick={() => setCalendarMode(mode.key)}
+            className={`rounded-lg px-3 py-1.5 ${
+              calendarMode === mode.key
+                ? "bg-white text-slate-800 shadow-sm"
+                : "text-slate-500"
+            }`}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="mb-3 text-sm font-medium text-slate-600">{monthLabel}</p>
+
+      <div className="overflow-x-auto rounded-2xl border border-slate-200">
+        <div className="min-w-[760px] md:min-w-[880px] lg:min-w-0">
+          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+            {WEEKDAY_LABELS.map((label) => (
+              <div key={label} className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-3 sm:text-xs">
+                {label}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {calendarCells.map((cell) => {
+              const iso = toIsoDate(cell.dateObj)
+              const events = eventsByDate.get(iso) || []
+              const isToday = iso === todayIso
+              return (
+                <div
+                  key={cell.key}
+                  className={`min-h-[96px] border-b border-r border-slate-200 p-1.5 last:border-r-0 sm:min-h-[112px] sm:p-2 lg:min-h-[130px] ${
+                    cell.inCurrentMonth ? "bg-white" : "bg-slate-50"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[11px] font-semibold sm:h-6 sm:min-w-[24px] sm:text-xs ${
+                      isToday
+                        ? "bg-blue-600 text-white"
+                        : cell.inCurrentMonth
+                          ? "text-slate-700"
+                          : "text-slate-400"
+                    }`}
+                  >
+                    {cell.value}
+                  </span>
+                  <div className="mt-2 space-y-1">
+                    {events.slice(0, 3).map((event) => (
+                      <button
+                        key={event.id}
+                        type="button"
+                        onClick={() => {
+                          if (event.type === "leave" && event.leaveId) {
+                            navigate(`/leaves/${encodeURIComponent(event.leaveId)}`)
+                          }
+                        }}
+                        className={`block truncate rounded-md px-1.5 py-1 text-[10px] font-medium sm:px-2 sm:text-[11px] ${getEventClass(event.type)}`}
+                        title={event.title}
+                      >
+                        {event.title}
+                      </button>
+                    ))}
+                    {events.length > 3 ? (
+                      <span className="block px-1 text-[10px] font-medium text-slate-500 sm:text-[11px]">
+                        +{events.length - 3} more
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200">
-        <div>
-          <div className="sticky top-0 z-10 flex border-b border-slate-200 bg-white">
-            <div className="w-[220px] border-r border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">Employees</div>
-            <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${rangeDates.length}, minmax(0, 1fr))` }}>
-              {rangeDates.map((date) => (
-                <div key={toYMD(date)} className="border-r border-slate-100 px-1 py-2 text-center last:border-r-0">
-                  <p className="text-sm font-semibold text-slate-700">{date.getDate()}</p>
-                  <p className="text-[11px] text-slate-400">
-                    {new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date)}
-                  </p>
-                </div>
-              ))}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+          Meeting
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-violet-500" />
+          Task
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          Holiday
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+          Leave
+        </span>
+      </div>
+
+      {showAddEventModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
+          <div className="w-full max-w-[420px] rounded-2xl bg-white p-5 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-900">Add Calendar Event</h3>
+            <div className="my-4 border-t border-slate-200" />
+
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Date</span>
+                <input
+                  type="date"
+                  value={eventDate}
+                  onChange={(event) => setEventDate(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Type</span>
+                <select
+                  value={eventType}
+                  onChange={(event) => setEventType(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
+                >
+                  <option value="meeting">Meeting</option>
+                  <option value="task">Task</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
+                <input
+                  type="text"
+                  value={eventTitle}
+                  onChange={(event) => setEventTitle(event.target.value)}
+                  placeholder="Enter event title"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
+                />
+              </label>
+            </div>
+
+            {eventFormError ? (
+              <p className="mt-3 text-sm text-rose-500">{eventFormError}</p>
+            ) : null}
+
+            <div className="mt-6 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAddEventModal(false)}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSavingEvent}
+                onClick={async () => {
+                  if (!eventDate || !eventTitle.trim()) {
+                    setEventFormError("Please fill date and title.")
+                    return
+                  }
+                  try {
+                    setIsSavingEvent(true)
+                    const created = await createCalendarEvent(eventDate, eventTitle.trim(), eventType)
+                    setCalendarEvents((prev) => [...prev, created])
+                    setShowAddEventModal(false)
+                  } catch (error) {
+                    setEventFormError(error?.message || "Unable to create event.")
+                  } finally {
+                    setIsSavingEvent(false)
+                  }
+                }}
+                className="flex-1 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingEvent ? "Saving..." : "Save"}
+              </button>
             </div>
           </div>
-
-          {rows.map((row) => (
-            <div key={row.id} className="flex border-b border-slate-100 last:border-b-0">
-              <div className="flex w-[220px] items-center gap-2 border-r border-slate-200 px-3 py-3">
-                {row.avatar && !brokenAvatarById[row.id] ? (
-                  <img
-                    src={row.avatar}
-                    alt={row.name}
-                    className="h-7 w-7 rounded-full object-cover"
-                    onError={() => {
-                      setBrokenAvatarById((prev) => ({ ...prev, [row.id]: true }))
-                    }}
-                  />
-                ) : (
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-semibold text-emerald-700">
-                    {getInitials(row.name)}
-                  </span>
-                )}
-                <p className="truncate text-sm font-medium text-slate-700">{row.name}</p>
-              </div>
-              <div className="relative flex-1">
-                <div className="grid h-14" style={{ gridTemplateColumns: `repeat(${rangeDates.length}, minmax(0, 1fr))` }}>
-                  {rangeDates.map((date) => (
-                    <span key={`${row.id}-${toYMD(date)}`} className="border-r border-slate-100 last:border-r-0" />
-                  ))}
-                </div>
-                <div className="pointer-events-none absolute inset-0 px-0">
-                  {row.segments.slice(0, 4).map((segment, index) => {
-                    const left = `${(segment.startIndex / rangeDates.length) * 100}%`
-                    const width = `${((segment.endIndex - segment.startIndex + 1) / rangeDates.length) * 100}%`
-                    return (
-                      <span
-                        key={segment.id}
-                        className="absolute inline-flex h-4 items-center overflow-hidden whitespace-nowrap rounded-full px-1.5 text-[9px] font-medium text-white"
-                        style={{ left, width, top: `${10 + index * 11}px`, backgroundColor: segment.color }}
-                        title={segment.reason}
-                      >
-                        {segment.reason}
-                      </span>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          ))}
-          {rows.length === 0 ? (
-            <div className="px-4 py-10 text-center text-sm text-slate-500">
-              No leave records in this date range.
-            </div>
-          ) : null}
         </div>
-      </div>
+      ) : null}
     </article>
   )
 }
