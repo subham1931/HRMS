@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Filter, MoreHorizontal, Search } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { listLeaveRequests } from "../services/leaves"
 
 function formatDate(dateText) {
   if (!dateText) return "-"
@@ -80,7 +81,7 @@ function makeDefaultLeaveRequests(employees) {
 function normalizeRequests(rows) {
   return (rows || []).map((item, index) => ({
     employeeId: item.employeeId || `EMP${1000 + index}`,
-    employeeName: item.name || "Employee",
+    employeeName: item.employeeName || item.name || "Employee",
     department: item.department || "General",
     leaveType: normalizeLeaveType(item.leaveType || item.type || "Casual Leave"),
     startDate: item.startDate || toYMD(new Date()),
@@ -90,7 +91,7 @@ function normalizeRequests(rows) {
     status: item.status || "Pending",
     appliedAt: item.appliedAt || toYMD(new Date()),
     jobTitle: item.jobTitle || item.designation || "Team Member",
-    avatar: item.avatar || item.profileImage || `https://i.pravatar.cc/80?img=${(index * 7 + 9) % 70}`,
+    avatar: item.avatar || item.profileImage || "",
     id: item.id || `leave-${Date.now()}-${index}`,
   }))
 }
@@ -102,32 +103,45 @@ function LeavesPage() {
   const [overviewRange, setOverviewRange] = useState("week")
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
-  const [employees] = useState([])
+  const [loadError, setLoadError] = useState("")
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
-  const [leaveRequests] = useState(() => normalizeRequests(makeDefaultLeaveRequests([])))
+  const [leaveRequests, setLeaveRequests] = useState([])
+
+  useEffect(() => {
+    let mounted = true
+    async function loadRequests() {
+      try {
+        setLoadError("")
+        const rows = await listLeaveRequests()
+        if (!mounted) return
+        setLeaveRequests(normalizeRequests(rows))
+      } catch (error) {
+        if (!mounted) return
+        setLeaveRequests(normalizeRequests(makeDefaultLeaveRequests([])))
+        setLoadError(error?.message || "Unable to load leave requests.")
+      }
+    }
+    loadRequests()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const enrichedRequests = useMemo(() => {
-    const byId = new Map(employees.map((item) => [String(item.employeeId || "").trim().toLowerCase(), item]))
-    const byName = new Map(employees.map((item) => [String(item.name || "").trim().toLowerCase(), item]))
-
     return leaveRequests.map((item, index) => {
-      const employeeFromId = byId.get(String(item.employeeId || "").trim().toLowerCase())
-      const employeeFromName = byName.get(String(item.employeeName || "").trim().toLowerCase())
-      const matchedEmployee = employeeFromId || employeeFromName
-
       return {
         ...item,
-        employeeId: matchedEmployee?.employeeId || item.employeeId || `EMP${1000 + index}`,
-        employeeName: matchedEmployee?.name || item.employeeName || "Employee",
-        department: matchedEmployee?.department || item.department || "General",
-        jobTitle: matchedEmployee?.designation || item.jobTitle || "Team Member",
-        avatar: matchedEmployee?.profileImage || item.avatar || `https://i.pravatar.cc/80?img=${(index * 7 + 9) % 70}`,
+        employeeId: item.employeeId || `EMP${1000 + index}`,
+        employeeName: item.employeeName || "Employee",
+        department: item.department || "General",
+        jobTitle: item.jobTitle || "Team Member",
+        avatar: item.avatar || `https://i.pravatar.cc/80?img=${(index * 7 + 9) % 70}`,
       }
     })
-  }, [employees, leaveRequests])
+  }, [leaveRequests])
 
   const filteredRows = useMemo(() => {
     return enrichedRequests.filter((item) => {
@@ -307,6 +321,11 @@ function LeavesPage() {
   return (
     <div className="space-y-4">
       <article className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+        {loadError ? (
+          <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+            {loadError}
+          </div>
+        ) : null}
         <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
           <div className="grid gap-3 sm:grid-cols-2">
             {[

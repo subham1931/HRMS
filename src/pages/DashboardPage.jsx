@@ -1,10 +1,11 @@
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal, Star } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { listAttendanceRowsByDate } from "../services/attendance"
+import { listAttendanceRecordsInRange, listAttendanceRowsByDate } from "../services/attendance"
+import { getEmployeeCount, getEmploymentTypeCounts } from "../services/employees"
 
-const topStats = [
-  { title: "Total Employees", value: "128", sub: "Employees", footer: "You're part of a growing team!" },
+const topStatsTemplate = [
+  { title: "Total Employees", value: "0", sub: "Employees", footer: "You're part of a growing team!" },
   { title: "Attendance", value: "92%", sub: "Present", extra: "3 Days Off, 1 Late Arrival", footer: "Your attendance this month is looking solid" },
   { title: "Leave Requests", value: "1", sub: "Approved", extra: "1 Pending Review", footer: "You've submitted 2 leave requests this month" },
 ]
@@ -59,7 +60,7 @@ const attendanceRangeData = {
     label: "This Week",
     value: "92%",
     growth: "+1.54%",
-    rowLabels: ["8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM"],
+    rowLabels: ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "After 12"],
     columnLabels: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     rows: [
       ["bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#0f5c4d]", "bg-[#0f5c4d]"],
@@ -99,6 +100,98 @@ const attendanceRangeData = {
   },
 }
 
+const WEEKLY_ROW_LABELS = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "After 12"]
+const WEEKLY_COLUMN_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+const HEATMAP_LEVEL_CLASSES = ["bg-[#f1f3ef]", "bg-[#d2e1c3]", "bg-[#40c3ad]", "bg-[#35bda6]", "bg-[#0f5c4d]"]
+
+const toIsoLocal = (dateObj) => {
+  const y = dateObj.getFullYear()
+  const m = `${dateObj.getMonth() + 1}`.padStart(2, "0")
+  const d = `${dateObj.getDate()}`.padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
+const parseIsoDate = (isoDate) => {
+  const [y, m, d] = String(isoDate || "").split("-").map(Number)
+  return new Date(y, (m || 1) - 1, d || 1)
+}
+
+const getMonday = (baseDate) => {
+  const date = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate())
+  const day = date.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  date.setDate(date.getDate() + diff)
+  return date
+}
+
+const getWeeklySlotIndex = (checkInIso) => {
+  if (!checkInIso) return -1
+  const date = new Date(checkInIso)
+  if (Number.isNaN(date.getTime())) return -1
+  const minutes = date.getHours() * 60 + date.getMinutes()
+  if (minutes <= 10 * 60) return 0
+  if (minutes <= 10 * 60 + 30) return 1
+  if (minutes <= 11 * 60) return 2
+  if (minutes <= 11 * 60 + 30) return 3
+  if (minutes <= 12 * 60) return 4
+  return 5
+}
+
+const getHeatmapClass = (count, maxCount) => {
+  if (!count || maxCount <= 0) return HEATMAP_LEVEL_CLASSES[0]
+  const ratio = count / maxCount
+  if (ratio >= 0.85) return HEATMAP_LEVEL_CLASSES[4]
+  if (ratio >= 0.6) return HEATMAP_LEVEL_CLASSES[3]
+  if (ratio >= 0.35) return HEATMAP_LEVEL_CLASSES[2]
+  return HEATMAP_LEVEL_CLASSES[1]
+}
+
+const buildWeeklyAttendanceRange = (records, previousRecords = []) => {
+  const matrix = Array.from({ length: WEEKLY_ROW_LABELS.length }, () => Array.from({ length: WEEKLY_COLUMN_LABELS.length }, () => 0))
+  let onTimeCount = 0
+  let checkInCount = 0
+
+  records.forEach((item) => {
+    const dayDate = parseIsoDate(item.attendance_date)
+    const weekdayIndex = (dayDate.getDay() + 6) % 7 // Mon=0
+    if (weekdayIndex < 0 || weekdayIndex > 4) return
+    const slotIndex = getWeeklySlotIndex(item.check_in_at)
+    if (slotIndex < 0) return
+    matrix[slotIndex][weekdayIndex] += 1
+    checkInCount += 1
+    if (String(item.status || "").toLowerCase() === "on time") onTimeCount += 1
+  })
+
+  let previousOnTime = 0
+  let previousCheckIns = 0
+  previousRecords.forEach((item) => {
+    if (!item.check_in_at) return
+    previousCheckIns += 1
+    if (String(item.status || "").toLowerCase() === "on time") previousOnTime += 1
+  })
+
+  const maxCount = Math.max(0, ...matrix.flat())
+  const rows = matrix.map((row) =>
+    row.map((count) => ({
+      className: getHeatmapClass(count, maxCount),
+      count,
+    })),
+  )
+  const currentRate = checkInCount ? Math.round((onTimeCount / checkInCount) * 100) : 0
+  const previousRate = previousCheckIns ? (previousOnTime / previousCheckIns) * 100 : 0
+  const growth = currentRate - previousRate
+  const growthPrefix = growth >= 0 ? "+" : "-"
+
+  return {
+    label: "This Week",
+    value: `${currentRate}%`,
+    growth: `${growthPrefix}${Math.abs(growth).toFixed(2)}%`,
+    rowLabels: WEEKLY_ROW_LABELS,
+    columnLabels: WEEKLY_COLUMN_LABELS,
+    rows,
+  }
+}
+
 function DashboardPage() {
   const navigate = useNavigate()
   const [attendanceRange, setAttendanceRange] = useState("weekly")
@@ -108,9 +201,19 @@ function DashboardPage() {
   })
   const [showYearModal, setShowYearModal] = useState(false)
   const [attendanceRows, setAttendanceRows] = useState([])
+  const [totalEmployees, setTotalEmployees] = useState(0)
+  const [employmentTypeCounts, setEmploymentTypeCounts] = useState({
+    fullTime: 0,
+    partTime: 0,
+    freelance: 0,
+    internship: 0,
+  })
+  const [weeklyAttendanceRange, setWeeklyAttendanceRange] = useState(() => buildWeeklyAttendanceRange([]))
   const [attendanceError, setAttendanceError] = useState("")
   const [brokenAvatarById, setBrokenAvatarById] = useState({})
-  const activeAttendanceRange = attendanceRangeData[attendanceRange]
+  const activeAttendanceRange = attendanceRange === "weekly"
+    ? weeklyAttendanceRange
+    : attendanceRangeData[attendanceRange]
   const currentDate = new Date()
   const currentYear = currentDate.getFullYear()
   const calendarLabel = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(calendarMonth)
@@ -129,12 +232,20 @@ function DashboardPage() {
     async function loadAttendancePreview() {
       try {
         setAttendanceError("")
-        const rows = await listAttendanceRowsByDate(todayIso)
+        const [rows, count, employment] = await Promise.all([
+          listAttendanceRowsByDate(todayIso),
+          getEmployeeCount().catch(() => 0),
+          getEmploymentTypeCounts().catch(() => ({ total: 0, counts: { fullTime: 0, partTime: 0, freelance: 0, internship: 0 } })),
+        ])
         if (!mounted) return
         setAttendanceRows(rows.slice(0, 6))
+        setTotalEmployees(count)
+        setEmploymentTypeCounts(employment.counts || { fullTime: 0, partTime: 0, freelance: 0, internship: 0 })
       } catch (error) {
         if (!mounted) return
         setAttendanceRows([])
+        setTotalEmployees(0)
+        setEmploymentTypeCounts({ fullTime: 0, partTime: 0, freelance: 0, internship: 0 })
         setAttendanceError(error?.message || "Unable to load attendance.")
       }
     }
@@ -143,6 +254,37 @@ function DashboardPage() {
       mounted = false
     }
   }, [todayIso])
+
+  useEffect(() => {
+    let mounted = true
+    async function loadWeeklyReport() {
+      try {
+        const today = new Date()
+        const currentWeekStart = getMonday(today)
+        const currentWeekEnd = new Date(currentWeekStart)
+        currentWeekEnd.setDate(currentWeekStart.getDate() + 6)
+        const previousWeekStart = new Date(currentWeekStart)
+        previousWeekStart.setDate(currentWeekStart.getDate() - 7)
+        const previousWeekEnd = new Date(currentWeekStart)
+        previousWeekEnd.setDate(currentWeekStart.getDate() - 1)
+
+        const allRows = await listAttendanceRecordsInRange(toIsoLocal(previousWeekStart), toIsoLocal(currentWeekEnd))
+        if (!mounted) return
+
+        const currentRows = allRows.filter((item) => item.attendance_date >= toIsoLocal(currentWeekStart))
+        const previousRows = allRows.filter((item) => item.attendance_date <= toIsoLocal(previousWeekEnd))
+        setWeeklyAttendanceRange(buildWeeklyAttendanceRange(currentRows, previousRows))
+      } catch {
+        if (!mounted) return
+        setWeeklyAttendanceRange(buildWeeklyAttendanceRange([]))
+      }
+    }
+
+    loadWeeklyReport()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const attendanceCounts = useMemo(() => {
     let onTime = 0
@@ -158,6 +300,27 @@ function DashboardPage() {
     })
     return { onTime, late, onLeave, absent }
   }, [attendanceRows])
+
+  const topStats = useMemo(() => {
+    const next = [...topStatsTemplate]
+    next[0] = { ...next[0], value: String(totalEmployees) }
+    return next
+  }, [totalEmployees])
+
+  const employmentStatusCards = useMemo(() => {
+    const raw = [
+      { key: "fullTime", label: "Full-Time", count: employmentTypeCounts.fullTime, color: "bg-emerald-800" },
+      { key: "partTime", label: "Part-Time", count: employmentTypeCounts.partTime, color: "bg-[#39c9b3]" },
+      { key: "freelance", label: "Freelance", count: employmentTypeCounts.freelance, color: "bg-emerald-300" },
+      { key: "internship", label: "Internship", count: employmentTypeCounts.internship, color: "bg-slate-300" },
+    ]
+    const total = Math.max(1, totalEmployees)
+    return raw.map((item) => ({
+      ...item,
+      percent: Math.round((item.count / total) * 100),
+    }))
+  }, [employmentTypeCounts, totalEmployees])
+  const employmentCoveredPercent = employmentStatusCards.reduce((sum, item) => sum + item.percent, 0)
 
   const calendarCells = [
     ...Array.from({ length: firstWeekday }, (_, idx) => ({
@@ -330,9 +493,21 @@ function DashboardPage() {
                         className="grid gap-1.5"
                         style={{ gridTemplateColumns: `repeat(${activeAttendanceRange.columnLabels.length}, minmax(0, 1fr))` }}
                       >
-                        {row.map((cell, c) => (
-                          <span key={`cell-${r}-${c}`} className={`h-[22px] rounded-md ${cell}`} />
-                        ))}
+                        {row.map((cell, c) => {
+                          const className = typeof cell === "string" ? cell : cell.className
+                          const count = typeof cell === "string" ? 0 : Number(cell.count || 0)
+                          const textClass = className === "bg-[#0f5c4d]" || className === "bg-[#35bda6]"
+                            ? "text-white"
+                            : "text-slate-600"
+                          return (
+                            <span
+                              key={`cell-${r}-${c}`}
+                              className={`inline-flex h-[22px] items-center justify-center rounded-md text-[10px] font-semibold ${className} ${count > 0 ? textClass : ""}`}
+                            >
+                              {count > 0 ? count : ""}
+                            </span>
+                          )
+                        })}
                       </div>
                     ))}
                     <div
@@ -478,48 +653,31 @@ function DashboardPage() {
               </div>
               <div className="mb-3 flex items-end justify-between">
                 <div>
-                  <p className="text-3xl font-semibold text-slate-900">128</p>
+                  <p className="text-3xl font-semibold text-slate-900">{totalEmployees}</p>
                   <p className="text-xs text-slate-500">Employees</p>
                 </div>
                 <p className="text-xs text-slate-500">100%</p>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
                 <div className="flex h-full w-full">
-                  <span className="h-full w-[68%] bg-emerald-800" />
-                  <span className="h-full w-[15%] bg-[#39c9b3]" />
-                  <span className="h-full w-[10%] bg-emerald-300" />
-                  <span className="h-full w-[7%] bg-slate-300" />
+                  {employmentStatusCards.map((item) => (
+                    <span key={`bar-${item.key}`} className={`h-full ${item.color}`} style={{ width: `${item.percent}%` }} />
+                  ))}
+                  {employmentCoveredPercent < 100 ? (
+                    <span className="h-full bg-slate-200" style={{ width: `${100 - employmentCoveredPercent}%` }} />
+                  ) : null}
                 </div>
               </div>
               <div className="mt-4 grid flex-1 grid-cols-2 gap-2.5 text-sm text-slate-700">
-                <div className="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
-                  <p className="inline-flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-800" />
-                    Full-Time
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">68% - 87 Employees</p>
-                </div>
-                <div className="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
-                  <p className="inline-flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-[#39c9b3]" />
-                    Part-Time
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">15% - 19 Employees</p>
-                </div>
-                <div className="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
-                  <p className="inline-flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
-                    Freelance
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">10% - 13 Employees</p>
-                </div>
-                <div className="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
-                  <p className="inline-flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                    Internship
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">7% - 9 Employees</p>
-                </div>
+                {employmentStatusCards.map((item) => (
+                  <div key={item.key} className="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
+                    <p className="inline-flex items-center gap-1.5">
+                      <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
+                      {item.label}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{item.percent}% - {item.count} Employees</p>
+                  </div>
+                ))}
               </div>
             </article>
           </div>

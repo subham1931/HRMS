@@ -226,3 +226,40 @@ export async function updateEmployeeRecord(employeeCode, payload) {
     employeeId: data.employee_code,
   }
 }
+
+export async function getEmployeeCount() {
+  assertSupabaseConfigured()
+  const { count, error } = await supabase
+    .from("employees")
+    .select("id", { count: "exact", head: true })
+
+  if (error) throw new Error(error.message || "Failed to load employee count.")
+  return Number(count || 0)
+}
+
+export async function getEmploymentTypeCounts() {
+  assertSupabaseConfigured()
+  const { data, error } = await supabase
+    .from("employees")
+    .select("employment_type")
+
+  if (error) throw new Error(error.message || "Failed to load employment type counts.")
+
+  const counts = {
+    fullTime: 0,
+    partTime: 0,
+    freelance: 0,
+    internship: 0,
+  }
+
+  ;(data || []).forEach((row) => {
+    const value = String(row?.employment_type || "").trim().toLowerCase()
+    if (value === "full-time") counts.fullTime += 1
+    else if (value === "part-time") counts.partTime += 1
+    else if (value === "freelance") counts.freelance += 1
+    else if (value === "internship") counts.internship += 1
+  })
+
+  const total = Number(data?.length || 0)
+  return { total, counts }
+}

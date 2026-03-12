@@ -1,5 +1,6 @@
 import { Calendar, ChevronLeft, Mail, MapPin, PenLine, Phone } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { listEmployeeAttendanceRecordsInRange } from "../services/attendance"
 
 const getInitials = (value) => (value || "A")
   .split(" ")
@@ -8,8 +9,151 @@ const getInitials = (value) => (value || "A")
   .map((word) => word[0]?.toUpperCase() || "")
   .join("")
 
+const DAY_MS = 24 * 60 * 60 * 1000
+const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"]
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+const toIsoDate = (value) => {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+const parseIsoDate = (iso) => {
+  const [year, month, day] = String(iso || "").split("-").map((part) => Number(part))
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+const getMonday = (date) => {
+  const base = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const day = base.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  base.setDate(base.getDate() + diff)
+  return base
+}
+
+const getMonthBounds = (date) => {
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const start = new Date(year, month, 1)
+  const end = new Date(year, month + 1, 0)
+  return { start, end }
+}
+
+const getWorkdayCount = (start, end) => {
+  if (!start || !end || start > end) return 0
+  let count = 0
+  for (let cursor = new Date(start); cursor <= end; cursor = new Date(cursor.getTime() + DAY_MS)) {
+    const day = cursor.getDay()
+    if (day !== 0 && day !== 6) count += 1
+  }
+  return count
+}
+
+const formatClockDuration = (minutes) => {
+  const value = Math.max(0, Number(minutes || 0))
+  const hrs = Math.floor(value / 60)
+  const mins = value % 60
+  return `${hrs}:${String(mins).padStart(2, "0")}`
+}
+
+const formatTotalWorkHours = (minutes) => {
+  const value = Math.max(0, Number(minutes || 0))
+  const hrs = Math.floor(value / 60)
+  const mins = value % 60
+  return `${hrs}h ${mins}m`
+}
+
+const getMinutesFromRecord = (record) => {
+  const storedMinutes = Number(record?.work_minutes)
+  if (Number.isFinite(storedMinutes) && storedMinutes >= 0) return storedMinutes
+  if (!record?.check_in_at || !record?.check_out_at) return 0
+  const start = new Date(record.check_in_at)
+  const end = new Date(record.check_out_at)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000))
+}
+
+const getRangeBounds = (range, now) => {
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (range === "This Week") {
+    const start = getMonday(end)
+    return { start, end }
+  }
+  if (range === "This Month") {
+    const start = new Date(end.getFullYear(), end.getMonth(), 1)
+    return { start, end }
+  }
+  const start = new Date(end.getFullYear(), 0, 1)
+  return { start, end }
+}
+
+const buildPerformanceGraph = (range, records, now) => {
+  const minutesByDate = new Map()
+  ;(records || []).forEach((record) => {
+    const dateKey = String(record?.attendance_date || "")
+    if (!dateKey) return
+    minutesByDate.set(dateKey, (minutesByDate.get(dateKey) || 0) + getMinutesFromRecord(record))
+  })
+
+  let buckets = []
+  let bottomLabels = []
+
+  if (range === "This Week") {
+    const weekStart = getMonday(now)
+    bottomLabels = WEEKDAY_LABELS
+    buckets = Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(weekStart.getTime() + (index * DAY_MS))
+      return minutesByDate.get(toIsoDate(day)) || 0
+    })
+  } else if (range === "This Month") {
+    const year = now.getFullYear()
+    const month = now.getMonth()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const weekCount = Math.ceil(daysInMonth / 7)
+    bottomLabels = Array.from({ length: weekCount }, (_, index) => `Week ${index + 1}`)
+    buckets = Array.from({ length: weekCount }, () => 0)
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const slot = Math.floor((day - 1) / 7)
+      const dateKey = toIsoDate(new Date(year, month, day))
+      buckets[slot] += minutesByDate.get(dateKey) || 0
+    }
+  } else {
+    const year = now.getFullYear()
+    bottomLabels = MONTH_LABELS
+    buckets = Array.from({ length: 12 }, () => 0)
+    minutesByDate.forEach((minutes, dateKey) => {
+      const parsed = parseIsoDate(dateKey)
+      if (!parsed || parsed.getFullYear() !== year) return
+      buckets[parsed.getMonth()] += minutes
+    })
+  }
+
+  const maxMinutes = Math.max(0, ...buckets)
+  const heights = buckets.map((minutes) => {
+    if (maxMinutes <= 0) return 8
+    return Math.max(8, Math.round((minutes / maxMinutes) * 100))
+  })
+  const totalMinutes = buckets.reduce((sum, minutes) => sum + minutes, 0)
+
+  return {
+    topLabels: buckets.map((minutes) => formatClockDuration(minutes)),
+    bottomLabels,
+    heights,
+    activeIndex: maxMinutes > 0 ? buckets.indexOf(maxMinutes) : -1,
+    totalMinutes,
+  }
+}
+
 function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
   const [performanceRange, setPerformanceRange] = useState("This Week")
+  const [performanceGraph, setPerformanceGraph] = useState(() => buildPerformanceGraph("This Week", [], new Date()))
+  const [monthAttendanceMap, setMonthAttendanceMap] = useState({})
+  const [monthAttendanceStats, setMonthAttendanceStats] = useState({ present: 0, late: 0, onLeave: 0, absent: 0 })
   const isLegacyEmployee = Array.isArray(employee)
   const [legacyName, legacyEmployeeId, legacyDepartment, legacyDesignation, legacyType] = isLegacyEmployee ? employee : []
   const name = isLegacyEmployee ? legacyName : employee?.name
@@ -31,7 +175,7 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
     { label: "Casual Leaves", used: 8, total: 24, color: "#d5e3c2" },
     { label: "Sick Leaves", used: 3, total: 4, color: "#1f8e7b" },
   ]
-  const [calendarCursor, setCalendarCursor] = useState(() => new Date(2035, 5, 1))
+  const [calendarCursor, setCalendarCursor] = useState(() => new Date())
   const calendarDays = useMemo(() => {
     const year = calendarCursor.getFullYear()
     const month = calendarCursor.getMonth()
@@ -56,41 +200,7 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
     () => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(calendarCursor),
     [calendarCursor],
   )
-  const calendarCellClass = {
-    "1": "bg-[#174f48] text-white font-semibold",
-    "4": "bg-[#49c4af] text-white",
-    "15": "bg-[#49c4af] text-white",
-    "20": "bg-[#49c4af] text-white",
-    "21": "bg-[#49c4af] text-white",
-    "26": "bg-[#174f48] text-white font-semibold",
-    "28": "bg-[#49c4af] text-white",
-  }
-  const totalHoursByRange = {
-    "This Week": "34h 30m",
-    "This Month": "142h 15m",
-    "This Year": "1720h 40m",
-  }
-  const performanceGraphByRange = {
-    "This Week": {
-      topLabels: ["8:00", "7:30", "4:00", "8:00", "7:00", "0:00", "0:00"],
-      bottomLabels: ["M", "T", "W", "T", "F", "S", "S"],
-      heights: [96, 82, 60, 100, 72, 100, 100],
-      activeIndex: 3,
-    },
-    "This Month": {
-      topLabels: ["36h", "31h", "40h", "35h"],
-      bottomLabels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-      heights: [76, 68, 94, 80],
-      activeIndex: 2,
-    },
-    "This Year": {
-      topLabels: ["142h", "136h", "150h", "144h", "147h", "138h"],
-      bottomLabels: ["Jan-Feb", "Mar-Apr", "May-Jun", "Jul-Aug", "Sep-Oct", "Nov-Dec"],
-      heights: [72, 66, 92, 78, 84, 70],
-      activeIndex: 2,
-    },
-  }
-  const activeGraph = performanceGraphByRange[performanceRange]
+  const activeGraph = performanceGraph
   const personalInfoRows = [
     { label: "Gender", value: isLegacyEmployee ? "" : employee?.gender || "" },
     { label: "Date of Birth", value: isLegacyEmployee ? "" : employee?.dob || "" },
@@ -123,6 +233,101 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
     { label: "Bank Name", value: employee?.bankName || "" },
     { label: "Bank Account Number", value: employee?.bankAccount || "" },
   ].filter((item) => item.value && String(item.value).trim() !== "")
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadPerformanceGraph() {
+      const code = String(employeeId || "").trim()
+      const now = new Date()
+      if (!code) {
+        if (mounted) setPerformanceGraph(buildPerformanceGraph(performanceRange, [], now))
+        return
+      }
+
+      const { start, end } = getRangeBounds(performanceRange, now)
+      try {
+        const records = await listEmployeeAttendanceRecordsInRange(code, toIsoDate(start), toIsoDate(end))
+        if (!mounted) return
+        setPerformanceGraph(buildPerformanceGraph(performanceRange, records, now))
+      } catch {
+        if (!mounted) return
+        setPerformanceGraph(buildPerformanceGraph(performanceRange, [], now))
+      }
+    }
+
+    loadPerformanceGraph()
+    return () => {
+      mounted = false
+    }
+  }, [employeeId, performanceRange])
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadMonthAttendance() {
+      const code = String(employeeId || "").trim()
+      const { start, end } = getMonthBounds(calendarCursor)
+      if (!code) {
+        if (!mounted) return
+        setMonthAttendanceMap({})
+        setMonthAttendanceStats({ present: 0, late: 0, onLeave: 0, absent: 0 })
+        return
+      }
+
+      try {
+        const records = await listEmployeeAttendanceRecordsInRange(code, toIsoDate(start), toIsoDate(end))
+        if (!mounted) return
+
+        const statusByDate = {}
+        let present = 0
+        let late = 0
+        let onLeave = 0
+        const markedWorkdaySet = new Set()
+
+        records.forEach((record) => {
+          const dateKey = String(record?.attendance_date || "")
+          if (!dateKey) return
+
+          const status = String(record?.status || "").trim().toLowerCase()
+          const isLeave = status.includes("leave")
+          const isLate = status === "late"
+          const hasCheckIn = Boolean(record?.check_in_at)
+          const isPresent = hasCheckIn && !isLeave && !isLate
+
+          if (isLeave) {
+            onLeave += 1
+            statusByDate[dateKey] = "onLeave"
+          } else if (isLate) {
+            late += 1
+            statusByDate[dateKey] = "late"
+            markedWorkdaySet.add(dateKey)
+          } else if (isPresent) {
+            present += 1
+            statusByDate[dateKey] = "present"
+            markedWorkdaySet.add(dateKey)
+          }
+        })
+
+        const today = new Date()
+        const monthEndForAbsence = end < today ? end : new Date(today.getFullYear(), today.getMonth(), today.getDate())
+        const workdaysInScope = getWorkdayCount(start, monthEndForAbsence)
+        const absent = Math.max(0, workdaysInScope - markedWorkdaySet.size)
+
+        setMonthAttendanceMap(statusByDate)
+        setMonthAttendanceStats({ present, late, onLeave, absent })
+      } catch {
+        if (!mounted) return
+        setMonthAttendanceMap({})
+        setMonthAttendanceStats({ present: 0, late: 0, onLeave: 0, absent: 0 })
+      }
+    }
+
+    loadMonthAttendance()
+    return () => {
+      mounted = false
+    }
+  }, [calendarCursor, employeeId])
 
   return (
     <div className="rounded-2xl bg-white">
@@ -223,18 +428,24 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
                 <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">▼</span>
               </div>
             </div>
-            <p className="text-[30px] font-semibold leading-none text-slate-800">{totalHoursByRange[performanceRange]}</p>
+            <p className="text-[30px] font-semibold leading-none text-slate-800">{formatTotalWorkHours(activeGraph.totalMinutes)}</p>
             <p className="mt-1 text-xs text-slate-500">Total logged hours for selected range</p>
             <div className="mt-4 flex-1 rounded-xl bg-gradient-to-t from-[#e8f5ef] to-white p-3">
               <div className="grid h-full grid-rows-[auto_1fr_auto] gap-2">
-                <div className={`grid gap-2 text-center text-[11px] text-slate-500 ${activeGraph.topLabels.length === 7 ? "grid-cols-7" : activeGraph.topLabels.length === 6 ? "grid-cols-6" : "grid-cols-4"}`}>
+                <div
+                  className="grid gap-2 text-center text-[11px] text-slate-500"
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, activeGraph.topLabels.length)}, minmax(0, 1fr))` }}
+                >
                   {activeGraph.topLabels.map((slot, index) => (
                     <span key={`perf-slot-${index}`} className={index === activeGraph.activeIndex ? "font-semibold text-[#1f6257]" : ""}>
                       {slot}
                     </span>
                   ))}
                 </div>
-                <div className={`grid h-full items-end gap-2 ${activeGraph.heights.length === 7 ? "grid-cols-7" : activeGraph.heights.length === 6 ? "grid-cols-6" : "grid-cols-4"}`}>
+                <div
+                  className="grid h-full items-end gap-2"
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, activeGraph.heights.length)}, minmax(0, 1fr))` }}
+                >
                   {activeGraph.heights.map((height, index) => {
                     const isActive = index === activeGraph.activeIndex
                     const topColor = isActive ? "#1f6257" : (height > 85 ? "#d2e1c3" : "#4fc2aa")
@@ -247,7 +458,10 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
                     )
                   })}
                 </div>
-                <div className={`grid gap-2 text-center text-xs text-slate-500 ${activeGraph.bottomLabels.length === 7 ? "grid-cols-7" : activeGraph.bottomLabels.length === 6 ? "grid-cols-6" : "grid-cols-4"}`}>
+                <div
+                  className="grid gap-2 text-center text-xs text-slate-500"
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, activeGraph.bottomLabels.length)}, minmax(0, 1fr))` }}
+                >
                   {activeGraph.bottomLabels.map((day, index) => (
                     <span key={`perf-day-${index}`}>{day}</span>
                   ))}
@@ -351,7 +565,14 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
                       key={`${weekIndex}-${cell.day}`}
                       className={`inline-flex h-7 items-center justify-center rounded-md ${
                         cell.inCurrentMonth
-                          ? (calendarCellClass[String(cell.day)] || "bg-[#dceac7] text-slate-700")
+                          ? (() => {
+                              const dateKey = toIsoDate(new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), cell.day))
+                              const status = monthAttendanceMap[dateKey]
+                              if (status === "late") return "bg-[#49c4af] text-white"
+                              if (status === "onLeave") return "bg-[#174f48] text-white"
+                              if (status === "present") return "bg-[#dceac7] text-slate-700"
+                              return "bg-white text-slate-700"
+                            })()
                           : "text-slate-400"
                       }`}
                     >
@@ -363,10 +584,10 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
             </div>
             <div className="mt-3 grid grid-cols-2 gap-1.5 border-t border-slate-200 pt-3">
               {[
-                { label: "Present", value: "13", color: "#dceac7" },
-                { label: "Late", value: "5", color: "#49c4af" },
-                { label: "On Leave", value: "2", color: "#174f48" },
-                { label: "Absent", value: "1", color: "#e5e7eb" },
+                { label: "Present", value: String(monthAttendanceStats.present), color: "#dceac7" },
+                { label: "Late", value: String(monthAttendanceStats.late), color: "#49c4af" },
+                { label: "On Leave", value: String(monthAttendanceStats.onLeave), color: "#174f48" },
+                { label: "Absent", value: String(monthAttendanceStats.absent), color: "#e5e7eb" },
               ].map((item) => (
                 <div key={item.label} className="rounded-md bg-white px-1.5 py-1">
                   <p className="flex items-center gap-1 text-[10px] leading-none text-slate-500">

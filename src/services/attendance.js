@@ -25,7 +25,7 @@ export async function listAttendanceRowsByDate(attendanceDate) {
       .order("full_name", { ascending: true }),
     supabase
       .from("attendance_records")
-      .select("employee_code, check_in_at, check_out_at, status")
+      .select("employee_code, check_in_at, check_out_at, status, overtime_minutes")
       .eq("attendance_date", date),
   ])
 
@@ -45,6 +45,42 @@ export async function listAttendanceRowsByDate(attendanceDate) {
       deriveStatus(record),
       emp.profile_image_url || "",
       emp.employee_code || "",
+      Number(record?.overtime_minutes || 0),
     ]
   })
+}
+
+export async function listAttendanceRecordsInRange(startDate, endDate) {
+  assertSupabaseConfigured()
+  const start = String(startDate || "").trim()
+  const end = String(endDate || "").trim()
+  if (!start || !end) return []
+
+  const { data, error } = await supabase
+    .from("attendance_records")
+    .select("attendance_date, check_in_at, status")
+    .gte("attendance_date", start)
+    .lte("attendance_date", end)
+
+  if (error) throw new Error(error.message || "Failed to load attendance range.")
+  return data || []
+}
+
+export async function listEmployeeAttendanceRecordsInRange(employeeCode, startDate, endDate) {
+  assertSupabaseConfigured()
+  const code = String(employeeCode || "").trim()
+  const start = String(startDate || "").trim()
+  const end = String(endDate || "").trim()
+  if (!code || !start || !end) return []
+
+  const { data, error } = await supabase
+    .from("attendance_records")
+    .select("attendance_date, check_in_at, check_out_at, work_minutes, status")
+    .eq("employee_code", code)
+    .gte("attendance_date", start)
+    .lte("attendance_date", end)
+    .order("attendance_date", { ascending: true })
+
+  if (error) throw new Error(error.message || "Failed to load employee attendance.")
+  return data || []
 }

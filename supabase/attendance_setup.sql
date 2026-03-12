@@ -11,10 +11,12 @@ create table if not exists public.attendance_records (
   check_out_at timestamptz,
   status text not null default 'Not Marked',
   work_minutes integer not null default 0,
+  overtime_minutes integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (employee_code, attendance_date)
 );
+alter table public.attendance_records add column if not exists overtime_minutes integer not null default 0;
 
 create index if not exists attendance_records_date_idx
   on public.attendance_records(attendance_date);

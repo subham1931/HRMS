@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ArrowLeft, Check, ChevronDown, X } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
+import { listLeaveRequests, updateLeaveRequestStatus } from "../services/leaves"
 const YEARLY_LEAVE_QUOTA = {
   "Annual Leave": 20,
   "Sick Leave": 10,
@@ -49,70 +50,75 @@ function normalizeRequests(rows) {
     reason: item.reason || "Requested from employee mobile app.",
     source: item.source || "mobile-app",
     status: item.status || "Pending",
-    appliedAt: item.appliedAt || toYMD(new Date()),
+    appliedAt: item.appliedAt || (item.createdAt ? String(item.createdAt).slice(0, 10) : toYMD(new Date())),
     jobTitle: item.jobTitle || item.designation || "Team Member",
     avatar: item.avatar || item.profileImage || `https://i.pravatar.cc/80?img=${(index * 7 + 9) % 70}`,
     id: item.id || `leave-${Date.now()}-${index}`,
   }))
 }
 
+const getInitials = (value) => (value || "E")
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0]?.toUpperCase() || "")
+  .join("")
+
 function LeaveRequestDetailsPage() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const leaveId = decodeURIComponent(pathname.split("/").pop() || "")
   const [balanceRange, setBalanceRange] = useState("month")
+  const [leaveRequests, setLeaveRequests] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
-  const [employees] = useState([])
-  const [leaveRequests, setLeaveRequests] = useState(() => normalizeRequests([]))
-
-  const leaveRequest = useMemo(() => {
-    const base = leaveRequests.find((item) => item.id === leaveId)
-    if (!base) {
-      return {
-        id: leaveId || "leave-static",
-        employeeId: "EMP-7307",
-        employeeName: "Rohit Rana",
-        department: "Sales",
-        leaveType: "Other Leave",
-        startDate: "2026-02-27",
-        endDate: "2026-03-01",
-        reason: "Personal family work",
-        source: "mobile-app",
-        status: "Pending",
-        appliedAt: "2026-02-25",
-        jobTitle: "Field Officer",
-        avatar: "https://i.pravatar.cc/80?img=44",
+  useEffect(() => {
+    let mounted = true
+    async function loadRequests() {
+      try {
+        setLoadError("")
+        setIsLoading(true)
+        const rows = await listLeaveRequests()
+        if (!mounted) return
+        setLeaveRequests(normalizeRequests(rows))
+      } catch (error) {
+        if (!mounted) return
+        setLeaveRequests([])
+        setLoadError(error?.message || "Unable to load leave request details.")
+      } finally {
+        if (mounted) setIsLoading(false)
       }
     }
-    const byId = new Map(employees.map((item) => [String(item.employeeId || "").trim().toLowerCase(), item]))
-    const byName = new Map(employees.map((item) => [String(item.name || "").trim().toLowerCase(), item]))
-    const employeeFromId = byId.get(String(base.employeeId || "").trim().toLowerCase())
-    const employeeFromName = byName.get(String(base.employeeName || "").trim().toLowerCase())
-    const matchedEmployee = employeeFromId || employeeFromName
-    return {
-      ...base,
-      employeeId: matchedEmployee?.employeeId || base.employeeId,
-      employeeName: matchedEmployee?.name || base.employeeName,
-      department: matchedEmployee?.department || base.department,
-      jobTitle: matchedEmployee?.designation || base.jobTitle,
-      avatar: matchedEmployee?.profileImage || base.avatar,
+    loadRequests()
+    return () => {
+      mounted = false
     }
-  }, [employees, leaveId, leaveRequests])
+  }, [])
 
-  const updateLeaveStatus = (nextStatus) => {
+  const leaveRequest = useMemo(() => {
+    return leaveRequests.find((item) => item.id === leaveId) || null
+  }, [leaveId, leaveRequests])
+
+  const handleUpdateLeaveStatus = async (nextStatus) => {
     if (!leaveRequest) return
-    setLeaveRequests((prev) =>
-      prev.map((item) =>
-        item.id === leaveRequest.id
-          ? {
-              ...item,
-              status: nextStatus,
-              reviewedAt: new Date().toISOString(),
-              reviewedBy: "HR",
-            }
-          : item,
-      ),
-    )
+    try {
+      setIsUpdatingStatus(true)
+      await updateLeaveRequestStatus(leaveRequest.id, nextStatus)
+      setLeaveRequests((prev) =>
+        prev.map((item) =>
+          item.id === leaveRequest.id
+            ? { ...item, status: nextStatus, reviewedAt: new Date().toISOString() }
+            : item,
+        ),
+      )
+    } catch (error) {
+      setLoadError(error?.message || "Unable to update leave status.")
+      return
+    } finally {
+      setIsUpdatingStatus(false)
+    }
     navigate("/leaves")
   }
   const leaveBalance = useMemo(() => {
@@ -156,8 +162,37 @@ function LeaveRequestDetailsPage() {
     })
   }, [balanceRange, leaveRequest, leaveRequests])
 
+  if (isLoading) {
+    return (
+      <article className="rounded-2xl border border-slate-200 bg-white p-5">
+        <p className="text-sm text-slate-500">Loading leave request details...</p>
+      </article>
+    )
+  }
+
+  if (!leaveRequest) {
+    return (
+      <article className="rounded-2xl border border-slate-200 bg-white p-5">
+        <button
+          type="button"
+          onClick={() => navigate("/leaves")}
+          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600"
+        >
+          <ArrowLeft size={14} />
+          Back to Leaves
+        </button>
+        <p className="mt-4 text-sm text-slate-500">Leave request not found.</p>
+      </article>
+    )
+  }
+
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5">
+      {loadError ? (
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+          {loadError}
+        </div>
+      ) : null}
       <button
         type="button"
         onClick={() => navigate("/leaves")}
@@ -173,7 +208,13 @@ function LeaveRequestDetailsPage() {
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-[90px_1fr]">
-        <img src={leaveRequest.avatar} alt={leaveRequest.employeeName} className="h-20 w-20 rounded-xl object-cover" />
+        {leaveRequest.avatar ? (
+          <img src={leaveRequest.avatar} alt={leaveRequest.employeeName} className="h-20 w-20 rounded-xl object-cover" />
+        ) : (
+          <span className="inline-flex h-20 w-20 items-center justify-center rounded-xl bg-emerald-100 text-xl font-semibold text-emerald-700">
+            {getInitials(leaveRequest.employeeName)}
+          </span>
+        )}
         <div>
           <p className="text-lg font-semibold text-slate-800">{leaveRequest.employeeName}</p>
           <p className="text-sm text-slate-500">{leaveRequest.employeeId} · {leaveRequest.jobTitle}</p>
@@ -227,19 +268,21 @@ function LeaveRequestDetailsPage() {
       <div className="mt-5 flex justify-end gap-2">
         <button
           type="button"
-          onClick={() => updateLeaveStatus("Rejected")}
-          className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600"
+          disabled={leaveRequest.status !== "Pending" || isUpdatingStatus}
+          onClick={() => handleUpdateLeaveStatus("Rejected")}
+          className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <X size={14} />
           Reject
         </button>
         <button
           type="button"
-          onClick={() => updateLeaveStatus("Approved")}
-          className="inline-flex items-center gap-1 rounded-xl bg-[#53c4ae] px-4 py-2 text-sm font-medium text-white"
+          disabled={leaveRequest.status !== "Pending" || isUpdatingStatus}
+          onClick={() => handleUpdateLeaveStatus("Approved")}
+          className="inline-flex items-center gap-1 rounded-xl bg-[#53c4ae] px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Check size={14} />
-          Approve
+          {isUpdatingStatus ? "Updating..." : "Approve"}
         </button>
       </div>
     </article>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Plus, Search, SlidersHorizontal, X } from "lucide-react"
-import { listAttendanceRowsByDate } from "../services/attendance"
+import { listAttendanceRecordsInRange, listAttendanceRowsByDate } from "../services/attendance"
+import { getEmployeeCount } from "../services/employees"
 
 const initialAttendanceRows = []
 
@@ -34,6 +35,14 @@ const formatDuration = (minutes) => {
   return `${hrs}h ${mins}m`
 }
 
+const formatOvertime = (minutes) => {
+  const value = Number(minutes || 0)
+  if (!Number.isFinite(value) || value <= 0) return "0"
+  const hrs = Math.floor(value / 60)
+  const mins = value % 60
+  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`
+}
+
 const getInitials = (name) => (name || "A")
   .split(" ")
   .filter(Boolean)
@@ -48,6 +57,14 @@ const getStatusClasses = (value) => {
   if (status === "absent") return "bg-slate-100 text-slate-600"
   if (status === "on leave") return "bg-amber-50 text-amber-600"
   return "bg-slate-100 text-slate-500"
+}
+
+const getMonday = (date) => {
+  const base = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const day = base.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  base.setDate(base.getDate() + diff)
+  return base
 }
 
 function AttendancePage() {
@@ -68,6 +85,8 @@ function AttendancePage() {
   const [loadError, setLoadError] = useState("")
   const [brokenAvatarById, setBrokenAvatarById] = useState({})
   const [attendanceRows, setAttendanceRows] = useState(() => initialAttendanceRows)
+  const [overviewRecords, setOverviewRecords] = useState([])
+  const [totalEmployeesCount, setTotalEmployeesCount] = useState(0)
 
   useEffect(() => {
     let mounted = true
@@ -88,6 +107,45 @@ function AttendancePage() {
       mounted = false
     }
   }, [selectedDate])
+
+  useEffect(() => {
+    let mounted = true
+    const now = new Date()
+    let startDate
+    let endDate
+
+    if (overviewRange === "week") {
+      startDate = getMonday(now)
+      endDate = new Date(startDate.getTime() + (6 * 24 * 60 * 60 * 1000))
+    } else if (overviewRange === "month") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    } else {
+      startDate = new Date(now.getFullYear(), 0, 1)
+      endDate = new Date(now.getFullYear(), 11, 31)
+    }
+
+    async function loadOverview() {
+      try {
+        const [records, totalCount] = await Promise.all([
+          listAttendanceRecordsInRange(toIsoDate(startDate), toIsoDate(endDate)),
+          getEmployeeCount().catch(() => 0),
+        ])
+        if (!mounted) return
+        setOverviewRecords(records || [])
+        setTotalEmployeesCount(Number(totalCount) || 0)
+      } catch {
+        if (!mounted) return
+        setOverviewRecords([])
+        setTotalEmployeesCount(0)
+      }
+    }
+
+    loadOverview()
+    return () => {
+      mounted = false
+    }
+  }, [overviewRange])
 
   const filteredRows = useMemo(() => {
     return attendanceRows.filter((row) => {
@@ -126,31 +184,77 @@ function AttendancePage() {
   }, [attendanceRows])
   const attendanceOverviewBars = useMemo(() => {
     const now = new Date()
-    const todayWeekIndex = (now.getDay() + 6) % 7 // Mon=0 ... Sun=6
-    const todayWeekOfMonthIndex = Math.floor((now.getDate() - 1) / 7) // Week 1 => 0
-    const currentMonthIndex = now.getMonth() // Jan=0 ... Dec=11
-    const labelsByRange = {
-      week: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-      month: ["Week 1", "Week 2", "Week 3", "Week 4"],
-      year: Array.from({ length: 12 }, (_, index) =>
-        new Intl.DateTimeFormat("en-US", { month: "short" }).format(new Date(now.getFullYear(), index, 1))),
-    }
-    const labels = labelsByRange[overviewRange] || labelsByRange.month
-    const total = Math.max(1, attendanceRows.length)
-    const baseRate = Math.round((attendanceSummary.present / total) * 100)
-    const offsets = [-6, -3, 2, -8, -2, 4, -1, 3, -4, 1, 5, -2]
-    return labels.map((label, index) => {
-      const isFutureWeekDay = overviewRange === "week" && index > todayWeekIndex
-      const isFutureMonthWeek = overviewRange === "month" && index > todayWeekOfMonthIndex
-      const isFutureYearMonth = overviewRange === "year" && index > currentMonthIndex
-      return {
-        month: label,
-        rate: isFutureWeekDay || isFutureMonthWeek || isFutureYearMonth
-          ? null
-          : Math.max(48, Math.min(100, baseRate + offsets[index % offsets.length])),
+    const denominator = Math.max(1, Number(totalEmployeesCount) || 0)
+    const presentByDate = new Map()
+
+    ;(overviewRecords || []).forEach((row) => {
+      const dateKey = String(row?.attendance_date || "")
+      const status = String(row?.status || "").toLowerCase()
+      if (!dateKey) return
+      if (status === "on time" || status === "late") {
+        presentByDate.set(dateKey, (presentByDate.get(dateKey) || 0) + 1)
       }
     })
-  }, [attendanceRows.length, attendanceSummary.present, overviewRange])
+
+    if (overviewRange === "week") {
+      const weekStart = getMonday(now)
+      return Array.from({ length: 7 }, (_, index) => {
+        const dayDate = new Date(weekStart.getTime() + (index * 24 * 60 * 60 * 1000))
+        const dateKey = toIsoDate(dayDate)
+        const isFuture = dayDate > now
+        const presentCount = presentByDate.get(dateKey) || 0
+        return {
+          month: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index],
+          rate: isFuture ? null : Math.round((presentCount / denominator) * 100),
+        }
+      })
+    }
+
+    if (overviewRange === "month") {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+      const weekCount = Math.ceil(daysInMonth / 7)
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+      return Array.from({ length: weekCount }, (_, index) => {
+        const startDay = (index * 7) + 1
+        const endDay = Math.min(daysInMonth, startDay + 6)
+        let dayCount = 0
+        let sumRate = 0
+        for (let day = startDay; day <= endDay; day += 1) {
+          const dateKey = toIsoDate(new Date(monthStart.getFullYear(), monthStart.getMonth(), day))
+          const current = new Date(monthStart.getFullYear(), monthStart.getMonth(), day)
+          if (current > today) continue
+          dayCount += 1
+          sumRate += Math.round(((presentByDate.get(dateKey) || 0) / denominator) * 100)
+        }
+        return {
+          month: `Week ${index + 1}`,
+          rate: dayCount === 0 ? null : Math.round(sumRate / dayCount),
+        }
+      })
+    }
+
+    const currentMonth = now.getMonth()
+    return Array.from({ length: 12 }, (_, index) => {
+      const label = new Intl.DateTimeFormat("en-US", { month: "short" }).format(new Date(now.getFullYear(), index, 1))
+      if (index > currentMonth) return { month: label, rate: null }
+      const daysInMonth = new Date(now.getFullYear(), index + 1, 0).getDate()
+      let dayCount = 0
+      let sumRate = 0
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const dateKey = toIsoDate(new Date(now.getFullYear(), index, day))
+        const current = new Date(now.getFullYear(), index, day)
+        if (current > now) continue
+        dayCount += 1
+        sumRate += Math.round(((presentByDate.get(dateKey) || 0) / denominator) * 100)
+      }
+      return {
+        month: label,
+        rate: dayCount === 0 ? null : Math.round(sumRate / dayCount),
+      }
+    })
+  }, [overviewRange, overviewRecords, totalEmployeesCount])
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safeCurrentPage = Math.min(currentPage, totalPages)
@@ -597,12 +701,7 @@ function AttendancePage() {
                   )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 text-slate-700">
-                  {(() => {
-                    const outMinutes = toMinutesFromLabel(row[5])
-                    if (outMinutes == null) return "--"
-                    const overtime = outMinutes - 18 * 60
-                    return overtime > 0 ? `${Math.floor(overtime / 60)}h ${overtime % 60}m` : "--"
-                  })()}
+                  {formatOvertime(row[9])}
                 </td>
                 <td className="px-3 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClasses(row[6])}`}>
