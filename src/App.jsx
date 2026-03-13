@@ -9,6 +9,7 @@ import EmployeesPage from "./pages/EmployeesPage"
 import AddEmployeePage from "./pages/AddEmployeePage"
 import EditEmployeePage from "./pages/EditEmployeePage"
 import DepartmentsPage from "./pages/DepartmentsPage"
+import DepartmentDetailsPage from "./pages/DepartmentDetailsPage"
 import OfficesPage from "./pages/OfficesPage"
 import AttendancePage from "./pages/AttendancePage"
 import PayrollPage from "./pages/PayrollPage"
@@ -42,7 +43,7 @@ function App() {
       return "Light"
     }
   })
-  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/employees/addemploye" || pathname === "/employees/editemploye" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup" || pathname === "/departments" || pathname === "/offices" || pathname === "/setup/leaves" || pathname === "/leaves" || pathname === "/calendar" || pathname === "/leaves/calendar" || pathname === "/holidays" || pathname === "/profile" || pathname.startsWith("/leaves/"))
+  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/employees/addemploye" || pathname === "/employees/editemploye" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup" || pathname === "/departments" || pathname.startsWith("/departments/") || pathname === "/offices" || pathname === "/setup/leaves" || pathname === "/leaves" || pathname === "/calendar" || pathname === "/leaves/calendar" || pathname === "/holidays" || pathname === "/profile" || pathname.startsWith("/leaves/"))
   const isDarkUi = appearance === "Dark"
 
   useEffect(() => {
@@ -153,6 +154,8 @@ function App() {
   }
   const activeRouteContent = pathname === "/leaves/calendar"
     ? <LeaveCalendarPage appearance={appearance} />
+    : pathname.startsWith("/departments/")
+      ? <DepartmentDetailsPage appearance={appearance} />
     : pathname.startsWith("/leaves/")
       ? <LeaveRequestDetailsPage appearance={appearance} />
       : routeContent[pathname]

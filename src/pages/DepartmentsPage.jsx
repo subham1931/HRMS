@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Pencil, Plus, Search } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { createDepartment, listDepartmentDetails, updateDepartmentDetails } from "../services/departments"
 import { listEmployeeRecords } from "../services/employees"
 
@@ -17,6 +18,7 @@ function formatDateTime(value) {
 }
 
 function DepartmentsPage({ appearance = "Light" }) {
+  const navigate = useNavigate()
   const isDark = appearance === "Dark"
   const [departments, setDepartments] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -167,7 +169,11 @@ function DepartmentsPage({ appearance = "Light" }) {
           </thead>
           <tbody className="text-sm">
             {!isLoading && filteredRows.map((row) => (
-              <tr key={row.id} className={`border-b last:border-0 ${isDark ? "border-slate-700" : "border-slate-100"}`}>
+              <tr
+                key={row.id}
+                className={`cursor-pointer border-b last:border-0 ${isDark ? "border-slate-700 hover:bg-[#0f1720]" : "border-slate-100 hover:bg-slate-50"}`}
+                onClick={() => navigate(`/departments/${encodeURIComponent(row.id)}`)}
+              >
                 <td className={`py-3.5 font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{row.name}</td>
                 <td className={`py-3.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   {employeeCountByDepartment[row.name] || 0}
@@ -186,7 +192,10 @@ function DepartmentsPage({ appearance = "Light" }) {
                 <td className="py-3.5 text-right">
                   <button
                     type="button"
-                    onClick={() => openUpdateModal(row)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openUpdateModal(row)
+                    }}
                     className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
                       isDark ? "border-slate-700 text-slate-200 hover:bg-[#0f1720]" : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}

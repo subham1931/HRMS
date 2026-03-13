@@ -730,23 +730,23 @@ function AttendancePage({ appearance = "Light" }) {
       )}
 
       <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[1120px] text-left">
+        <table className="w-full table-fixed text-left">
           <thead className={`text-xs ${isDark ? "text-slate-300" : "text-slate-500"}`}>
             <tr>
-              <th className={`w-[270px] rounded-l-xl px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Name</th>
-              <th className={`w-[220px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Job Title</th>
-              <th className={`w-[150px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Date</th>
-              <th className={`w-[130px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Office</th>
-              <th className={`w-[190px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Check In - Out</th>
-              <th className={`w-[110px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Duration</th>
-              <th className={`w-[110px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Overtime</th>
-              <th className={`w-[120px] rounded-r-xl px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Status</th>
+              <th className={`w-[22%] rounded-l-xl px-2 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Name</th>
+              <th className={`w-[18%] px-2 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Job Title</th>
+              <th className={`w-[13%] px-2 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Date</th>
+              <th className={`w-[11%] px-2 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Office</th>
+              <th className={`w-[14%] px-2 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Check In - Out</th>
+              <th className={`w-[9%] px-2 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Duration</th>
+              <th className={`w-[7%] px-2 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Overtime</th>
+              <th className={`w-[6%] rounded-r-xl px-2 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Status</th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {pagedRows.map((row) => (
               <tr key={row[8]} className={`border-b last:border-0 ${isDark ? "border-slate-700 hover:bg-[#0f1720]/60" : "border-slate-100 hover:bg-slate-50/70"}`}>
-                <td className={`px-3 py-3 ${isDark ? "text-slate-100" : "text-slate-800"}`}>
+                <td className={`px-2 py-3 ${isDark ? "text-slate-100" : "text-slate-800"}`}>
                   <span className="flex items-center gap-3">
                     {row[7] && !brokenAvatarById[row[8]] ? (
                       <img
@@ -762,36 +762,36 @@ function AttendancePage({ appearance = "Light" }) {
                         {getInitials(row[0]) || "A"}
                       </span>
                     )}
-                    <span>
-                      <span className={`block font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{row[0]}</span>
+                    <span className="min-w-0">
+                      <span className={`block truncate font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{row[0]}</span>
                       <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] ${
                         isDark ? "bg-[#1b2530] text-slate-300" : "bg-slate-100 text-slate-500"
                       }`}>{row[8]}</span>
                     </span>
                   </span>
                 </td>
-                <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                  <span className="block font-medium">{row[2]}</span>
-                  <span className={`block text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{row[1]}</span>
+                <td className={`px-2 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                  <span className="block truncate font-medium">{row[2]}</span>
+                  <span className={`block truncate text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{row[1]}</span>
                 </td>
-                <td className={`whitespace-nowrap px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{selectedDateTableLabel}</td>
-                <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row[3]}</td>
-                <td className={`whitespace-nowrap px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                <td className={`whitespace-nowrap px-2 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{selectedDateTableLabel}</td>
+                <td className={`truncate px-2 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row[3]}</td>
+                <td className={`whitespace-nowrap px-2 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   <span className="font-medium">{row[4]}</span>
                   <span className="px-1.5 text-slate-400">-</span>
                   <span className="font-medium">{row[5]}</span>
                 </td>
-                <td className={`whitespace-nowrap px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                <td className={`whitespace-nowrap px-2 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   {formatDuration(
                     toMinutesFromLabel(row[4]) != null && toMinutesFromLabel(row[5]) != null
                       ? toMinutesFromLabel(row[5]) - toMinutesFromLabel(row[4])
                       : null,
                   )}
                 </td>
-                <td className={`whitespace-nowrap px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                <td className={`whitespace-nowrap px-2 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   {formatOvertime(row[9])}
                 </td>
-                <td className="px-3 py-3">
+                <td className="px-2 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClasses(row[6])}`}>
                     {row[6]}
                   </span>
