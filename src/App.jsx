@@ -42,7 +42,7 @@ function App() {
       return "Light"
     }
   })
-  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/payroll")
+  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup")
   const isDarkUi = appearance === "Dark"
 
   useEffect(() => {
