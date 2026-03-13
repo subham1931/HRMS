@@ -46,7 +46,8 @@ const getInitials = (name) => (name || "A")
   .map((word) => word[0]?.toUpperCase() || "")
   .join("")
 
-function EmployeesPage() {
+function EmployeesPage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const navigate = useNavigate()
   const location = useLocation()
   const [showFilterModal, setShowFilterModal] = useState(false)
@@ -251,7 +252,7 @@ function EmployeesPage() {
 
   return (
     <>
-      <article className="rounded-2xl border border-slate-200 bg-white p-5">
+      <article className={`rounded-2xl border p-5 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
         {loadError ? (
           <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
             {loadError}
@@ -261,79 +262,79 @@ function EmployeesPage() {
           <>
             <div className="mb-6 space-y-4">
               <div>
-                <h1 className="text-[28px] font-semibold tracking-tight text-slate-900">Employees</h1>
-                <p className="mt-1 text-xs text-slate-500">Dashboard / Employees</p>
+                <h1 className={`text-[28px] font-semibold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>Employees</h1>
+                <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Dashboard / Employees</p>
               </div>
 
               <div className="grid gap-3 xl:grid-cols-[1.8fr_1fr]">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-[#dceac7] p-4">
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#1d2c22]" : "border-slate-200 bg-[#dceac7]"}`}>
+                    <div className={`flex items-center gap-2 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                       <Users size={14} />
                       <span>Total Employees</span>
                     </div>
                     <div className="mt-4 flex items-end justify-between">
-                      <p className="text-[36px] font-semibold leading-none text-slate-800">{heroStats.totalEmployees}</p>
+                      <p className={`text-[36px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>{heroStats.totalEmployees}</p>
                       <div className="text-right">
-                        <span className="rounded-full bg-white/75 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                        <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${isDark ? "bg-[#0f1720] text-slate-200" : "bg-white/75 text-slate-700"}`}>
                           {heroStats.totalGrowth >= 0 ? "+" : "-"}
                           {safePercent(heroStats.totalGrowth)}
                         </span>
-                        <p className="mt-1 text-[11px] text-slate-600">from last month</p>
+                        <p className={`mt-1 text-[11px] ${isDark ? "text-slate-400" : "text-slate-600"}`}>from last month</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+                    <div className={`flex items-center gap-2 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                       <UserRoundPlus size={14} />
                       <span>New Employees (This Month)</span>
                     </div>
                     <div className="mt-4 flex items-end justify-between">
-                      <p className="text-[36px] font-semibold leading-none text-slate-800">{heroStats.newEmployeesThisMonth}</p>
+                      <p className={`text-[36px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>{heroStats.newEmployeesThisMonth}</p>
                       <div className="text-right">
                         <span className="rounded-full bg-[#e6f4de] px-2 py-1 text-[11px] font-semibold text-[#2f7b54]">
                           {heroStats.newEmployeeGrowth >= 0 ? "+" : "-"}
                           {safePercent(heroStats.newEmployeeGrowth)}
                         </span>
-                        <p className="mt-1 text-[11px] text-slate-500">from last month</p>
+                        <p className={`mt-1 text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>from last month</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+                    <div className={`flex items-center gap-2 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                       <Activity size={14} />
                       <span>Turnover Rate</span>
                     </div>
                     <div className="mt-4 flex items-end justify-between">
-                      <p className="text-[36px] font-semibold leading-none text-slate-800">{heroStats.turnoverRate.toFixed(1)}%</p>
-                      <p className="text-[11px] text-slate-500">this month</p>
+                      <p className={`text-[36px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>{heroStats.turnoverRate.toFixed(1)}%</p>
+                      <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>this month</p>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+                    <div className={`flex items-center gap-2 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                       <UserMinus size={14} />
                       <span>Resigned Employees (This Month)</span>
                     </div>
                     <div className="mt-4 flex items-end justify-between">
-                      <p className="text-[36px] font-semibold leading-none text-slate-800">{heroStats.resignedThisMonth}</p>
+                      <p className={`text-[36px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>{heroStats.resignedThisMonth}</p>
                       <div className="text-right">
                         <span className="rounded-full bg-[#e6f4de] px-2 py-1 text-[11px] font-semibold text-[#2f7b54]">
                           {heroStats.resignedGrowth >= 0 ? "+" : "-"}
                           {safePercent(heroStats.resignedGrowth)}
                         </span>
-                        <p className="mt-1 text-[11px] text-slate-500">from last month</p>
+                        <p className={`mt-1 text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>from last month</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-slate-800">Departments</h3>
-                    <button type="button" className="rounded-lg bg-[#edf4e6] px-2.5 py-1 text-xs text-slate-600">
+                    <h3 className={`text-lg font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Departments</h3>
+                    <button type="button" className={`rounded-lg px-2.5 py-1 text-xs ${isDark ? "bg-[#1d2c22] text-slate-200" : "bg-[#edf4e6] text-slate-600"}`}>
                       This Month
                     </button>
                   </div>
@@ -343,10 +344,10 @@ function EmployeesPage() {
                         className="relative h-[110px] w-[110px] rounded-full"
                         style={{ background: `conic-gradient(${departmentBreakdown.donutStops})` }}
                       >
-                        <div className="absolute inset-[20px] rounded-full bg-white" />
+                        <div className={`absolute inset-[20px] rounded-full ${isDark ? "bg-[#111a24]" : "bg-white"}`} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-1 text-xs text-slate-600">
+                    <div className={`grid grid-cols-1 gap-1 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                       {departmentBreakdown.items.length === 0 ? (
                         <p className="text-slate-400">No department data yet.</p>
                       ) : (
@@ -356,8 +357,8 @@ function EmployeesPage() {
                               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
                               {item.name}
                             </span>
-                            <span className="text-slate-500">
-                              {item.count} - <span className="font-semibold text-slate-700">{item.percent}%</span>
+                            <span className={`${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                              {item.count} - <span className={`font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>{item.percent}%</span>
                             </span>
                           </div>
                         ))
@@ -374,7 +375,9 @@ function EmployeesPage() {
                 <input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300"
+                  className={`w-full rounded-xl border py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300 ${
+                    isDark ? "border-slate-700 bg-[#0f1720] text-slate-100" : "border-slate-200 bg-white"
+                  }`}
                   placeholder="Search employee"
                 />
               </div>
@@ -384,7 +387,9 @@ function EmployeesPage() {
                   onClick={() => {
                     setShowFilterModal(true)
                   }}
-                  className="relative inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-[#edf4e6] px-4 py-2.5 text-sm font-medium text-slate-700"
+                  className={`relative inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium ${
+                    isDark ? "border-slate-700 bg-[#1d2c22] text-slate-200" : "border-slate-200 bg-[#edf4e6] text-slate-700"
+                  }`}
                 >
                   <SlidersHorizontal size={16} />
                   Filter
@@ -420,8 +425,8 @@ function EmployeesPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[940px] text-left">
-              <thead className="text-xs text-slate-400">
-                <tr className="rounded-xl bg-[#f6f7f8]">
+              <thead className={`text-xs ${isDark ? "text-slate-200" : "text-slate-400"}`}>
+                <tr className={`rounded-xl ${isDark ? "bg-[#1b2530]" : "bg-[#f6f7f8]"}`}>
                   <th className="w-10 rounded-l-xl px-3 py-3 font-medium">
                     <button
                       type="button"
@@ -436,14 +441,14 @@ function EmployeesPage() {
                       {allVisibleSelected ? <Check size={10} /> : hasVisibleSelection ? <Minus size={10} /> : null}
                     </button>
                   </th>
-                  <th className="px-3 py-3 font-medium">Employee ID</th>
-                  <th className="px-3 py-3 font-medium">Name</th>
-                  <th className="px-3 py-3 font-medium">Job Title</th>
-                  <th className="px-3 py-3 font-medium">Department</th>
-                  <th className="px-3 py-3 font-medium">Employment Type</th>
-                  <th className="px-3 py-3 font-medium">Work Model</th>
-                  <th className="px-3 py-3 font-medium">Join Date</th>
-                  <th className="rounded-r-xl px-3 py-3 font-medium">Status</th>
+                  <th className="px-3 py-3 font-semibold">Employee ID</th>
+                  <th className="px-3 py-3 font-semibold">Name</th>
+                  <th className="px-3 py-3 font-semibold">Job Title</th>
+                  <th className="px-3 py-3 font-semibold">Department</th>
+                  <th className="px-3 py-3 font-semibold">Employment Type</th>
+                  <th className="px-3 py-3 font-semibold">Work Model</th>
+                  <th className="px-3 py-3 font-semibold">Join Date</th>
+                  <th className="rounded-r-xl px-3 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -453,7 +458,7 @@ function EmployeesPage() {
                     onClick={() => {
                       setSelectedEmployeeId(row.employeeId)
                     }}
-                    className="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50"
+                    className={`cursor-pointer border-b last:border-0 ${isDark ? "border-slate-700 hover:bg-[#0f1720]" : "border-slate-100 hover:bg-slate-50"}`}
                   >
                     <td className="w-10 px-3 py-3">
                       <button
@@ -472,8 +477,8 @@ function EmployeesPage() {
                         <Check size={10} />
                       </button>
                     </td>
-                    <td className="px-3 py-3 text-slate-700">{row.employeeId}</td>
-                    <td className="px-3 py-3 font-medium text-slate-800">
+                    <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.employeeId}</td>
+                    <td className={`px-3 py-3 font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>
                       <span className="flex items-center gap-3">
                         {row.profileImage ? (
                           <img src={row.profileImage} alt={row.name} className="h-9 w-9 rounded-full object-cover" />
@@ -485,11 +490,11 @@ function EmployeesPage() {
                         {row.name}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-slate-700">{row.designation}</td>
-                    <td className="px-3 py-3 text-slate-700">{row.department}</td>
-                    <td className="px-3 py-3 text-slate-700">{getEmploymentTypeLabel(row)}</td>
-                    <td className="px-3 py-3 text-slate-700">{row.type || "-"}</td>
-                    <td className="px-3 py-3 text-slate-700">{row.joiningDate || "-"}</td>
+                    <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.designation}</td>
+                    <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.department}</td>
+                    <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{getEmploymentTypeLabel(row)}</td>
+                    <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.type || "-"}</td>
+                    <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.joiningDate || "-"}</td>
                     <td className="px-3 py-3">
                       <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600">Active</span>
                     </td>
@@ -497,7 +502,7 @@ function EmployeesPage() {
                 ))}
                 {filteredRows.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="py-10 text-center text-sm text-slate-500">
+                    <td colSpan={9} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                       No employees match the selected filters.
                     </td>
                   </tr>
