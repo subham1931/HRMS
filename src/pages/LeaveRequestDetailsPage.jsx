@@ -64,7 +64,8 @@ const getInitials = (value) => (value || "E")
   .map((part) => part[0]?.toUpperCase() || "")
   .join("")
 
-function LeaveRequestDetailsPage() {
+function LeaveRequestDetailsPage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const leaveId = decodeURIComponent(pathname.split("/").pop() || "")
@@ -165,30 +166,30 @@ function LeaveRequestDetailsPage() {
 
   if (isLoading) {
     return (
-      <article className="rounded-2xl border border-slate-200 bg-white p-5">
-        <p className="text-sm text-slate-500">Loading leave request details...</p>
+      <article className={`rounded-2xl border p-5 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+        <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Loading leave request details...</p>
       </article>
     )
   }
 
   if (!leaveRequest) {
     return (
-      <article className="rounded-2xl border border-slate-200 bg-white p-5">
+      <article className={`rounded-2xl border p-5 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
         <button
           type="button"
           onClick={() => navigate("/leaves")}
-          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600"
+          className={`inline-flex items-center gap-1 text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}
         >
           <ArrowLeft size={14} />
           Back to Leaves
         </button>
-        <p className="mt-4 text-sm text-slate-500">Leave request not found.</p>
+        <p className={`mt-4 text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Leave request not found.</p>
       </article>
     )
   }
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5">
+    <article className={`rounded-2xl border p-5 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
       {loadError ? (
         <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
           {loadError}
@@ -197,15 +198,15 @@ function LeaveRequestDetailsPage() {
       <button
         type="button"
         onClick={() => navigate("/leaves")}
-        className="inline-flex items-center gap-1 text-sm font-medium text-slate-600"
+        className={`inline-flex items-center gap-1 text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}
       >
         <ArrowLeft size={14} />
         Back to Leaves
       </button>
 
       <div className="mt-4">
-        <h3 className="text-2xl font-semibold text-slate-800">Leave Request Details</h3>
-        <p className="mt-1 text-sm text-slate-500">Review and take action on this request.</p>
+        <h3 className={`text-2xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Leave Request Details</h3>
+        <p className={`mt-1 text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Review and take action on this request.</p>
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-[90px_1fr]">
@@ -219,53 +220,57 @@ function LeaveRequestDetailsPage() {
             }}
           />
         ) : (
-          <span className="inline-flex h-20 w-20 items-center justify-center rounded-xl bg-emerald-100 text-xl font-semibold text-emerald-700">
+          <span className={`inline-flex h-20 w-20 items-center justify-center rounded-xl text-xl font-semibold ${
+            isDark ? "bg-emerald-900/35 text-emerald-300" : "bg-emerald-100 text-emerald-700"
+          }`}>
             {getInitials(leaveRequest.employeeName)}
           </span>
         )}
         <div>
-          <p className="text-lg font-semibold text-slate-800">{leaveRequest.employeeName}</p>
-          <p className="text-sm text-slate-500">{leaveRequest.employeeId} · {leaveRequest.jobTitle}</p>
-          <p className="text-sm text-slate-500">{leaveRequest.department}</p>
+          <p className={`text-lg font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{leaveRequest.employeeName}</p>
+          <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>{leaveRequest.employeeId} · {leaveRequest.jobTitle}</p>
+          <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>{leaveRequest.department}</p>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
-        <p className="text-slate-600"><span className="font-medium text-slate-700">Leave Type:</span> {leaveRequest.leaveType}</p>
-        <p className="text-slate-600"><span className="font-medium text-slate-700">Status:</span> {leaveRequest.status}</p>
-        <p className="text-slate-600"><span className="font-medium text-slate-700">Applied On:</span> {formatDate(leaveRequest.appliedAt)}</p>
-        <p className="text-slate-600"><span className="font-medium text-slate-700">Duration:</span> {daysBetween(leaveRequest.startDate, leaveRequest.endDate)} day(s)</p>
-        <p className="sm:col-span-2 text-slate-600">
-          <span className="font-medium text-slate-700">Period:</span> {formatDate(leaveRequest.startDate)} - {formatDate(leaveRequest.endDate)}
+      <div className={`mt-4 grid gap-3 rounded-xl p-4 text-sm sm:grid-cols-2 ${isDark ? "border border-slate-700 bg-[#0f1720]" : "bg-slate-50"}`}>
+        <p className={isDark ? "text-slate-300" : "text-slate-600"}><span className={`font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>Leave Type:</span> {leaveRequest.leaveType}</p>
+        <p className={isDark ? "text-slate-300" : "text-slate-600"}><span className={`font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>Status:</span> {leaveRequest.status}</p>
+        <p className={isDark ? "text-slate-300" : "text-slate-600"}><span className={`font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>Applied On:</span> {formatDate(leaveRequest.appliedAt)}</p>
+        <p className={isDark ? "text-slate-300" : "text-slate-600"}><span className={`font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>Duration:</span> {daysBetween(leaveRequest.startDate, leaveRequest.endDate)} day(s)</p>
+        <p className={`sm:col-span-2 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+          <span className={`font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>Period:</span> {formatDate(leaveRequest.startDate)} - {formatDate(leaveRequest.endDate)}
         </p>
-        <p className="sm:col-span-2 text-slate-600">
-          <span className="font-medium text-slate-700">Reason:</span> {leaveRequest.reason}
+        <p className={`sm:col-span-2 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+          <span className={`font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>Reason:</span> {leaveRequest.reason}
         </p>
       </div>
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+      <div className={`mt-4 rounded-xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-white"}`}>
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-base font-semibold text-slate-800">Leave Balance</h4>
+          <h4 className={`text-base font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Leave Balance</h4>
           <div className="relative">
             <select
               value={balanceRange}
               onChange={(event) => setBalanceRange(event.target.value)}
-              className="appearance-none rounded-lg border border-slate-200 bg-[#edf4e6] px-2.5 py-1 pr-6 text-xs text-slate-700 outline-none"
+              className={`appearance-none rounded-lg border px-2.5 py-1 pr-6 text-xs outline-none ${
+                isDark ? "border-slate-700 bg-[#111a24] text-slate-200" : "border-slate-200 bg-[#edf4e6] text-slate-700"
+              }`}
             >
               <option value="month">This Month</option>
               <option value="year">This Year</option>
             </select>
-            <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
+            <ChevronDown size={12} className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
           </div>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {leaveBalance.map((item) => (
-            <div key={item.type} className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-              <p className="text-sm font-medium text-slate-800">{item.type}</p>
-              <p className="mt-1 text-xs text-slate-600">
-                Used: <span className="font-semibold text-slate-700">{item.used}</span> day(s)
+            <div key={item.type} className={`rounded-lg border p-2.5 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-slate-50"}`}>
+              <p className={`text-sm font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{item.type}</p>
+              <p className={`mt-1 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                Used: <span className={`font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>{item.used}</span> day(s)
               </p>
-              <p className="text-xs text-slate-600">
+              <p className={`text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                 Available: <span className="font-semibold text-[#2f6f63]">{item.available}</span> / {item.quota} day(s)
               </p>
             </div>

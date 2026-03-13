@@ -42,7 +42,7 @@ function App() {
       return "Light"
     }
   })
-  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup" || pathname === "/departments" || pathname === "/offices" || pathname === "/setup/leaves")
+  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup" || pathname === "/departments" || pathname === "/offices" || pathname === "/setup/leaves" || pathname === "/leaves" || pathname === "/calendar" || pathname === "/leaves/calendar" || pathname === "/holidays" || pathname.startsWith("/leaves/"))
   const isDarkUi = appearance === "Dark"
 
   useEffect(() => {
@@ -141,20 +141,20 @@ function App() {
     "/payroll": <PayrollPage appearance={appearance} />,
     "/jobs": <PlaceholderPage />,
     "/candidates": <PlaceholderPage />,
-    "/leaves": <LeavesPage />,
+    "/leaves": <LeavesPage appearance={appearance} />,
     "/setup/leaves": <LeaveSetupPage appearance={appearance} />,
-    "/calendar": <LeaveCalendarPage />,
-    "/leaves/calendar": <LeaveCalendarPage />,
-    "/holidays": <HolidaysPage />,
+    "/calendar": <LeaveCalendarPage appearance={appearance} />,
+    "/leaves/calendar": <LeaveCalendarPage appearance={appearance} />,
+    "/holidays": <HolidaysPage appearance={appearance} />,
     "/setup": <SettingsPage appearance={appearance} onAppearanceChange={setAppearance} />,
     "/settings": <SettingsPage appearance={appearance} onAppearanceChange={setAppearance} />,
     "/notifications": <NotificationsPanel appearance={appearance} />,
     "/profile": <ProfilePage adminProfile={adminProfile} />,
   }
   const activeRouteContent = pathname === "/leaves/calendar"
-    ? <LeaveCalendarPage />
+    ? <LeaveCalendarPage appearance={appearance} />
     : pathname.startsWith("/leaves/")
-      ? <LeaveRequestDetailsPage />
+      ? <LeaveRequestDetailsPage appearance={appearance} />
       : routeContent[pathname]
 
   const handleNavigate = (nextPath) => {

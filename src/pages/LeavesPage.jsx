@@ -73,7 +73,7 @@ function makeDefaultLeaveRequests(employees) {
       status,
       appliedAt: toYMD(submitDate),
       jobTitle: item.designation || item.jobTitle || "Team Member",
-      avatar: item.profileImage || `https://i.pravatar.cc/80?img=${(index * 7 + 9) % 70}`,
+      avatar: item.profileImage || "",
     }
   })
 }
@@ -96,7 +96,15 @@ function normalizeRequests(rows) {
   }))
 }
 
-function LeavesPage() {
+const getInitials = (value) => (value || "E")
+  .split(" ")
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0]?.toUpperCase() || "")
+  .join("")
+
+function LeavesPage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("All")
@@ -109,6 +117,7 @@ function LeavesPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
   const [leaveRequests, setLeaveRequests] = useState([])
+  const [brokenAvatarById, setBrokenAvatarById] = useState({})
 
   useEffect(() => {
     let mounted = true
@@ -138,7 +147,7 @@ function LeavesPage() {
         employeeName: item.employeeName || "Employee",
         department: item.department || "General",
         jobTitle: item.jobTitle || "Team Member",
-        avatar: item.avatar || `https://i.pravatar.cc/80?img=${(index * 7 + 9) % 70}`,
+        avatar: item.avatar || "",
       }
     })
   }, [leaveRequests])
@@ -313,7 +322,7 @@ function LeavesPage() {
   const employeeLeaves = useMemo(
     () =>
       enrichedRequests
-        .filter((item) => item.status !== "Rejected")
+        .filter((item) => item.status === "Pending")
         .slice(0, 3)
         .map((item) => ({
           id: item.id,
@@ -349,7 +358,7 @@ function LeavesPage() {
 
   return (
     <div className="space-y-4">
-      <article className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+      <article className={`rounded-2xl border p-3 sm:p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
         {loadError ? (
           <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
             {loadError}
@@ -363,34 +372,34 @@ function LeavesPage() {
               { label: "Sick Leave", value: summary.typeCount.sick, tone: "bg-slate-50", percent: `${Math.round((summary.typeCount.sick / totalType) * 100)}%` },
               { label: "Other Leaves", value: summary.typeCount.other, tone: "bg-slate-50", percent: `${Math.round((summary.typeCount.other / totalType) * 100)}%` },
             ].map((card) => (
-              <div key={card.label} className={`rounded-2xl p-3.5 sm:p-4 ${card.tone}`}>
-                <div className="inline-flex items-center gap-2 text-[11px] text-slate-500 sm:text-xs">
+              <div key={card.label} className={`rounded-2xl p-3.5 sm:p-4 ${isDark ? "border border-slate-700 bg-[#0f1720]" : card.tone}`}>
+                <div className={`inline-flex items-center gap-2 text-[11px] sm:text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   <CalendarDays size={13} className="text-emerald-500" />
                   {card.label}
                 </div>
-                <p className="mt-3 text-[34px] font-semibold leading-none text-slate-800 sm:text-[40px]">{card.value}</p>
-                <p className="mt-2 text-[11px] text-slate-500 sm:text-xs">
-                  <span className="rounded bg-[#d4e7c7] px-2 py-0.5 text-emerald-700">{card.percent}</span>
+                <p className={`mt-3 text-[34px] font-semibold leading-none sm:text-[40px] ${isDark ? "text-slate-100" : "text-slate-800"}`}>{card.value}</p>
+                <p className={`mt-2 text-[11px] sm:text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  <span className={`rounded px-2 py-0.5 ${isDark ? "bg-emerald-900/35 text-emerald-300" : "bg-[#d4e7c7] text-emerald-700"}`}>{card.percent}</span>
                   <span className="ml-2">of total leave</span>
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-100 bg-slate-50"}`}>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-800">Leave Types</h3>
-              <button type="button" className="text-slate-500">
+              <h3 className={`text-lg font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Leave Types</h3>
+              <button type="button" className={isDark ? "text-slate-300" : "text-slate-500"}>
                 <MoreHorizontal size={16} />
               </button>
             </div>
             <div className="mx-auto my-3 grid h-44 w-44 place-items-center rounded-full" style={donutStyle}>
-              <div className="grid h-30 w-30 place-items-center rounded-full bg-white text-center">
+              <div className={`grid h-30 w-30 place-items-center rounded-full text-center ${isDark ? "bg-[#111a24]" : "bg-white"}`}>
                 <p className="text-[42px] font-semibold leading-none text-[#0f5b4d]">{summary.total}</p>
-                <p className="text-xs text-slate-500">Employees</p>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Employees</p>
               </div>
             </div>
-            <div className="space-y-2 text-xs text-slate-700">
+            <div className={`space-y-2 text-xs ${isDark ? "text-slate-300" : "text-slate-700"}`}>
               {[
                 ["#0f5b4d", "Annual Leave", summary.typeCount.annual],
                 ["#2eb79d", "Sick Leave", summary.typeCount.sick],
@@ -410,26 +419,28 @@ function LeavesPage() {
         </div>
 
         <div className="mt-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-slate-50"}`}>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-slate-800">Leave Overview</h3>
+              <h3 className={`text-xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Leave Overview</h3>
               <div className="relative">
                 <select
                   value={overviewRange}
                   onChange={(event) => setOverviewRange(event.target.value)}
-                  className="appearance-none rounded-xl border border-slate-200 bg-white px-3 py-1 pr-7 text-sm text-slate-600 outline-none"
+                  className={`appearance-none rounded-xl border px-3 py-1 pr-7 text-sm outline-none ${
+                    isDark ? "border-slate-700 bg-[#111a24] text-slate-200" : "border-slate-200 bg-white text-slate-600"
+                  }`}
                 >
                   <option value="week">This Week</option>
                   <option value="month">This Month</option>
                   <option value="year">This Year</option>
                 </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
+                <ChevronDown size={14} className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
               </div>
             </div>
-            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-              <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+            <div className={`mt-3 rounded-xl border p-3 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+              <div className={`mb-3 flex items-center justify-between text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 <span>{leaveOverview.title}</span>
-                <span className="rounded-full bg-[#e7f4ef] px-2 py-0.5 font-medium text-[#2f6f63]">
+                <span className={`rounded-full px-2 py-0.5 font-medium ${isDark ? "bg-emerald-900/35 text-emerald-300" : "bg-[#e7f4ef] text-[#2f6f63]"}`}>
                   {leaveOverview.total} total
                 </span>
               </div>
@@ -441,11 +452,11 @@ function LeavesPage() {
                   const height = `${Math.max(10, Math.round((day.count / leaveOverview.max) * 100))}%`
                   return (
                     <div key={day.key || day.label} className="flex h-full flex-col items-center justify-end gap-1">
-                      <span className="text-[11px] font-semibold text-slate-700">{day.count}</span>
-                      <div className="flex h-[100px] w-full items-end justify-center rounded-md bg-slate-100/70 px-1">
+                      <span className={`text-[11px] font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>{day.count}</span>
+                      <div className={`flex h-[100px] w-full items-end justify-center rounded-md px-1 ${isDark ? "bg-slate-800/70" : "bg-slate-100/70"}`}>
                         <span className="block w-full rounded-md bg-[#53c4ae] transition-all duration-300" style={{ height }} />
                       </div>
-                      <span className="text-center text-[10px] text-slate-500">{day.label}</span>
+                      <span className={`text-center text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{day.label}</span>
                     </div>
                   )
                 })}
@@ -455,34 +466,40 @@ function LeavesPage() {
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_1fr]">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-slate-50"}`}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-2xl font-semibold leading-none text-slate-800 sm:text-[30px]">{calendarLabel}</h3>
+              <h3 className={`text-2xl font-semibold leading-none sm:text-[30px] ${isDark ? "text-slate-100" : "text-slate-800"}`}>{calendarLabel}</h3>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => navigate("/leaves/calendar")}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    isDark ? "border-slate-700 bg-[#111a24] text-slate-200 hover:bg-[#0b1320]" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
                 >
                   View All
                 </button>
                 <button
                   type="button"
                   onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border ${
+                    isDark ? "border-slate-700 bg-[#111a24] text-slate-200" : "border-slate-200 bg-white text-slate-600"
+                  }`}
                 >
                   <ChevronLeft size={14} />
                 </button>
                 <button
                   type="button"
                   onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border ${
+                    isDark ? "border-slate-700 bg-[#111a24] text-slate-200" : "border-slate-200 bg-white text-slate-600"
+                  }`}
                 >
                   <ChevronRight size={14} />
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-y-1 text-center text-xs text-slate-500">
+            <div className={`grid grid-cols-7 gap-y-1 text-center text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
                 <span key={d} className="py-1.5">
                   {d}
@@ -493,53 +510,72 @@ function LeavesPage() {
                   key={cell.day}
                   className={`mx-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[12px] ${
                     cell.muted
-                        ? "text-slate-300"
+                        ? isDark ? "text-slate-600" : "text-slate-300"
                         : leaveStatusByDayInCalendarMonth.get(Number(cell.value)) === "approved"
                           ? "bg-[#2eb79d] text-white"
                           : leaveStatusByDayInCalendarMonth.get(Number(cell.value)) === "pending"
                             ? "bg-[#d4eee7] text-[#1f6f61]"
-                            : "text-slate-700"
+                            : isDark ? "text-slate-200" : "text-slate-700"
                   }`}
                 >
                   {cell.value}
                 </span>
               ))}
             </div>
-            <div className="mt-3 flex items-center gap-4 text-xs text-slate-600">
+            <div className={`mt-3 flex items-center gap-4 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
               <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#2eb79d]" /> Approved Leave</span>
               <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#d4eee7]" /> Pending Leave</span>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-slate-50"}`}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-slate-800">Leave Request</h3>
-              <button type="button" className="text-slate-500">
+              <h3 className={`text-xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Leave Request</h3>
+              <button type="button" className={isDark ? "text-slate-300" : "text-slate-500"}>
                 <MoreHorizontal size={16} />
               </button>
             </div>
             <div className="space-y-2.5">
-              {employeeLeaves.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => navigate(`/leaves/${encodeURIComponent(item.id)}`)}
-                  className="flex w-full items-center gap-3 rounded-xl bg-white p-2.5 text-left transition-colors hover:bg-slate-50"
-                >
-                  <img src={item.avatar} alt={item.name} className="h-9 w-9 rounded-full object-cover" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-800">{item.name}</p>
-                    <p className="truncate text-xs text-teal-500">{item.type} - {item.period}</p>
-                  </div>
-                </button>
-              ))}
+              {employeeLeaves.length > 0 ? (
+                employeeLeaves.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => navigate(`/leaves/${encodeURIComponent(item.id)}`)}
+                    className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors ${
+                      isDark ? "bg-[#111a24] hover:bg-[#0b1320]" : "bg-white hover:bg-slate-50"
+                    }`}
+                  >
+                    {item.avatar && !brokenAvatarById[item.id] ? (
+                      <img
+                        src={item.avatar}
+                        alt={item.name}
+                        className="h-9 w-9 rounded-full object-cover"
+                        onError={() => setBrokenAvatarById((prev) => ({ ...prev, [item.id]: true }))}
+                      />
+                    ) : (
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
+                        {getInitials(item.name)}
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <p className={`truncate text-sm font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{item.name}</p>
+                      <p className="truncate text-xs text-teal-500">{item.type} - {item.period}</p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className={`rounded-xl px-3 py-6 text-center text-sm ${isDark ? "bg-[#111a24] text-slate-400" : "bg-white text-slate-500"}`}>
+                  No pending leave requests.
+                </div>
+              )}
             </div>
           </div>
         </div>
       </article>
 
-      <article className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+      <article className={`rounded-2xl border p-3 sm:p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h3 className="text-xl font-semibold text-slate-800">Leave Activity</h3>
+          <h3 className={`text-xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Leave Activity</h3>
           <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
             <div className="relative w-full sm:w-[280px]">
               <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -549,7 +585,9 @@ function LeavesPage() {
                   setSearchQuery(event.target.value)
                   setCurrentPage(1)
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-violet-300"
+                className={`w-full rounded-xl border py-2 pl-9 pr-3 text-sm outline-none focus:border-violet-300 ${
+                  isDark ? "border-slate-700 bg-[#0f1720] text-slate-100" : "border-slate-200 bg-white"
+                }`}
                 placeholder="Search employee, ID, etc"
               />
             </div>
@@ -561,20 +599,22 @@ function LeavesPage() {
                   setStatusFilter(event.target.value)
                   setCurrentPage(1)
                 }}
-                className="appearance-none rounded-xl border border-slate-200 bg-[#e8f1df] py-2 pl-8 pr-8 text-sm text-slate-700 outline-none"
+                className={`appearance-none rounded-xl border py-2 pl-8 pr-8 text-sm outline-none ${
+                  isDark ? "border-slate-700 bg-[#111a24] text-slate-200" : "border-slate-200 bg-[#e8f1df] text-slate-700"
+                }`}
               >
                 {["All", "Pending", "Approved", "Rejected"].map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </select>
-              <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <ChevronDown size={13} className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
             </div>
           </div>
         </div>
 
         <div className="overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 text-xs text-slate-500">
+            <thead className={`text-xs ${isDark ? "bg-[#0f1720] text-slate-300" : "bg-slate-50 text-slate-500"}`}>
               <tr>
                 <th className="px-3 py-2.5 font-medium">Name</th>
                 <th className="px-3 py-2.5 font-medium">Type</th>
@@ -588,23 +628,36 @@ function LeavesPage() {
               {pagedRows.map((item) => {
                 const durationDays = daysBetween(item.startDate, item.endDate)
                 return (
-                  <tr key={item.id} className="border-b border-slate-100 last:border-0">
+                  <tr key={item.id} className={`border-b last:border-0 ${isDark ? "border-slate-700" : "border-slate-100"}`}>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2.5">
-                        <img src={item.avatar} alt={item.employeeName} className="h-8 w-8 rounded-full object-cover" />
+                        {item.avatar && !brokenAvatarById[item.id] ? (
+                          <img
+                            src={item.avatar}
+                            alt={item.employeeName}
+                            className="h-8 w-8 rounded-full object-cover"
+                            onError={() => setBrokenAvatarById((prev) => ({ ...prev, [item.id]: true }))}
+                          />
+                        ) : (
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
+                            {getInitials(item.employeeName)}
+                          </span>
+                        )}
                         <div>
-                          <p className="font-medium text-slate-800">{item.employeeName}</p>
-                          <p className="text-xs text-slate-500">{item.employeeId} · {item.department}</p>
+                          <p className={`font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{item.employeeName}</p>
+                          <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.employeeId} · {item.department}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-700">{item.leaveType}</td>
-                    <td className="px-3 py-2.5 text-slate-700">
+                    <td className={`px-3 py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{item.leaveType}</td>
+                    <td className={`px-3 py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                       {formatDate(item.startDate)} - {formatDate(item.endDate)}
                     </td>
-                    <td className="px-3 py-2.5 text-slate-700">{durationDays} Day{durationDays > 1 ? "s" : ""}</td>
+                    <td className={`px-3 py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{durationDays} Day{durationDays > 1 ? "s" : ""}</td>
                     <td className="px-3 py-2.5">
-                      <span className="inline-block max-w-[220px] truncate rounded bg-slate-100 px-2 py-1 text-xs text-slate-600">{item.reason}</span>
+                      <span className={`inline-block max-w-[220px] truncate rounded px-2 py-1 text-xs ${
+                        isDark ? "bg-[#0f1720] text-slate-300" : "bg-slate-100 text-slate-600"
+                      }`}>{item.reason}</span>
                     </td>
                     <td className="px-3 py-2.5">
                       <span
@@ -624,7 +677,7 @@ function LeavesPage() {
               })}
               {pagedRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-sm text-slate-500">
+                  <td colSpan={6} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                     No leave requests found.
                   </td>
                 </tr>
@@ -633,7 +686,7 @@ function LeavesPage() {
           </table>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+        <div className={`mt-4 flex flex-wrap items-center justify-between gap-3 text-sm ${isDark ? "text-slate-400" : "text-slate-400"}`}>
           <div className="flex items-center gap-2">
             <span>Showing</span>
             <select
@@ -642,7 +695,9 @@ function LeavesPage() {
                 setPageSize(Number(event.target.value))
                 setCurrentPage(1)
               }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-slate-600 outline-none"
+              className={`rounded-lg border px-3 py-1.5 outline-none ${
+                isDark ? "border-slate-700 bg-[#0f1720] text-slate-200" : "border-slate-200 bg-white text-slate-600"
+              }`}
             >
               <option value={10}>10</option>
               <option value={20}>20</option>
@@ -654,7 +709,7 @@ function LeavesPage() {
             Showing {from} to {to} out of {filteredRows.length} records
           </p>
 
-          <div className="flex items-center gap-2 text-slate-700">
+          <div className={`flex items-center gap-2 ${isDark ? "text-slate-200" : "text-slate-700"}`}>
             <button
               type="button"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}

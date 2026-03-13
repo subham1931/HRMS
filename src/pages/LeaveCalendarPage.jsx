@@ -41,7 +41,8 @@ const getMonthCalendarCells = (monthCursor) => {
   return cells
 }
 
-function LeaveCalendarPage() {
+function LeaveCalendarPage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const isStandaloneCalendar = pathname === "/calendar"
@@ -179,6 +180,12 @@ function LeaveCalendarPage() {
 
   const todayIso = toIsoDate(new Date())
   const getEventClass = (type) => {
+    if (isDark) {
+      if (type === "holiday") return "bg-emerald-900/30 text-emerald-200 border border-emerald-800/60"
+      if (type === "meeting") return "bg-blue-900/30 text-blue-200 border border-blue-800/60"
+      if (type === "leave") return "bg-amber-900/30 text-amber-200 border border-amber-800/60"
+      return "bg-violet-900/30 text-violet-200 border border-violet-800/60"
+    }
     if (type === "holiday") return "bg-emerald-100 text-emerald-800 border border-emerald-200"
     if (type === "meeting") return "bg-blue-100 text-blue-800 border border-blue-200"
     if (type === "leave") return "bg-amber-100 text-amber-800 border border-amber-200"
@@ -186,7 +193,7 @@ function LeaveCalendarPage() {
   }
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+    <article className={`rounded-2xl border p-4 sm:p-5 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
       {loadError ? (
         <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
           {loadError}
@@ -195,8 +202,8 @@ function LeaveCalendarPage() {
 
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3 sm:items-center">
         <div>
-          <h3 className="text-2xl font-semibold text-slate-800">Team Calendar</h3>
-          <p className="text-sm text-slate-500">Meetings, tasks, and holidays in one monthly view</p>
+          <h3 className={`text-2xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Team Calendar</h3>
+          <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Meetings, tasks, and holidays in one monthly view</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -218,7 +225,9 @@ function LeaveCalendarPage() {
             <button
               type="button"
               onClick={() => navigate("/leaves")}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700"
+              className={`rounded-xl border px-3 py-1.5 text-sm font-medium ${
+                isDark ? "border-slate-700 bg-[#0f1720] text-slate-200" : "border-slate-200 bg-white text-slate-700"
+              }`}
             >
               Back to Leaves
             </button>
@@ -226,7 +235,9 @@ function LeaveCalendarPage() {
           <button
             type="button"
             onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-200" : "border-slate-200 bg-white text-slate-600"
+            }`}
             aria-label="Previous month"
           >
             <ChevronLeft size={14} />
@@ -234,14 +245,18 @@ function LeaveCalendarPage() {
           <button
             type="button"
             onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-200" : "border-slate-200 bg-white text-slate-600"
+            }`}
             aria-label="Next month"
           >
             <ChevronRight size={14} />
           </button>
         </div>
       </div>
-      <div className="mb-3 inline-flex w-full flex-wrap rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-medium sm:w-auto">
+      <div className={`mb-3 inline-flex w-full flex-wrap rounded-xl border p-1 text-xs font-medium sm:w-auto ${
+        isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-slate-50"
+      }`}>
         {[
           { key: "team", label: "Team" },
           { key: "leaves", label: "Leaves" },
@@ -253,8 +268,12 @@ function LeaveCalendarPage() {
             onClick={() => setCalendarMode(mode.key)}
             className={`rounded-lg px-3 py-1.5 ${
               calendarMode === mode.key
-                ? "bg-white text-slate-800 shadow-sm"
-                : "text-slate-500"
+                ? isDark
+                  ? "bg-[#111a24] text-slate-100 shadow-sm"
+                  : "bg-white text-slate-800 shadow-sm"
+                : isDark
+                  ? "text-slate-400"
+                  : "text-slate-500"
             }`}
           >
             {mode.label}
@@ -262,13 +281,13 @@ function LeaveCalendarPage() {
         ))}
       </div>
 
-      <p className="mb-3 text-sm font-medium text-slate-600">{monthLabel}</p>
+      <p className={`mb-3 text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>{monthLabel}</p>
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200">
+      <div className={`overflow-x-auto rounded-2xl border ${isDark ? "border-slate-700" : "border-slate-200"}`}>
         <div className="min-w-[760px] md:min-w-[880px] lg:min-w-0">
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+          <div className={`grid grid-cols-7 border-b ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-slate-50"}`}>
             {WEEKDAY_LABELS.map((label) => (
-              <div key={label} className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-3 sm:text-xs">
+              <div key={label} className={`px-2 py-2 text-[11px] font-semibold uppercase tracking-wide sm:px-3 sm:text-xs ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                 {label}
               </div>
             ))}
@@ -281,8 +300,10 @@ function LeaveCalendarPage() {
               return (
                 <div
                   key={cell.key}
-                  className={`min-h-[96px] border-b border-r border-slate-200 p-1.5 last:border-r-0 sm:min-h-[112px] sm:p-2 lg:min-h-[130px] ${
-                    cell.inCurrentMonth ? "bg-white" : "bg-slate-50"
+                  className={`min-h-[96px] border-b border-r p-1.5 last:border-r-0 sm:min-h-[112px] sm:p-2 lg:min-h-[130px] ${
+                    isDark
+                      ? `border-slate-700 ${cell.inCurrentMonth ? "bg-[#111a24]" : "bg-[#0f1720]"}`
+                      : `border-slate-200 ${cell.inCurrentMonth ? "bg-white" : "bg-slate-50"}`
                   }`}
                 >
                   <span
@@ -290,8 +311,8 @@ function LeaveCalendarPage() {
                       isToday
                         ? "bg-blue-600 text-white"
                         : cell.inCurrentMonth
-                          ? "text-slate-700"
-                          : "text-slate-400"
+                          ? isDark ? "text-slate-200" : "text-slate-700"
+                          : isDark ? "text-slate-500" : "text-slate-400"
                     }`}
                   >
                     {cell.value}
@@ -313,7 +334,7 @@ function LeaveCalendarPage() {
                       </button>
                     ))}
                     {events.length > 3 ? (
-                      <span className="block px-1 text-[10px] font-medium text-slate-500 sm:text-[11px]">
+                      <span className={`block px-1 text-[10px] font-medium sm:text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                         +{events.length - 3} more
                       </span>
                     ) : null}
@@ -325,7 +346,7 @@ function LeaveCalendarPage() {
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
+      <div className={`mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
           Meeting
@@ -346,27 +367,31 @@ function LeaveCalendarPage() {
 
       {showAddEventModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
-          <div className="w-full max-w-[420px] rounded-2xl bg-white p-5 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Add Calendar Event</h3>
-            <div className="my-4 border-t border-slate-200" />
+          <div className={`w-full max-w-[420px] rounded-2xl p-5 shadow-xl ${isDark ? "border border-slate-700 bg-[#0f1720]" : "bg-white"}`}>
+            <h3 className={`text-lg font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>Add Calendar Event</h3>
+            <div className={`my-4 border-t ${isDark ? "border-slate-700" : "border-slate-200"}`} />
 
             <div className="space-y-4">
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Date</span>
+                <span className={`mb-1 block text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>Date</span>
                 <input
                   type="date"
                   value={eventDate}
                   onChange={(event) => setEventDate(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
+                  className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae] ${
+                    isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200"
+                  }`}
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Type</span>
+                <span className={`mb-1 block text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>Type</span>
                 <select
                   value={eventType}
                   onChange={(event) => setEventType(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
+                  className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae] ${
+                    isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200"
+                  }`}
                 >
                   <option value="meeting">Meeting</option>
                   <option value="task">Task</option>
@@ -374,13 +399,15 @@ function LeaveCalendarPage() {
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
+                <span className={`mb-1 block text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>Title</span>
                 <input
                   type="text"
                   value={eventTitle}
                   onChange={(event) => setEventTitle(event.target.value)}
                   placeholder="Enter event title"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
+                  className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae] ${
+                    isDark ? "border-slate-700 bg-[#111a24] text-slate-100 placeholder:text-slate-400" : "border-slate-200"
+                  }`}
                 />
               </label>
             </div>
@@ -393,7 +420,9 @@ function LeaveCalendarPage() {
               <button
                 type="button"
                 onClick={() => setShowAddEventModal(false)}
-                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700"
+                className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
+                  isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-700"
+                }`}
               >
                 Cancel
               </button>

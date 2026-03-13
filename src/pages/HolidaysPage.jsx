@@ -2,7 +2,8 @@ import { useEffect, useRef, useMemo, useState } from "react"
 import { Calendar, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react"
 import { createHoliday, deleteHoliday, listHolidays, updateHoliday } from "../services/holidays"
 
-function HolidaysPage() {
+function HolidaysPage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const [searchQuery, setSearchQuery] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingHolidayId, setEditingHolidayId] = useState("")
@@ -78,7 +79,7 @@ function HolidaysPage() {
   }
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4">
+    <article className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
       {loadError ? (
         <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
           {loadError}
@@ -90,7 +91,9 @@ function HolidaysPage() {
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-3 text-sm outline-none focus:border-[#53c4ae]"
+            className={`w-full rounded-xl border py-2.5 pl-11 pr-3 text-sm outline-none focus:border-[#53c4ae] ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-100" : "border-slate-200 bg-white"
+            }`}
             placeholder="Search"
           />
         </div>
@@ -113,7 +116,7 @@ function HolidaysPage() {
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] text-left">
-          <thead className="border-b border-slate-100 text-sm text-slate-400">
+          <thead className={`border-b text-sm ${isDark ? "border-slate-700 text-slate-300" : "border-slate-100 text-slate-400"}`}>
             <tr>
               <th className="pb-4 font-medium">Date</th>
               <th className="pb-4 font-medium">Day</th>
@@ -123,19 +126,19 @@ function HolidaysPage() {
           </thead>
           <tbody className="text-sm">
             {filteredRows.map((row) => (
-              <tr key={row.id || `${row.date}-${row.name}`} className="border-b border-slate-100 last:border-0">
-                <td className="py-2.5 text-slate-700">
+              <tr key={row.id || `${row.date}-${row.name}`} className={`border-b last:border-0 ${isDark ? "border-slate-700" : "border-slate-100"}`}>
+                <td className={`py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   <span className="flex items-center gap-3">
                     <span
                       className={`inline-block h-8 w-0.5 rounded ${
-                        row.dateValue >= new Date(new Date().setHours(0, 0, 0, 0)) ? "bg-[#53c4ae]" : "bg-slate-200"
+                        row.dateValue >= new Date(new Date().setHours(0, 0, 0, 0)) ? "bg-[#53c4ae]" : isDark ? "bg-slate-600" : "bg-slate-200"
                       }`}
                     />
                     {row.date}
                   </span>
                 </td>
-                <td className="py-2.5 text-slate-700">{row.day}</td>
-                <td className="py-2.5 text-slate-700">{row.name}</td>
+                <td className={`py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.day}</td>
+                <td className={`py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.name}</td>
                 <td className="py-2.5 text-right">
                   <span className="relative inline-flex items-center">
                     <button
@@ -143,13 +146,17 @@ function HolidaysPage() {
                       onClick={() => {
                         setOpenActionHolidayId((prev) => (prev === row.id ? "" : row.id || ""))
                       }}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border ${
+                        isDark ? "border-slate-700 bg-[#0f1720] text-slate-300 hover:bg-[#0b1320]" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
                       aria-label="Open holiday actions"
                     >
                       <MoreHorizontal size={14} />
                     </button>
                     {openActionHolidayId === row.id ? (
-                      <span className="absolute right-0 top-9 z-20 w-[130px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md">
+                      <span className={`absolute right-0 top-9 z-20 w-[130px] overflow-hidden rounded-lg border shadow-md ${
+                        isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"
+                      }`}>
                         <button
                           type="button"
                           onClick={() => {
@@ -160,7 +167,9 @@ function HolidaysPage() {
                             setShowAddModal(true)
                             setOpenActionHolidayId("")
                           }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium ${
+                            isDark ? "text-slate-200 hover:bg-[#0f1720]" : "text-slate-700 hover:bg-slate-50"
+                          }`}
                         >
                           <Pencil size={12} />
                           Update
@@ -182,7 +191,9 @@ function HolidaysPage() {
                               setDeletingHolidayId("")
                             }
                           }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-rose-600 disabled:cursor-not-allowed disabled:opacity-60 ${
+                            isDark ? "hover:bg-rose-900/25" : "hover:bg-rose-50"
+                          }`}
                         >
                           <Trash2 size={12} />
                           {deletingHolidayId === row.id ? "Deleting..." : "Delete"}
@@ -195,7 +206,7 @@ function HolidaysPage() {
             ))}
             {filteredRows.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={4} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   No holidays found.
                 </td>
               </tr>
@@ -204,28 +215,28 @@ function HolidaysPage() {
         </table>
       </div>
 
-      <div className="mt-4 flex items-center gap-6 text-[13px] text-slate-700">
+      <div className={`mt-4 flex items-center gap-6 text-[13px] ${isDark ? "text-slate-300" : "text-slate-700"}`}>
         <span className="inline-flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[#53c4ae]" />
           <span className="font-medium">Upcoming</span>
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-slate-300" />
+          <span className={`h-2 w-2 rounded-full ${isDark ? "bg-slate-600" : "bg-slate-300"}`} />
           <span className="font-medium">Past Holidays</span>
         </span>
       </div>
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
-          <div className="w-full max-w-[420px] rounded-2xl bg-white p-5 shadow-xl">
-            <h3 className="text-[18px] font-semibold text-slate-900">
+          <div className={`w-full max-w-[420px] rounded-2xl p-5 shadow-xl ${isDark ? "border border-slate-700 bg-[#0f1720]" : "bg-white"}`}>
+            <h3 className={`text-[18px] font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>
               {editingHolidayId ? "Edit Holiday" : "Add New Holiday"}
             </h3>
-            <div className="my-4 border-t border-slate-200" />
+            <div className={`my-4 border-t ${isDark ? "border-slate-700" : "border-slate-200"}`} />
 
             <div className="space-y-4">
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Date</span>
+                <span className={`mb-1 block text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>Date</span>
                 <div className="relative">
                   <input
                     ref={holidayDateInputRef}
@@ -234,12 +245,14 @@ function HolidaysPage() {
                     onChange={(event) => setHolidayDate(event.target.value)}
                     onClick={(event) => event.currentTarget.showPicker?.()}
                     onFocus={(event) => event.currentTarget.showPicker?.()}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 pr-10 text-sm outline-none focus:border-[#53c4ae]"
+                    className={`w-full rounded-xl border px-3 py-2.5 pr-10 text-sm outline-none focus:border-[#53c4ae] ${
+                      isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200"
+                    }`}
                   />
                   <button
                     type="button"
                     onClick={() => holidayDateInputRef.current?.showPicker?.()}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
                     aria-label="Open date picker"
                   >
                     <Calendar size={16} />
@@ -248,13 +261,15 @@ function HolidaysPage() {
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Holiday Name</span>
+                <span className={`mb-1 block text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>Holiday Name</span>
                 <input
                   type="text"
                   value={holidayName}
                   onChange={(event) => setHolidayName(event.target.value)}
                   placeholder="Enter holiday name"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae]"
+                  className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae] ${
+                    isDark ? "border-slate-700 bg-[#111a24] text-slate-100 placeholder:text-slate-400" : "border-slate-200"
+                  }`}
                 />
               </label>
             </div>
@@ -271,7 +286,9 @@ function HolidaysPage() {
                   setHolidayName("")
                   setFormError("")
                 }}
-                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700"
+                className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
+                  isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-700"
+                }`}
               >
                 Cancel
               </button>
