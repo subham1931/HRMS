@@ -85,8 +85,10 @@ const INDIA_STATE_CITIES = {
   Puducherry: ["Puducherry", "Karaikal", "Mahe", "Yanam"],
 }
 
-const inputClass =
-  "w-full rounded-lg border border-transparent bg-[#f3f4f4] px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#53c4ae]"
+const getInputClass = (isDark) =>
+  `w-full rounded-lg border border-transparent px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae] ${
+    isDark ? "bg-[#0f1720] text-slate-100" : "bg-[#f3f4f4] text-slate-700"
+  }`
 const ADD_OFFICE_OPTION = "__add_new_office__"
 const EMPLOYMENT_TYPE_LEGACY_VALUES = new Set(["full-time", "part-time", "internship", "freelance", "contract", "temporary", "permanent"])
 const getValidEmploymentType = (...values) => {
@@ -179,6 +181,7 @@ const createInitialState = (initialData) => {
 }
 
 function RegisterEmployeeForm({
+  appearance = "Light",
   departmentOptions = [],
   officeOptions = [],
   onCancel,
@@ -188,6 +191,8 @@ function RegisterEmployeeForm({
   submitError = "",
   isSubmitting = false,
 }) {
+  const isDark = appearance === "Dark"
+  const inputClass = getInputClass(isDark)
   const initialState = createInitialState(initialData)
   const [stepIndex, setStepIndex] = useState(0)
   const [showOfficeModal, setShowOfficeModal] = useState(false)
@@ -358,17 +363,19 @@ function RegisterEmployeeForm({
 
   const uploadBox = (key, label) => (
     <div className="grid gap-3 md:grid-cols-[150px_1fr]">
-      <p className="pt-3 text-sm text-slate-600">{label}</p>
+      <p className={`pt-3 text-sm ${isDark ? "text-slate-300" : "text-slate-600"}`}>{label}</p>
       <button
         type="button"
         onClick={() => inputRefs.current[key]?.click()}
-        className="flex items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-[#f7f7f7] px-4 py-3 text-left text-sm text-slate-500"
+        className={`flex items-center gap-3 rounded-xl border border-dashed px-4 py-3 text-left text-sm ${
+          isDark ? "border-slate-600 bg-[#0f1720] text-slate-400" : "border-slate-300 bg-[#f7f7f7] text-slate-500"
+        }`}
       >
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#def4ec] text-[#53c4ae]">
           <Upload size={14} />
         </span>
         <span>
-          <span className="font-semibold text-slate-700">Click to Upload</span> or drag & drop
+          <span className={`font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>Click to Upload</span> or drag & drop
           <span className="block text-xs text-slate-400">PDF, DOC, PNG, JPG (max. 2.5 MB)</span>
           {documents[key] ? <span className="block text-xs font-medium text-emerald-600">{documents[key]}</span> : null}
         </span>
@@ -390,24 +397,26 @@ function RegisterEmployeeForm({
 
   return (
     <>
-      <div className="mx-auto rounded-2xl border border-slate-200 bg-white text-sm text-slate-800">
+      <div className={`mx-auto rounded-2xl border text-sm ${isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200 bg-white text-slate-800"}`}>
         <div className="grid md:grid-cols-[240px_1fr]">
-        <aside className="border-r border-slate-200 p-6">
+        <aside className={`border-r p-6 ${isDark ? "border-slate-700" : "border-slate-200"}`}>
           <button
             type="button"
             onClick={onCancel}
-            className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className={`mb-4 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-300 hover:bg-[#0b1320]" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
           >
             <ArrowLeft size={13} />
             Back
           </button>
-          <h2 className="text-2xl font-semibold leading-tight text-slate-800">{isEditMode ? "Edit Employee" : "Register New Employee"}</h2>
-          <p className="mt-2 text-xs text-slate-500">
+          <h2 className={`text-2xl font-semibold leading-tight ${isDark ? "text-slate-100" : "text-slate-800"}`}>{isEditMode ? "Edit Employee" : "Register New Employee"}</h2>
+          <p className={`mt-2 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
             {isEditMode
               ? "Update employee details and save profile changes."
               : "Enter all required employment details to formally add a new member to your organization."}
           </p>
-          <div className="relative mt-8 rounded-2xl bg-[#f8faf9] p-4">
+          <div className={`relative mt-8 rounded-2xl p-4 ${isDark ? "border border-slate-700 bg-[#0f1720]" : "bg-[#f8faf9]"}`}>
             <div className="space-y-5">
               {stepLabels.map((label, index) => {
                 const active = index === stepIndex
@@ -416,7 +425,7 @@ function RegisterEmployeeForm({
                   <div key={label} className="relative flex items-start gap-3">
                     <div className="relative w-7 shrink-0">
                       {index < stepLabels.length - 1 && (
-                        <span className="pointer-events-none absolute left-1/2 top-6 h-[calc(100%+24px)] w-[2px] -translate-x-1/2 bg-slate-200">
+                        <span className={`pointer-events-none absolute left-1/2 top-6 h-[calc(100%+24px)] w-[2px] -translate-x-1/2 ${isDark ? "bg-slate-700" : "bg-slate-200"}`}>
                           <span
                             className={`absolute inset-0 origin-top bg-[#53c4ae] transition-transform duration-500 ease-out ${
                               done ? "scale-y-100" : "scale-y-0"
@@ -428,14 +437,14 @@ function RegisterEmployeeForm({
                         className={`relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors duration-300 ${
                           done || active
                             ? "border-[#53c4ae] bg-[#53c4ae] text-white"
-                            : "border-slate-300 bg-white text-slate-500"
+                            : isDark ? "border-slate-600 bg-[#111a24] text-slate-400" : "border-slate-300 bg-white text-slate-500"
                         }`}
                       >
                         {done ? <Check size={12} className="text-white" /> : index + 1}
                       </span>
                     </div>
                     <div>
-                      <p className={`text-sm leading-5 transition-colors duration-300 ${active || done ? "font-semibold text-slate-700" : "text-slate-400"}`}>
+                      <p className={`text-sm leading-5 transition-colors duration-300 ${active || done ? (isDark ? "font-semibold text-slate-200" : "font-semibold text-slate-700") : "text-slate-400"}`}>
                         {label}
                       </p>
                       <p className={`text-xs ${active ? "text-[#2f6f63]" : "text-slate-400"}`}>
@@ -452,14 +461,14 @@ function RegisterEmployeeForm({
         </aside>
 
         <section className="p-6 md:p-8">
-          <p className="text-xs text-slate-400">Step {stepIndex + 1}/3</p>
-          <h3 className="mt-2 text-2xl font-semibold text-slate-800">{stepLabels[stepIndex]}</h3>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-400"}`}>Step {stepIndex + 1}/3</p>
+          <h3 className={`mt-2 text-2xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{stepLabels[stepIndex]}</h3>
+          <p className={`mt-1 text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
             {stepIndex === 0 && "Enter the employee's personal details and primary contact information to initiate their HR record"}
             {stepIndex === 1 && "Provide essential employment data and payroll setup to configure the employee's role and compensation"}
             {stepIndex === 2 && "Configure employee perks, attach required documents, and finalize their status within the system"}
           </p>
-          <div className="mt-4 border-b border-slate-200" />
+          <div className={`mt-4 border-b ${isDark ? "border-slate-700" : "border-slate-200"}`} />
 
           <div className="mt-5 space-y-5">
             {stepIndex === 0 && (
@@ -498,7 +507,7 @@ function RegisterEmployeeForm({
                   />
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>First Name <span className="text-rose-500">*</span></span>
                     <input
                       required
@@ -509,7 +518,7 @@ function RegisterEmployeeForm({
                     />
                     {errors.firstName ? <span className="text-xs text-rose-500">{errors.firstName}</span> : null}
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Last Name <span className="text-rose-500">*</span></span>
                     <input
                       required
@@ -522,13 +531,15 @@ function RegisterEmployeeForm({
                   </label>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Mobile Number <span className="text-rose-500">*</span></span>
-                    <div className={`flex rounded-lg bg-[#f3f4f4] ${errors.phone ? "border border-rose-400" : ""}`}>
+                    <div className={`flex rounded-lg ${isDark ? "bg-[#0f1720]" : "bg-[#f3f4f4]"} ${errors.phone ? "border border-rose-400" : ""}`}>
                       <select
                         value={form.phoneCode}
                         onChange={setField("phoneCode")}
-                        className="cursor-pointer rounded-l-lg border-r border-slate-200 bg-transparent px-2.5 py-2.5 text-sm text-slate-600 outline-none"
+                        className={`cursor-pointer rounded-l-lg border-r bg-transparent px-2.5 py-2.5 text-sm outline-none ${
+                          isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-600"
+                        }`}
                       >
                         {countryCodes.map((code) => (
                           <option key={`phone-${code}`} value={code}>
@@ -546,7 +557,7 @@ function RegisterEmployeeForm({
                     </div>
                     {errors.phone ? <span className="text-xs text-rose-500">{errors.phone}</span> : null}
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Email Address <span className="text-rose-500">*</span></span>
                     <input
                       required
@@ -559,7 +570,7 @@ function RegisterEmployeeForm({
                   </label>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Date of Birth <span className="text-rose-500">*</span></span>
                     <div className="relative">
                       <input
@@ -574,7 +585,7 @@ function RegisterEmployeeForm({
                     </div>
                     {errors.dob ? <span className="text-xs text-rose-500">{errors.dob}</span> : null}
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Gender <span className="text-rose-500">*</span></span>
                     <div className="relative">
                       <select required value={form.gender} onChange={setField("gender")} className={`${inputClass} appearance-none pr-8 ${errors.gender ? "border-rose-400" : ""}`}>
@@ -592,7 +603,7 @@ function RegisterEmployeeForm({
                     {errors.gender ? <span className="text-xs text-rose-500">{errors.gender}</span> : null}
                   </label>
                 </div>
-                <label className="space-y-1 text-sm text-slate-500">
+                <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                   <span>Address <span className="text-rose-500">*</span></span>
                   <input
                     required
@@ -604,7 +615,7 @@ function RegisterEmployeeForm({
                   {errors.address ? <span className="text-xs text-rose-500">{errors.address}</span> : null}
                 </label>
                 <div className="grid gap-4 md:grid-cols-3">
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>State <span className="text-rose-500">*</span></span>
                     <div className="relative">
                       <select
@@ -626,7 +637,7 @@ function RegisterEmployeeForm({
                     </div>
                     {errors.state ? <span className="text-xs text-rose-500">{errors.state}</span> : null}
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>City <span className="text-rose-500">*</span></span>
                     <div className="relative">
                       <select
@@ -634,7 +645,9 @@ function RegisterEmployeeForm({
                         value={form.city}
                         onChange={handleCityChange}
                         disabled={!form.state}
-                        className={`${inputClass} appearance-none pr-8 ${errors.city ? "border-rose-400" : ""} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
+                        className={`${inputClass} appearance-none pr-8 ${errors.city ? "border-rose-400" : ""} disabled:cursor-not-allowed ${
+                          isDark ? "disabled:bg-[#0b1320] disabled:text-slate-500" : "disabled:bg-slate-100 disabled:text-slate-400"
+                        }`}
                       >
                         <option value="" disabled>
                           {form.state ? "Select city" : "Select state first"}
@@ -649,7 +662,7 @@ function RegisterEmployeeForm({
                     </div>
                     {errors.city ? <span className="text-xs text-rose-500">{errors.city}</span> : null}
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Zip Code <span className="text-rose-500">*</span></span>
                     <input
                       required
@@ -666,14 +679,14 @@ function RegisterEmployeeForm({
 
             {stepIndex === 1 && (
               <>
-                <h4 className="text-base font-semibold text-slate-700">Employment Details</h4>
+                <h4 className={`text-base font-semibold ${isDark ? "text-slate-100" : "text-slate-700"}`}>Employment Details</h4>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Employee ID</span>
                     <input value={form.employeeId} onChange={setField("employeeId")} className={inputClass} />
-                    <span className="text-xs text-slate-400">*Auto-generated</span>
+                    <span className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>*Auto-generated</span>
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Join Date <span className="text-rose-500">*</span></span>
                     <div className="relative">
                       <input required type="date" value={form.joinDate} onChange={setField("joinDate")} className={`${inputClass} pr-9 ${errors.joinDate ? "border-rose-400" : ""}`} />
@@ -684,7 +697,7 @@ function RegisterEmployeeForm({
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Job Title <span className="text-rose-500">*</span></span>
                     <input
                       required
@@ -695,7 +708,7 @@ function RegisterEmployeeForm({
                     />
                     {errors.jobTitle ? <span className="text-xs text-rose-500">{errors.jobTitle}</span> : null}
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Department <span className="text-rose-500">*</span></span>
                     <div className="relative">
                       <select required value={form.department} onChange={handleDepartmentChange} className={`${inputClass} appearance-none pr-8 ${errors.department ? "border-rose-400" : ""}`}>
@@ -707,7 +720,7 @@ function RegisterEmployeeForm({
                       <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     </div>
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Employment Type <span className="text-rose-500">*</span></span>
                     <div className="relative">
                       <select required value={form.employmentType} onChange={setField("employmentType")} className={`${inputClass} appearance-none pr-8 ${errors.employmentType ? "border-rose-400" : ""}`}>
@@ -751,19 +764,29 @@ function RegisterEmployeeForm({
                       type="button"
                       onClick={() => setForm((prev) => ({ ...prev, workModel: item }))}
                       className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm ${
-                        form.workModel === item ? "border-[#53c4ae] bg-[#edf7f3]" : "border-transparent bg-[#f3f4f4] text-slate-600"
+                        form.workModel === item
+                          ? isDark
+                            ? "border-[#53c4ae] bg-emerald-900/25 text-emerald-200"
+                            : "border-[#53c4ae] bg-[#edf7f3]"
+                          : isDark
+                            ? "border-transparent bg-[#0f1720] text-slate-300"
+                            : "border-transparent bg-[#f3f4f4] text-slate-600"
                       }`}
                     >
                       <span>{item}</span>
                       <span className={`h-3.5 w-3.5 rounded-full border ${
-                        form.workModel === item ? "border-[#53c4ae] bg-[#53c4ae]" : "border-slate-300 bg-white"
+                        form.workModel === item
+                          ? "border-[#53c4ae] bg-[#53c4ae]"
+                          : isDark
+                            ? "border-slate-600 bg-[#111a24]"
+                            : "border-slate-300 bg-white"
                       }`} />
                     </button>
                   ))}
                 </div>
 
-                <h4 className="pt-2 text-base font-semibold text-slate-700">Payroll Info</h4>
-                <label className="space-y-1 text-sm text-slate-500">
+                <h4 className={`pt-2 text-base font-semibold ${isDark ? "text-slate-100" : "text-slate-700"}`}>Payroll Info</h4>
+                <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                   <span>Salary</span>
                   <div className="relative">
                     <input
@@ -772,15 +795,15 @@ function RegisterEmployeeForm({
                       placeholder="e.g. INR 50,000"
                       className={`${inputClass} pr-24`}
                     />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">INR /month</span>
+                    <span className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>INR /month</span>
                   </div>
                 </label>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Bank Name</span>
                     <input value={form.bankName} onChange={setField("bankName")} className={inputClass} />
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Bank Account Number</span>
                     <input value={form.bankAccount} onChange={setField("bankAccount")} className={inputClass} />
                   </label>
@@ -790,7 +813,7 @@ function RegisterEmployeeForm({
 
             {stepIndex === 2 && (
               <>
-                <h4 className="text-base font-semibold text-slate-700">Documents</h4>
+                <h4 className={`text-base font-semibold ${isDark ? "text-slate-100" : "text-slate-700"}`}>Documents</h4>
                 <div className="space-y-3">
                   {uploadBox("cv", "CV & Portfolio (if Any)")}
                   {uploadBox("id", "ID")}
@@ -798,57 +821,57 @@ function RegisterEmployeeForm({
                   {uploadBox("offerLetter", "Offer Letter")}
                 </div>
 
-                <h4 className="pt-3 text-base font-semibold text-slate-700">Credentials</h4>
-                <p className="text-sm text-slate-500">Set login access details for user account sign-in.</p>
+                <h4 className={`pt-3 text-base font-semibold ${isDark ? "text-slate-100" : "text-slate-700"}`}>Credentials</h4>
+                <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Set login access details for user account sign-in.</p>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Username</span>
                     <input
                       value={generatedUserName}
                       placeholder="Auto-generated from first name and DOB"
                       readOnly
-                      className={`${inputClass} bg-slate-100 text-slate-600`}
+                      className={`${inputClass} ${isDark ? "bg-[#0b1320] text-slate-300" : "bg-slate-100 text-slate-600"}`}
                     />
                   </label>
-                  <label className="space-y-1 text-sm text-slate-500">
+                  <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                     <span>Office Email</span>
                     <input
                       type="email"
                       value={generatedOfficeEmail}
                       placeholder="Auto-generated from first name"
                       readOnly
-                      className={`${inputClass} bg-slate-100 text-slate-600`}
+                      className={`${inputClass} ${isDark ? "bg-[#0b1320] text-slate-300" : "bg-slate-100 text-slate-600"}`}
                     />
                   </label>
                 </div>
-                <label className="space-y-1 text-sm text-slate-500">
+                <label className={`space-y-1 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                   <span>Password</span>
                   <input
                     type="text"
                     value={generatedPassword}
                     placeholder="Auto-generated from username"
                     readOnly
-                    className={`${inputClass} bg-slate-100 text-slate-600`}
+                    className={`${inputClass} ${isDark ? "bg-[#0b1320] text-slate-300" : "bg-slate-100 text-slate-600"}`}
                   />
                 </label>
 
                 <div className="pt-3">
-                  <div className="space-y-3 rounded-xl border border-slate-200 bg-[#f8faf9] p-3">
+                  <div className={`space-y-3 rounded-xl border p-3 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-[#f8faf9]"}`}>
                     <button
                       type="button"
                       onClick={() => setForm((prev) => ({ ...prev, activeEmployee: !prev.activeEmployee }))}
                       className="flex w-full items-center justify-between"
                     >
                       <span className="text-left">
-                        <span className="block text-sm font-medium text-slate-700">Active Employee</span>
-                        <span className="block text-xs text-slate-500">Mark this employee as currently active</span>
+                        <span className={`block text-sm font-medium ${isDark ? "text-slate-100" : "text-slate-700"}`}>Active Employee</span>
+                        <span className={`block text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Mark this employee as currently active</span>
                       </span>
                       <span className={`relative h-5 w-9 rounded-full transition-colors ${form.activeEmployee ? "bg-[#53c4ae]" : "bg-slate-300"}`}>
                         <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.activeEmployee ? "translate-x-4" : "translate-x-0"}`} />
                       </span>
                     </button>
 
-                    <div className="border-t border-slate-200" />
+                    <div className={`border-t ${isDark ? "border-slate-700" : "border-slate-200"}`} />
 
                     <button
                       type="button"
@@ -856,8 +879,8 @@ function RegisterEmployeeForm({
                       className="flex w-full items-center justify-between"
                     >
                       <span className="text-left">
-                        <span className="block text-sm font-medium text-slate-700">Send Welcome Email</span>
-                        <span className="block text-xs text-slate-500">Automatically notify employee after submit</span>
+                        <span className={`block text-sm font-medium ${isDark ? "text-slate-100" : "text-slate-700"}`}>Send Welcome Email</span>
+                        <span className={`block text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Automatically notify employee after submit</span>
                       </span>
                       <span className={`relative h-5 w-9 rounded-full transition-colors ${form.sendWelcomeEmail ? "bg-[#53c4ae]" : "bg-slate-300"}`}>
                         <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.sendWelcomeEmail ? "translate-x-4" : "translate-x-0"}`} />
@@ -869,7 +892,7 @@ function RegisterEmployeeForm({
             )}
           </div>
 
-          <div className="mt-8 border-t border-slate-200 pt-4">
+          <div className={`mt-8 border-t pt-4 ${isDark ? "border-slate-700" : "border-slate-200"}`}>
             <div className="flex justify-end">
               <div className="flex items-center gap-2">
                 {stepIndex > 0 && (
@@ -915,11 +938,11 @@ function RegisterEmployeeForm({
       </div>
       {showOfficeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5">
-            <h4 className="text-base font-semibold text-slate-800">Add New Office</h4>
-            <p className="mt-1 text-sm text-slate-500">Create an office location and save it for future employees.</p>
+          <div className={`w-full max-w-md rounded-2xl border p-5 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-white"}`}>
+            <h4 className={`text-base font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Add New Office</h4>
+            <p className={`mt-1 text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Create an office location and save it for future employees.</p>
             <label className="mt-4 block space-y-1">
-              <span className="text-sm text-slate-600">Office Name</span>
+              <span className={`text-sm ${isDark ? "text-slate-300" : "text-slate-600"}`}>Office Name</span>
               <input
                 value={newOfficeName}
                 onChange={(event) => {
@@ -940,7 +963,7 @@ function RegisterEmployeeForm({
                   setNewOfficeName("")
                   setOfficeModalError("")
                 }}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600"
+                className={`rounded-lg border px-4 py-2 text-sm ${isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-600"}`}
               >
                 Cancel
               </button>

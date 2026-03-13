@@ -176,7 +176,8 @@ const buildPerformanceGraph = (range, records, now) => {
   }
 }
 
-function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
+function EmployeeDetailsView({ employee, onBack, onEditProfile, appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const [performanceRange, setPerformanceRange] = useState("This Week")
   const [performanceGraph, setPerformanceGraph] = useState(() => buildPerformanceGraph("This Week", [], new Date()))
   const [monthAttendanceMap, setMonthAttendanceMap] = useState({})
@@ -428,21 +429,21 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
   }, [employeeId])
 
   return (
-    <div className="rounded-2xl bg-white">
+    <div className={`rounded-2xl ${isDark ? "bg-[#111a24]" : "bg-white"}`}>
       <div className="mb-4">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600"
+          className={`inline-flex items-center gap-1 text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}
         >
           <ChevronLeft size={15} />
           Employee Details
         </button>
-        <p className="mt-1 text-xs text-slate-400">Dashboard / Employees / Employee Details</p>
+        <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-400"}`}>Dashboard / Employees / Employee Details</p>
       </div>
 
       <div className="mb-6 grid gap-4 xl:grid-cols-[250px_1fr]">
-        <aside className="self-start rounded-2xl border border-slate-200 bg-white p-4">
+        <aside className={`self-start rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-white"}`}>
           <div className="mx-auto h-24 w-24 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#d8efe8,#88d3c2)]">
             {employee?.profileImage ? (
               <img src={employee.profileImage} alt={name} className="h-full w-full object-cover" />
@@ -453,27 +454,27 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
             )}
           </div>
           <div className="mt-3 text-center">
-            <p className="text-lg font-semibold leading-tight text-slate-800">{name}</p>
-            <p className="mt-1 text-[11px] text-slate-500">{designation} · {department}</p>
+            <p className={`text-lg font-semibold leading-tight ${isDark ? "text-slate-100" : "text-slate-800"}`}>{name}</p>
+            <p className={`mt-1 text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{designation} · {department}</p>
           </div>
           <div className="mt-3 flex items-center justify-center gap-2">
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{employeeId}</span>
+            <span className={`rounded-full px-2 py-0.5 text-[11px] ${isDark ? "bg-[#111a24] text-slate-300" : "bg-slate-100 text-slate-600"}`}>{employeeId}</span>
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-600">{employmentStatus}</span>
           </div>
-          <div className="mt-4 space-y-2.5 rounded-xl bg-[#f8faf9] p-3 text-[13px]">
-            <p className="flex items-center justify-between text-slate-600"><span>Employment Type</span><span className="font-semibold text-slate-800">{employmentType}</span></p>
-            <p className="flex items-center justify-between text-slate-600"><span>Work Model</span><span className="font-semibold text-slate-800">{workModel}</span></p>
-            <p className="flex items-center justify-between text-slate-600"><span>Status</span><span className="font-semibold text-slate-800">{employmentStatus}</span></p>
-            <p className="flex items-center justify-between text-slate-600"><span>Join Date</span><span className="font-semibold text-slate-800">{joiningDate || "-"}</span></p>
-            <p className="flex items-center justify-between text-slate-600"><span>Office Location</span><span className="font-semibold text-slate-800">{officeLocation}</span></p>
+          <div className={`mt-4 space-y-2.5 rounded-xl p-3 text-[13px] ${isDark ? "border border-slate-700 bg-[#111a24]" : "bg-[#f8faf9]"}`}>
+            <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-600"}`}><span>Employment Type</span><span className={`font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{employmentType}</span></p>
+            <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-600"}`}><span>Work Model</span><span className={`font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{workModel}</span></p>
+            <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-600"}`}><span>Status</span><span className={`font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{employmentStatus}</span></p>
+            <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-600"}`}><span>Join Date</span><span className={`font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{joiningDate || "-"}</span></p>
+            <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-600"}`}><span>Office Location</span><span className={`font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{officeLocation}</span></p>
           </div>
-          <div className="mt-3 space-y-2 rounded-xl border border-slate-200 p-3">
-            <p className="truncate text-[11px] text-slate-500">Office Email</p>
-            <p className="truncate text-[13px] font-medium text-slate-700">{officeEmail}</p>
-            <p className="text-[11px] text-slate-500">Username</p>
-            <p className="text-[13px] font-medium text-slate-700">{username}</p>
-            <p className="text-[11px] text-slate-500">Phone</p>
-            <p className="text-[13px] font-medium text-slate-700">{mobile}</p>
+          <div className={`mt-3 space-y-2 rounded-xl border p-3 ${isDark ? "border-slate-700" : "border-slate-200"}`}>
+            <p className={`truncate text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>Office Email</p>
+            <p className={`truncate text-[13px] font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>{officeEmail}</p>
+            <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>Username</p>
+            <p className={`text-[13px] font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>{username}</p>
+            <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>Phone</p>
+            <p className={`text-[13px] font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>{mobile}</p>
           </div>
           <button
             type="button"
@@ -490,17 +491,17 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
             {leaveStats.map((item) => {
               const percent = item.total > 0 ? Math.min(100, Math.round((item.used / item.total) * 100)) : 0
               return (
-                <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <p className="text-xs font-medium text-slate-600">{item.label}</p>
+                <div key={item.label} className={`rounded-2xl border p-3 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+                  <p className={`text-xs font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>{item.label}</p>
                   <div className="mt-2 flex items-center justify-center">
                     <div
                       className="relative h-16 w-16 rounded-full"
                       style={{ background: `conic-gradient(${item.color} ${percent}%, #edf2ef ${percent}% 100%)` }}
                     >
-                      <div className="absolute inset-[6px] flex items-center justify-center rounded-full bg-white text-center">
-                        <p className="text-sm font-semibold text-slate-800">
+                      <div className={`absolute inset-[6px] flex items-center justify-center rounded-full text-center ${isDark ? "bg-[#0f1720]" : "bg-white"}`}>
+                        <p className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>
                           {item.used}
-                          <span className="text-xs text-slate-500">/{item.total}</span>
+                          <span className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>/{item.total}</span>
                         </p>
                       </div>
                     </div>
@@ -510,32 +511,32 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
             })}
           </div>
 
-          <div className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-4">
+          <div className={`flex flex-1 flex-col rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-white"}`}>
             <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-lg font-semibold text-slate-800">Performance Overview</h4>
+              <h4 className={`text-lg font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Performance Overview</h4>
               <div className="relative">
                 <select
                   value={performanceRange}
                   onChange={(event) => setPerformanceRange(event.target.value)}
-                  className="appearance-none rounded-lg bg-[#edf4e6] px-2.5 py-1 pr-6 text-xs text-slate-600 outline-none"
+                  className={`appearance-none rounded-lg px-2.5 py-1 pr-6 text-xs outline-none ${isDark ? "bg-[#111a24] text-slate-200" : "bg-[#edf4e6] text-slate-600"}`}
                 >
                   <option>This Week</option>
                   <option>This Month</option>
                   <option>This Year</option>
                 </select>
-                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500">▼</span>
+                <span className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>▼</span>
               </div>
             </div>
-            <p className="text-[30px] font-semibold leading-none text-slate-800">{formatTotalWorkHours(activeGraph.totalMinutes)}</p>
-            <p className="mt-1 text-xs text-slate-500">Total logged hours for selected range</p>
-            <div className="mt-4 flex-1 rounded-xl bg-gradient-to-t from-[#e8f5ef] to-white p-3">
+            <p className={`text-[30px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>{formatTotalWorkHours(activeGraph.totalMinutes)}</p>
+            <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Total logged hours for selected range</p>
+            <div className={`mt-4 flex-1 rounded-xl p-3 ${isDark ? "bg-gradient-to-t from-[#0b1320] to-[#111a24]" : "bg-gradient-to-t from-[#e8f5ef] to-white"}`}>
               <div className="grid h-full grid-rows-[auto_1fr_auto] gap-2">
                 <div
-                  className="grid gap-2 text-center text-[11px] text-slate-500"
+                  className={`grid gap-2 text-center text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}
                   style={{ gridTemplateColumns: `repeat(${Math.max(1, activeGraph.topLabels.length)}, minmax(0, 1fr))` }}
                 >
                   {activeGraph.topLabels.map((slot, index) => (
-                    <span key={`perf-slot-${index}`} className={index === activeGraph.activeIndex ? "font-semibold text-[#1f6257]" : ""}>
+                    <span key={`perf-slot-${index}`} className={index === activeGraph.activeIndex ? (isDark ? "font-semibold text-emerald-300" : "font-semibold text-[#1f6257]") : ""}>
                       {slot}
                     </span>
                   ))}
@@ -557,7 +558,7 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
                   })}
                 </div>
                 <div
-                  className="grid gap-2 text-center text-xs text-slate-500"
+                  className={`grid gap-2 text-center text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}
                   style={{ gridTemplateColumns: `repeat(${Math.max(1, activeGraph.bottomLabels.length)}, minmax(0, 1fr))` }}
                 >
                   {activeGraph.bottomLabels.map((day, index) => (
@@ -573,14 +574,14 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
 
       <div className="grid gap-4 xl:grid-cols-[250px_1fr_230px]">
         <div className="space-y-4">
-          <aside className="h-[352px] self-start rounded-2xl border border-slate-200 bg-white p-4">
+          <aside className={`h-[352px] self-start rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-white"}`}>
             <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-lg font-semibold text-slate-800">Personal Info</h4>
-              <span className="text-slate-400">...</span>
+              <h4 className={`text-lg font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Personal Info</h4>
+              <span className={isDark ? "text-slate-500" : "text-slate-400"}>...</span>
             </div>
             <div className="flex h-[calc(100%-2.25rem)] flex-col">
               {visiblePersonalInfoRows.length === 0 ? (
-                <p className="text-sm text-slate-500">No personal info available.</p>
+                <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>No personal info available.</p>
               ) : (
                 <div className="flex h-full flex-col justify-between">
                   {visiblePersonalInfoRows.map((item) => {
@@ -592,10 +593,10 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
                           ? <Phone size={14} />
                           : <MapPin size={14} />
                     return (
-                      <div key={item.label} className="flex items-start gap-2 py-1 text-sm text-slate-700">
-                        <span className="mt-0.5 text-slate-400">{icon}</span>
+                      <div key={item.label} className={`flex items-start gap-2 py-1 text-sm ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                        <span className={`mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>{icon}</span>
                         <span>
-                          <span className="block text-xs text-slate-500">{item.label}</span>
+                          <span className={`block text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.label}</span>
                           <span className="font-medium break-all">{item.value || "-"}</span>
                         </span>
                       </div>
@@ -606,17 +607,17 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
             </div>
           </aside>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-white"}`}>
             <div className="mb-2 flex items-center justify-between">
-              <h4 className="text-lg font-semibold text-slate-800">Documents</h4>
-              <span className="text-slate-400">...</span>
+              <h4 className={`text-lg font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Documents</h4>
+              <span className={isDark ? "text-slate-500" : "text-slate-400"}>...</span>
             </div>
             <div className="space-y-2">
               {documentItems.length === 0 ? (
-                <p className="text-sm text-slate-500">No documents uploaded.</p>
+                <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>No documents uploaded.</p>
               ) : (
                 documentItems.map((item) => (
-                  <p key={item.label} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                  <p key={item.label} className={`rounded-lg border px-3 py-2 text-sm ${isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-700"}`}>
                     <span className="font-medium">{item.label}:</span> {item.value}
                   </p>
                 ))
@@ -626,33 +627,33 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
         </div>
 
         <section>
-          <div className="rounded-2xl border border-slate-200 bg-[#f7f8f8] p-3">
+          <div className={`rounded-2xl border p-3 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-[#f7f8f8]"}`}>
             <div className="mb-3 flex items-center justify-between">
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-sm font-semibold leading-none text-slate-800 hover:bg-slate-100"
+                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-sm font-semibold leading-none ${isDark ? "text-slate-100 hover:bg-[#111a24]" : "text-slate-800 hover:bg-slate-100"}`}
               >
                 {calendarMonthLabel}
-                <span className="text-xs text-slate-400">▼</span>
+                <span className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>▼</span>
               </button>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setCalendarCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#dceac7] text-lg font-medium leading-none text-slate-600"
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-lg font-medium leading-none ${isDark ? "bg-[#111a24] text-slate-300" : "bg-[#dceac7] text-slate-600"}`}
                 >
                   ‹
                 </button>
                 <button
                   type="button"
                   onClick={() => setCalendarCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#dceac7] text-lg font-medium leading-none text-slate-600"
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-lg font-medium leading-none ${isDark ? "bg-[#111a24] text-slate-300" : "bg-[#dceac7] text-slate-600"}`}
                 >
                   ›
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-slate-400">
+            <div className={`grid grid-cols-7 gap-1 text-center text-[10px] font-medium ${isDark ? "text-slate-500" : "text-slate-400"}`}>
               {["S", "M", "T", "W", "T", "F", "S"].map((day) => <span key={day}>{day}</span>)}
             </div>
             <div className="mt-2 grid gap-1">
@@ -669,9 +670,9 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
                               if (status === "late") return "bg-[#49c4af] text-white"
                               if (status === "onLeave") return "bg-[#174f48] text-white"
                               if (status === "present") return "bg-[#dceac7] text-slate-700"
-                              return "bg-white text-slate-700"
+                              return isDark ? "bg-[#111a24] text-slate-300" : "bg-white text-slate-700"
                             })()
-                          : "text-slate-400"
+                          : isDark ? "text-slate-600" : "text-slate-400"
                       }`}
                     >
                       {cell.day}
@@ -680,44 +681,44 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
                 </div>
               ))}
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-1.5 border-t border-slate-200 pt-3">
+            <div className={`mt-3 grid grid-cols-2 gap-1.5 border-t pt-3 ${isDark ? "border-slate-700" : "border-slate-200"}`}>
               {[
                 { label: "Present", value: String(monthAttendanceStats.present), color: "#dceac7" },
                 { label: "Late", value: String(monthAttendanceStats.late), color: "#49c4af" },
                 { label: "On Leave", value: String(monthAttendanceStats.onLeave), color: "#174f48" },
                 { label: "Absent", value: String(monthAttendanceStats.absent), color: "#e5e7eb" },
               ].map((item) => (
-                <div key={item.label} className="rounded-md bg-white px-1.5 py-1">
-                  <p className="flex items-center gap-1 text-[10px] leading-none text-slate-500">
+                <div key={item.label} className={`rounded-md px-1.5 py-1 ${isDark ? "bg-[#111a24]" : "bg-white"}`}>
+                  <p className={`flex items-center gap-1 text-[10px] leading-none ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                     <span className="inline-block h-2 w-1.5 rounded-sm" style={{ backgroundColor: item.color }} />
                     <span className="whitespace-normal break-words">{item.label}</span>
                   </p>
-                  <p className="mt-1 text-sm font-semibold leading-none text-slate-800">{item.value}</p>
+                  <p className={`mt-1 text-sm font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>{item.value}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <div className="h-full rounded-2xl border border-slate-200 bg-white p-3">
+        <div className={`h-full rounded-2xl border p-3 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-white"}`}>
           <div className="flex h-full flex-col">
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-base font-semibold text-slate-800">Payroll Summary</p>
-              <span className="text-slate-400">...</span>
+              <p className={`text-base font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Payroll Summary</p>
+              <span className={isDark ? "text-slate-500" : "text-slate-400"}>...</span>
             </div>
 
-            <div className="mb-2 rounded-lg bg-[#f4f5f5] px-3 py-2">
-              <p className="text-[11px] font-medium text-slate-700">Payroll Details</p>
+            <div className={`mb-2 rounded-lg px-3 py-2 ${isDark ? "bg-[#111a24]" : "bg-[#f4f5f5]"}`}>
+              <p className={`text-[11px] font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>Payroll Details</p>
             </div>
 
             <div className="space-y-2 text-xs">
               {payrollDetails.length === 0 ? (
-                <p className="text-sm text-slate-500">No payroll info available.</p>
+                <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>No payroll info available.</p>
               ) : (
                 payrollDetails.map((item) => (
-                  <p key={item.label} className="flex items-center justify-between border-b border-slate-200 pb-2 text-slate-700">
+                  <p key={item.label} className={`flex items-center justify-between border-b pb-2 ${isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-700"}`}>
                     <span className="font-medium">{item.label}</span>
-                    <span className="font-semibold text-slate-800">{item.value}</span>
+                    <span className={`font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{item.value}</span>
                   </p>
                 ))
               )}

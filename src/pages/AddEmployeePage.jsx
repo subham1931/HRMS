@@ -5,7 +5,7 @@ import { createEmployeeRecord } from "../services/employees"
 import { createDepartment, listDepartments } from "../services/departments"
 import { createOffice, listOffices } from "../services/offices"
 
-function AddEmployeePage() {
+function AddEmployeePage({ appearance = "Light" }) {
   const navigate = useNavigate()
   const [submitError, setSubmitError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -76,6 +76,7 @@ function AddEmployeePage() {
 
   return (
     <RegisterEmployeeForm
+      appearance={appearance}
       departmentOptions={departmentOptions}
       officeOptions={officeOptions}
       onCancel={() => navigate("/employees")}

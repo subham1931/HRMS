@@ -42,7 +42,7 @@ function App() {
       return "Light"
     }
   })
-  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup" || pathname === "/departments" || pathname === "/offices" || pathname === "/setup/leaves" || pathname === "/leaves" || pathname === "/calendar" || pathname === "/leaves/calendar" || pathname === "/holidays" || pathname.startsWith("/leaves/"))
+  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/employees/addemploye" || pathname === "/employees/editemploye" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup" || pathname === "/departments" || pathname === "/offices" || pathname === "/setup/leaves" || pathname === "/leaves" || pathname === "/calendar" || pathname === "/leaves/calendar" || pathname === "/holidays" || pathname === "/profile" || pathname.startsWith("/leaves/"))
   const isDarkUi = appearance === "Dark"
 
   useEffect(() => {
@@ -133,8 +133,8 @@ function App() {
   const routeContent = {
     "/dashboard": <DashboardPage appearance={appearance} />,
     "/employees": <EmployeesPage appearance={appearance} />,
-    "/employees/addemploye": <AddEmployeePage />,
-    "/employees/editemploye": <EditEmployeePage />,
+    "/employees/addemploye": <AddEmployeePage appearance={appearance} />,
+    "/employees/editemploye": <EditEmployeePage appearance={appearance} />,
     "/departments": <DepartmentsPage appearance={appearance} />,
     "/offices": <OfficesPage appearance={appearance} />,
     "/attendance": <AttendancePage appearance={appearance} />,
@@ -149,7 +149,7 @@ function App() {
     "/setup": <SettingsPage appearance={appearance} onAppearanceChange={setAppearance} />,
     "/settings": <SettingsPage appearance={appearance} onAppearanceChange={setAppearance} />,
     "/notifications": <NotificationsPanel appearance={appearance} />,
-    "/profile": <ProfilePage adminProfile={adminProfile} />,
+    "/profile": <ProfilePage adminProfile={adminProfile} appearance={appearance} />,
   }
   const activeRouteContent = pathname === "/leaves/calendar"
     ? <LeaveCalendarPage appearance={appearance} />

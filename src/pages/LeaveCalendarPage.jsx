@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { listHolidays } from "../services/holidays"
 import { listLeaveRequests } from "../services/leaves"
@@ -44,9 +44,12 @@ const getMonthCalendarCells = (monthCursor) => {
 function LeaveCalendarPage({ appearance = "Light" }) {
   const isDark = appearance === "Dark"
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const { pathname, state } = useLocation()
   const isStandaloneCalendar = pathname === "/calendar"
-  const [calendarMode, setCalendarMode] = useState("all")
+  const [calendarMode, setCalendarMode] = useState(() => {
+    const requested = String(state?.calendarMode || "").toLowerCase()
+    return ["team", "leaves", "all"].includes(requested) ? requested : "all"
+  })
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
@@ -86,6 +89,13 @@ function LeaveCalendarPage({ appearance = "Light" }) {
       mounted = false
     }
   }, [])
+
+  useEffect(() => {
+    const requested = String(state?.calendarMode || "").toLowerCase()
+    if (["team", "leaves", "all"].includes(requested)) {
+      setCalendarMode(requested)
+    }
+  }, [state?.calendarMode])
 
   useEffect(() => {
     let mounted = true
@@ -137,10 +147,7 @@ function LeaveCalendarPage({ appearance = "Light" }) {
   const leaveEvents = useMemo(
     () =>
       leaveRows
-        .filter((item) => {
-          const status = String(item.status || "").toLowerCase()
-          return status !== "rejected" && status !== "canceled"
-        })
+        .filter((item) => String(item.status || "").toLowerCase() === "approved")
         .flatMap((item) => {
           const start = new Date(`${item.startDate}T00:00:00`)
           const end = new Date(`${item.endDate}T00:00:00`)
@@ -386,16 +393,24 @@ function LeaveCalendarPage({ appearance = "Light" }) {
 
               <label className="block">
                 <span className={`mb-1 block text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>Type</span>
-                <select
-                  value={eventType}
-                  onChange={(event) => setEventType(event.target.value)}
-                  className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae] ${
-                    isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200"
-                  }`}
-                >
-                  <option value="meeting">Meeting</option>
-                  <option value="task">Task</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={eventType}
+                    onChange={(event) => setEventType(event.target.value)}
+                    className={`w-full appearance-none rounded-xl border px-3 py-2.5 pr-9 text-sm outline-none focus:border-[#53c4ae] ${
+                      isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200 bg-white text-slate-700"
+                    }`}
+                  >
+                    <option value="meeting">Meeting</option>
+                    <option value="task">Task</option>
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${
+                      isDark ? "text-slate-400" : "text-slate-500"
+                    }`}
+                  />
+                </div>
               </label>
 
               <label className="block">

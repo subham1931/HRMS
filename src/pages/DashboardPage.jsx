@@ -580,6 +580,7 @@ function DashboardPage({ appearance = "Light" }) {
     [teamPerformanceRange.points],
   )
   const peakCoord = teamPerformanceChart.coordinates[teamPerformanceRange.peakIndex] || { x: 34, y: 152 }
+  const tooltipX = Math.max(34, Math.min(298, peakCoord.x - 31))
   const growthPrefix = teamPerformanceRange.growth >= 0 ? "↗ +" : "↘ "
   const growthBadgeClass = teamPerformanceRange.growth >= 0
     ? "bg-[#dce8c8] text-emerald-700"
@@ -843,7 +844,7 @@ function DashboardPage({ appearance = "Light" }) {
                   <line x1={peakCoord.x} y1={peakCoord.y} x2={peakCoord.x} y2="152" stroke="#9ca4aa" strokeDasharray="4 4" />
                   <circle cx={peakCoord.x} cy={peakCoord.y} r="5.5" fill="#35bda6" />
 
-                  <g transform={`translate(${Math.max(190, peakCoord.x - 26)},8)`}>
+                  <g transform={`translate(${tooltipX},8)`}>
                     <rect width="62" height="42" rx="9" fill="white" stroke="#e4e8eb" />
                     <text x="10" y="16" fontSize="10" fill="#76828a">{teamPerformanceRange.peakPoint.longLabel}</text>
                     <text x="10" y="32" fontSize="18" fontWeight="600" fill="#0f5c4d">{teamPerformanceRange.peakPoint.value.toFixed(1)}%</text>

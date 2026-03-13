@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Pencil, Plus, Search } from "lucide-react"
 import { createDepartment, listDepartmentDetails, updateDepartmentDetails } from "../services/departments"
+import { listEmployeeRecords } from "../services/employees"
 
 function formatDateTime(value) {
   if (!value) return "-"
@@ -27,15 +28,27 @@ function DepartmentsPage({ appearance = "Light" }) {
   const [departmentActive, setDepartmentActive] = useState(true)
   const [formError, setFormError] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [employeeCountByDepartment, setEmployeeCountByDepartment] = useState({})
 
   const loadDepartments = useCallback(async () => {
     setIsLoading(true)
     setLoadError("")
     try {
-      const rows = await listDepartmentDetails()
+      const [rows, employees] = await Promise.all([
+        listDepartmentDetails(),
+        listEmployeeRecords().catch(() => []),
+      ])
+      const counts = (employees || []).reduce((acc, item) => {
+        const key = String(item?.department || "").trim()
+        if (!key) return acc
+        acc[key] = (acc[key] || 0) + 1
+        return acc
+      }, {})
       setDepartments(rows)
+      setEmployeeCountByDepartment(counts)
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Failed to load departments.")
+      setEmployeeCountByDepartment({})
     } finally {
       setIsLoading(false)
     }
@@ -141,10 +154,11 @@ function DepartmentsPage({ appearance = "Light" }) {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left">
+        <table className="w-full min-w-[820px] text-left">
           <thead className={`border-b text-sm ${isDark ? "border-slate-700 text-slate-300" : "border-slate-100 text-slate-400"}`}>
             <tr>
               <th className="pb-3 font-medium">Department</th>
+              <th className="pb-3 font-medium">Employees</th>
               <th className="pb-3 font-medium">Status</th>
               <th className="pb-3 font-medium">Created</th>
               <th className="pb-3 font-medium">Last Updated</th>
@@ -155,6 +169,9 @@ function DepartmentsPage({ appearance = "Light" }) {
             {!isLoading && filteredRows.map((row) => (
               <tr key={row.id} className={`border-b last:border-0 ${isDark ? "border-slate-700" : "border-slate-100"}`}>
                 <td className={`py-3.5 font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{row.name}</td>
+                <td className={`py-3.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                  {employeeCountByDepartment[row.name] || 0}
+                </td>
                 <td className="py-3.5">
                   <span
                     className={`rounded px-2 py-1 text-xs font-medium ${
@@ -182,14 +199,14 @@ function DepartmentsPage({ appearance = "Light" }) {
             ))}
             {!isLoading && filteredRows.length === 0 && (
               <tr>
-                <td colSpan={5} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <td colSpan={6} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   No departments found.
                 </td>
               </tr>
             )}
             {isLoading && (
               <tr>
-                <td colSpan={5} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <td colSpan={6} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   Loading departments...
                 </td>
               </tr>

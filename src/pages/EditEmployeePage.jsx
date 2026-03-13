@@ -5,7 +5,8 @@ import { listDepartments } from "../services/departments"
 import { getEmployeeRecordByCode, updateEmployeeRecord } from "../services/employees"
 import { createOffice, listOffices } from "../services/offices"
 
-function EditEmployeePage() {
+function EditEmployeePage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const navigate = useNavigate()
   const location = useLocation()
   const employeeId = location.state?.employeeId || ""
@@ -105,17 +106,17 @@ function EditEmployeePage() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
-        <p className="text-sm text-slate-500">Loading employee profile...</p>
+      <div className={`rounded-2xl border p-6 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+        <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Loading employee profile...</p>
       </div>
     )
   }
 
   if (!employee || loadError) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h1 className="text-xl font-semibold text-slate-800">Employee not found</h1>
-        <p className="mt-2 text-sm text-slate-500">{loadError || "This profile cannot be edited right now. Please open it again from Employees list."}</p>
+      <div className={`rounded-2xl border p-6 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+        <h1 className={`text-xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Employee not found</h1>
+        <p className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>{loadError || "This profile cannot be edited right now. Please open it again from Employees list."}</p>
         <button
           type="button"
           onClick={() => navigate("/employees")}
@@ -129,6 +130,7 @@ function EditEmployeePage() {
 
   return (
     <RegisterEmployeeForm
+      appearance={appearance}
       initialData={employee}
       departmentOptions={departmentOptions}
       officeOptions={officeOptions}

@@ -417,6 +417,7 @@ function EmployeesPage({ appearance = "Light" }) {
         {selectedEmployee ? (
           <EmployeeDetailsView
             employee={selectedEmployee}
+            appearance={appearance}
             onBack={() => {
               setSelectedEmployeeId("")
             }}
@@ -515,6 +516,7 @@ function EmployeesPage({ appearance = "Light" }) {
 
       {showFilterModal && (
         <EmployeeFilterModal
+          appearance={appearance}
           open={showFilterModal}
           initialFilters={filters}
           departmentOptions={filterDepartmentOptions}

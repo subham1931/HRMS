@@ -78,7 +78,7 @@ function PayrollPage({ appearance = "Light" }) {
           />
         </div>
 
-        <button type="button" className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white ${isDark ? "bg-[#53c4ae]" : "bg-violet-600"}`}>
+        <button type="button" className="inline-flex items-center gap-2 rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white">
           <Upload size={15} />
           Export
         </button>

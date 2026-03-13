@@ -472,7 +472,7 @@ function LeavesPage({ appearance = "Light" }) {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => navigate("/leaves/calendar")}
+                  onClick={() => navigate("/calendar", { state: { calendarMode: "leaves" } })}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                     isDark ? "border-slate-700 bg-[#111a24] text-slate-200 hover:bg-[#0b1320]" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}

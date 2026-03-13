@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Search, SlidersHorizontal, X } from "lucide-react"
 import { listAttendanceRecordsInRange, listAttendanceRowsByDate } from "../services/attendance"
-import { getEmployeeCount } from "../services/employees"
+import { listEmployeeRecords } from "../services/employees"
 
 const initialAttendanceRows = []
 
@@ -89,7 +89,7 @@ function AttendancePage({ appearance = "Light" }) {
   const [brokenAvatarById, setBrokenAvatarById] = useState({})
   const [attendanceRows, setAttendanceRows] = useState(() => initialAttendanceRows)
   const [overviewRecords, setOverviewRecords] = useState([])
-  const [totalEmployeesCount, setTotalEmployeesCount] = useState(0)
+  const [overviewEmployees, setOverviewEmployees] = useState([])
 
   useEffect(() => {
     let mounted = true
@@ -130,17 +130,17 @@ function AttendancePage({ appearance = "Light" }) {
 
     async function loadOverview() {
       try {
-        const [records, totalCount] = await Promise.all([
+        const [records, employees] = await Promise.all([
           listAttendanceRecordsInRange(toIsoDate(startDate), toIsoDate(endDate)),
-          getEmployeeCount().catch(() => 0),
+          listEmployeeRecords().catch(() => []),
         ])
         if (!mounted) return
         setOverviewRecords(records || [])
-        setTotalEmployeesCount(Number(totalCount) || 0)
+        setOverviewEmployees(employees || [])
       } catch {
         if (!mounted) return
         setOverviewRecords([])
-        setTotalEmployeesCount(0)
+        setOverviewEmployees([])
       }
     }
 
@@ -192,8 +192,32 @@ function AttendancePage({ appearance = "Light" }) {
   }, [attendanceRows])
   const attendanceOverviewBars = useMemo(() => {
     const now = new Date()
-    const denominator = Math.max(1, Number(totalEmployeesCount) || 0)
     const presentByDate = new Map()
+    const activeCountByDate = new Map()
+
+    const normalizedEmployees = (overviewEmployees || []).filter((employee) => {
+      const status = String(employee?.status || "").toLowerCase()
+      return status !== "inactive" && status !== "resigned" && status !== "terminated"
+    })
+
+    const getActiveCountForDate = (dateObj) => {
+      const dateKey = toIsoDate(dateObj)
+      if (activeCountByDate.has(dateKey)) return activeCountByDate.get(dateKey)
+      const count = normalizedEmployees.filter((employee) => {
+        const joinDateRaw = String(employee?.joiningDate || "").trim()
+        if (!joinDateRaw) return true
+        return joinDateRaw <= dateKey
+      }).length
+      activeCountByDate.set(dateKey, count)
+      return count
+    }
+
+    const getDailyRate = (dateObj) => {
+      const dateKey = toIsoDate(dateObj)
+      const presentCount = presentByDate.get(dateKey) || 0
+      const activeCount = Math.max(1, getActiveCountForDate(dateObj))
+      return Math.round((presentCount / activeCount) * 100)
+    }
 
     ;(overviewRecords || []).forEach((row) => {
       const dateKey = String(row?.attendance_date || "")
@@ -208,12 +232,10 @@ function AttendancePage({ appearance = "Light" }) {
       const weekStart = getMonday(now)
       return Array.from({ length: 7 }, (_, index) => {
         const dayDate = new Date(weekStart.getTime() + (index * 24 * 60 * 60 * 1000))
-        const dateKey = toIsoDate(dayDate)
         const isFuture = dayDate > now
-        const presentCount = presentByDate.get(dateKey) || 0
         return {
           month: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index],
-          rate: isFuture ? null : Math.round((presentCount / denominator) * 100),
+          rate: isFuture ? null : getDailyRate(dayDate),
         }
       })
     }
@@ -230,11 +252,10 @@ function AttendancePage({ appearance = "Light" }) {
         let dayCount = 0
         let sumRate = 0
         for (let day = startDay; day <= endDay; day += 1) {
-          const dateKey = toIsoDate(new Date(monthStart.getFullYear(), monthStart.getMonth(), day))
           const current = new Date(monthStart.getFullYear(), monthStart.getMonth(), day)
           if (current > today) continue
           dayCount += 1
-          sumRate += Math.round(((presentByDate.get(dateKey) || 0) / denominator) * 100)
+          sumRate += getDailyRate(current)
         }
         return {
           month: `Week ${index + 1}`,
@@ -251,18 +272,17 @@ function AttendancePage({ appearance = "Light" }) {
       let dayCount = 0
       let sumRate = 0
       for (let day = 1; day <= daysInMonth; day += 1) {
-        const dateKey = toIsoDate(new Date(now.getFullYear(), index, day))
         const current = new Date(now.getFullYear(), index, day)
         if (current > now) continue
         dayCount += 1
-        sumRate += Math.round(((presentByDate.get(dateKey) || 0) / denominator) * 100)
+        sumRate += getDailyRate(current)
       }
       return {
         month: label,
         rate: dayCount === 0 ? null : Math.round(sumRate / dayCount),
       }
     })
-  }, [overviewRange, overviewRecords, totalEmployeesCount])
+  }, [overviewEmployees, overviewRange, overviewRecords])
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safeCurrentPage = Math.min(currentPage, totalPages)
