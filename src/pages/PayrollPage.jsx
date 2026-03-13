@@ -9,7 +9,8 @@ const getInitials = (name) => (name || "E")
   .map((part) => part[0]?.toUpperCase() || "")
   .join("")
 
-function PayrollPage() {
+function PayrollPage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const [searchQuery, setSearchQuery] = useState("")
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
@@ -55,7 +56,7 @@ function PayrollPage() {
   const to = Math.min(endIndex, filteredRows.length)
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4">
+    <article className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
       {loadError ? (
         <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
           {loadError}
@@ -70,12 +71,14 @@ function PayrollPage() {
               setSearchQuery(event.target.value)
               setCurrentPage(1)
             }}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300"
+            className={`w-full rounded-xl border py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300 ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-100" : "border-slate-200 bg-white"
+            }`}
             placeholder="Search"
           />
         </div>
 
-        <button type="button" className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white">
+        <button type="button" className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white ${isDark ? "bg-[#53c4ae]" : "bg-violet-600"}`}>
           <Upload size={15} />
           Export
         </button>
@@ -83,7 +86,7 @@ function PayrollPage() {
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[920px] text-left">
-          <thead className="border-b border-slate-100 text-sm text-slate-400">
+          <thead className={`border-b text-sm ${isDark ? "border-slate-700 text-slate-300" : "border-slate-100 text-slate-400"}`}>
             <tr>
               <th className="pb-4 font-medium">Employee Name</th>
               <th className="pb-4 font-medium">CTC</th>
@@ -94,8 +97,8 @@ function PayrollPage() {
           </thead>
           <tbody className="text-sm">
             {pagedRows.map((row) => (
-              <tr key={row.employeeCode || row.employeeName} className="border-b border-slate-100 last:border-0">
-                <td className="py-3 text-slate-800">
+              <tr key={row.employeeCode || row.employeeName} className={`border-b last:border-0 ${isDark ? "border-slate-700" : "border-slate-100"}`}>
+                <td className={`py-3 ${isDark ? "text-slate-100" : "text-slate-800"}`}>
                   <span className="flex items-center gap-3">
                     {row.profileImage && !brokenAvatarByCode[row.employeeCode] ? (
                       <img
@@ -111,12 +114,12 @@ function PayrollPage() {
                         {getInitials(row.employeeName)}
                       </span>
                     )}
-                    <span className="font-medium">{row.employeeName}</span>
+                    <span className={`font-medium ${isDark ? "text-slate-100" : ""}`}>{row.employeeName}</span>
                   </span>
                 </td>
-                <td className="py-3 text-slate-700">{row.ctc}</td>
-                <td className="py-3 text-slate-700">{row.salaryPerMonth}</td>
-                <td className="py-3 text-slate-700">{row.deduction}</td>
+                <td className={`py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.ctc}</td>
+                <td className={`py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.salaryPerMonth}</td>
+                <td className={`py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row.deduction}</td>
                 <td className="py-3">
                   <span
                     className={`rounded px-2 py-1 text-xs font-medium ${
@@ -130,7 +133,7 @@ function PayrollPage() {
             ))}
             {pagedRows.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={5} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   No payroll records found.
                 </td>
               </tr>
@@ -139,7 +142,7 @@ function PayrollPage() {
         </table>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+      <div className={`mt-4 flex flex-wrap items-center justify-between gap-3 text-sm ${isDark ? "text-slate-400" : "text-slate-400"}`}>
         <div className="flex items-center gap-2">
           <span>Showing</span>
           <select
@@ -148,7 +151,9 @@ function PayrollPage() {
               setPageSize(Number(event.target.value))
               setCurrentPage(1)
             }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-slate-600 outline-none"
+            className={`rounded-lg border px-3 py-1.5 outline-none ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-200" : "border-slate-200 bg-white text-slate-600"
+            }`}
           >
             <option value={10}>10</option>
             <option value={20}>20</option>
@@ -160,7 +165,7 @@ function PayrollPage() {
           Showing {from} to {to} out of {filteredRows.length} records
         </p>
 
-        <div className="flex items-center gap-2 text-slate-700">
+        <div className={`flex items-center gap-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
           <button
             type="button"
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
@@ -175,7 +180,9 @@ function PayrollPage() {
               type="button"
               onClick={() => setCurrentPage(page)}
               className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-xs ${
-                safeCurrentPage === page ? "border border-violet-500 text-violet-600" : ""
+                safeCurrentPage === page
+                  ? (isDark ? "border border-[#53c4ae] text-[#53c4ae]" : "border border-violet-500 text-violet-600")
+                  : ""
               }`}
             >
               {page}
