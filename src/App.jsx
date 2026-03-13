@@ -60,12 +60,11 @@ function App() {
 
   useEffect(() => {
     if (!authReady) return
-    if (pathname === "/signin" && isAuthenticated) {
+    if (isAuthenticated && PUBLIC_PATHS.has(pathname)) {
       navigate("/dashboard", { replace: true })
       return
     }
-    if (PUBLIC_PATHS.has(pathname)) return
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !PUBLIC_PATHS.has(pathname)) {
       navigate("/signin", { replace: true })
     }
   }, [authReady, isAuthenticated, navigate, pathname])
@@ -89,16 +88,17 @@ function App() {
     navigate(nextPath)
   }
 
-  if (pathname === "/") {
-    return <LandingPage onGetStarted={() => handlePublicNavigation("/signin")} />
-  }
-
-  if (!authReady && !PUBLIC_PATHS.has(pathname)) {
+  if (!authReady) {
     return (
       <main className="grid min-h-screen place-items-center bg-slate-100 text-slate-600">
         <p className="text-sm">Checking session...</p>
       </main>
     )
+  }
+
+  if (pathname === "/") {
+    if (isAuthenticated) return null
+    return <LandingPage onGetStarted={() => handlePublicNavigation("/signin")} />
   }
 
   if (pathname === "/signin") {

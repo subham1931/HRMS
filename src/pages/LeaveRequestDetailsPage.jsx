@@ -52,7 +52,7 @@ function normalizeRequests(rows) {
     status: item.status || "Pending",
     appliedAt: item.appliedAt || (item.createdAt ? String(item.createdAt).slice(0, 10) : toYMD(new Date())),
     jobTitle: item.jobTitle || item.designation || "Team Member",
-    avatar: item.avatar || item.profileImage || `https://i.pravatar.cc/80?img=${(index * 7 + 9) % 70}`,
+    avatar: item.avatar || item.profileImage || "",
     id: item.id || `leave-${Date.now()}-${index}`,
   }))
 }
@@ -73,6 +73,7 @@ function LeaveRequestDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [brokenAvatarById, setBrokenAvatarById] = useState({})
 
   useEffect(() => {
     let mounted = true
@@ -208,8 +209,15 @@ function LeaveRequestDetailsPage() {
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-[90px_1fr]">
-        {leaveRequest.avatar ? (
-          <img src={leaveRequest.avatar} alt={leaveRequest.employeeName} className="h-20 w-20 rounded-xl object-cover" />
+        {leaveRequest.avatar && !brokenAvatarById[leaveRequest.id] ? (
+          <img
+            src={leaveRequest.avatar}
+            alt={leaveRequest.employeeName}
+            className="h-20 w-20 rounded-xl object-cover"
+            onError={() => {
+              setBrokenAvatarById((prev) => ({ ...prev, [leaveRequest.id]: true }))
+            }}
+          />
         ) : (
           <span className="inline-flex h-20 w-20 items-center justify-center rounded-xl bg-emerald-100 text-xl font-semibold text-emerald-700">
             {getInitials(leaveRequest.employeeName)}

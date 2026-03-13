@@ -1,6 +1,8 @@
 import { Calendar, ChevronLeft, Mail, MapPin, PenLine, Phone } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { listEmployeeAttendanceRecordsInRange } from "../services/attendance"
+import { listLeaveRequests } from "../services/leaves"
+import { listLeaveTypes } from "../services/leaveTypes"
 
 const getInitials = (value) => (value || "A")
   .split(" ")
@@ -12,6 +14,11 @@ const getInitials = (value) => (value || "A")
 const DAY_MS = 24 * 60 * 60 * 1000
 const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"]
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+const DEFAULT_LEAVE_LIMITS = {
+  "Annual Leaves": 20,
+  "Casual Leaves": 12,
+  "Sick Leaves": 10,
+}
 
 const toIsoDate = (value) => {
   const date = value instanceof Date ? value : new Date(value)
@@ -76,6 +83,26 @@ const getMinutesFromRecord = (record) => {
   const end = new Date(record.check_out_at)
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0
   return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000))
+}
+
+const normalizeLeaveTypeLabel = (value) => {
+  const text = String(value || "").trim().toLowerCase()
+  if (text.includes("annual")) return "Annual Leaves"
+  if (text.includes("casual")) return "Casual Leaves"
+  if (text.includes("sick")) return "Sick Leaves"
+  return "Other"
+}
+
+const countDaysWithinYear = (startDateText, endDateText, year) => {
+  const start = parseIsoDate(startDateText)
+  const end = parseIsoDate(endDateText)
+  if (!start || !end) return 0
+  const yearStart = new Date(year, 0, 1)
+  const yearEnd = new Date(year, 11, 31)
+  const overlapStart = start > yearStart ? start : yearStart
+  const overlapEnd = end < yearEnd ? end : yearEnd
+  if (overlapStart > overlapEnd) return 0
+  return Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / DAY_MS) + 1
 }
 
 const getRangeBounds = (range, now) => {
@@ -154,6 +181,8 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
   const [performanceGraph, setPerformanceGraph] = useState(() => buildPerformanceGraph("This Week", [], new Date()))
   const [monthAttendanceMap, setMonthAttendanceMap] = useState({})
   const [monthAttendanceStats, setMonthAttendanceStats] = useState({ present: 0, late: 0, onLeave: 0, absent: 0 })
+  const [employeeLeaveRequests, setEmployeeLeaveRequests] = useState([])
+  const [leaveTypeLimits, setLeaveTypeLimits] = useState(DEFAULT_LEAVE_LIMITS)
   const isLegacyEmployee = Array.isArray(employee)
   const [legacyName, legacyEmployeeId, legacyDepartment, legacyDesignation, legacyType] = isLegacyEmployee ? employee : []
   const name = isLegacyEmployee ? legacyName : employee?.name
@@ -169,12 +198,38 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
   const officeLocation = isLegacyEmployee ? "-" : employee?.officeLocation || "-"
   const username = isLegacyEmployee ? "-" : employee?.userName || "-"
 
-  const leaveStats = [
-    { label: "All Leaves", used: 14, total: 20, color: "#0f766e" },
-    { label: "Annual Leaves", used: 10, total: 15, color: "#22c3aa" },
-    { label: "Casual Leaves", used: 8, total: 24, color: "#d5e3c2" },
-    { label: "Sick Leaves", used: 3, total: 4, color: "#1f8e7b" },
-  ]
+  const leaveStats = useMemo(() => {
+    const usageByType = {
+      "Annual Leaves": 0,
+      "Casual Leaves": 0,
+      "Sick Leaves": 0,
+    }
+    const currentYear = new Date().getFullYear()
+    employeeLeaveRequests.forEach((item) => {
+      const status = String(item?.status || "").toLowerCase()
+      if (status !== "approved") return
+      const typeLabel = normalizeLeaveTypeLabel(item?.leaveType)
+      if (!Object.hasOwn(usageByType, typeLabel)) return
+      usageByType[typeLabel] += countDaysWithinYear(item?.startDate, item?.endDate, currentYear)
+    })
+
+    const annualTotal = Number(leaveTypeLimits["Annual Leaves"] || 0)
+    const casualTotal = Number(leaveTypeLimits["Casual Leaves"] || 0)
+    const sickTotal = Number(leaveTypeLimits["Sick Leaves"] || 0)
+    const annualUsed = usageByType["Annual Leaves"]
+    const casualUsed = usageByType["Casual Leaves"]
+    const sickUsed = usageByType["Sick Leaves"]
+
+    const allTotal = annualTotal + casualTotal + sickTotal
+    const allUsed = annualUsed + casualUsed + sickUsed
+
+    return [
+      { label: "All Leaves", used: allUsed, total: allTotal, color: "#0f766e" },
+      { label: "Annual Leaves", used: annualUsed, total: annualTotal, color: "#22c3aa" },
+      { label: "Casual Leaves", used: casualUsed, total: casualTotal, color: "#d5e3c2" },
+      { label: "Sick Leaves", used: sickUsed, total: sickTotal, color: "#1f8e7b" },
+    ]
+  }, [employeeLeaveRequests, leaveTypeLimits])
   const [calendarCursor, setCalendarCursor] = useState(() => new Date())
   const calendarDays = useMemo(() => {
     const year = calendarCursor.getFullYear()
@@ -329,6 +384,49 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
     }
   }, [calendarCursor, employeeId])
 
+  useEffect(() => {
+    let mounted = true
+
+    async function loadEmployeeLeaveStats() {
+      const code = String(employeeId || "").trim()
+      if (!code) {
+        if (!mounted) return
+        setEmployeeLeaveRequests([])
+        setLeaveTypeLimits(DEFAULT_LEAVE_LIMITS)
+        return
+      }
+
+      try {
+        const [requests, leaveTypes] = await Promise.all([
+          listLeaveRequests(),
+          listLeaveTypes().catch(() => []),
+        ])
+        if (!mounted) return
+
+        const filteredRequests = (requests || []).filter((item) => String(item.employeeId || "").trim() === code)
+        const limitMap = { ...DEFAULT_LEAVE_LIMITS }
+        ;(leaveTypes || []).forEach((type) => {
+          if (!type?.isActive) return
+          const key = normalizeLeaveTypeLabel(type.name)
+          if (!Object.hasOwn(limitMap, key)) return
+          limitMap[key] = Number(type.annualLimit || 0)
+        })
+
+        setEmployeeLeaveRequests(filteredRequests)
+        setLeaveTypeLimits(limitMap)
+      } catch {
+        if (!mounted) return
+        setEmployeeLeaveRequests([])
+        setLeaveTypeLimits(DEFAULT_LEAVE_LIMITS)
+      }
+    }
+
+    loadEmployeeLeaveStats()
+    return () => {
+      mounted = false
+    }
+  }, [employeeId])
+
   return (
     <div className="rounded-2xl bg-white">
       <div className="mb-4">
@@ -390,7 +488,7 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile }) {
         <section className="flex h-full flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {leaveStats.map((item) => {
-              const percent = Math.min(100, Math.round((item.used / item.total) * 100))
+              const percent = item.total > 0 ? Math.min(100, Math.round((item.used / item.total) * 100)) : 0
               return (
                 <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-3">
                   <p className="text-xs font-medium text-slate-600">{item.label}</p>

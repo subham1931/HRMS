@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Bell, ChevronDown, LogOut, Menu, UserRound } from "lucide-react"
+import { getActiveLeaveNotificationsCount } from "../services/notifications"
 
 function TopNavbar({
   onNotificationClick,
@@ -17,6 +18,7 @@ function TopNavbar({
   userImage = "",
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const mobileMenuRef = useRef(null)
   const isPublic = mode === "public"
   const initials = (userName || "A")
@@ -38,6 +40,30 @@ function TopNavbar({
     document.addEventListener("mousedown", handleOutsideClick)
     return () => document.removeEventListener("mousedown", handleOutsideClick)
   }, [mobileMenuOpen])
+
+  useEffect(() => {
+    if (isPublic) return
+    let cancelled = false
+
+    const loadUnreadCount = async () => {
+      try {
+        const count = await getActiveLeaveNotificationsCount()
+        if (!cancelled) setUnreadNotificationCount(count)
+      } catch {
+        if (!cancelled) setUnreadNotificationCount(0)
+      }
+    }
+
+    loadUnreadCount()
+    const intervalId = window.setInterval(loadUnreadCount, 30000)
+    window.addEventListener("focus", loadUnreadCount)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+      window.removeEventListener("focus", loadUnreadCount)
+    }
+  }, [isPublic, notificationsOpen])
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between rounded-2xl border border-slate-200 bg-[#f7f7fa] px-3 py-3 sm:px-4 sm:py-3.5 lg:px-5 lg:py-4">
@@ -85,12 +111,17 @@ function TopNavbar({
             <button
               type="button"
               onClick={onNotificationClick}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border sm:h-10 sm:w-10 ${
+              className={`relative inline-flex h-9 w-9 items-center justify-center rounded-xl border sm:h-10 sm:w-10 ${
                 notificationsOpen ? "border-violet-200 bg-violet-50 text-violet-600" : "border-slate-200 bg-white text-slate-500"
               }`}
               aria-label="Notifications"
             >
               <Bell size={16} />
+              {!notificationsOpen && unreadNotificationCount > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#53c4ae] px-1 text-[10px] font-semibold leading-4 text-white">
+                  {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                </span>
+              )}
             </button>
             <div ref={mobileMenuRef} className="relative">
               <button
