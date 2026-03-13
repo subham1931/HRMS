@@ -24,6 +24,7 @@ function LeaveSetupPage() {
   const [editingLeaveType, setEditingLeaveType] = useState(null)
   const [leaveTypeName, setLeaveTypeName] = useState("")
   const [annualLimit, setAnnualLimit] = useState("12")
+  const [earnedPerMonth, setEarnedPerMonth] = useState("0")
   const [isPaid, setIsPaid] = useState(true)
   const [isActive, setIsActive] = useState(true)
   const [formError, setFormError] = useState("")
@@ -56,6 +57,7 @@ function LeaveSetupPage() {
     setEditingLeaveType(null)
     setLeaveTypeName("")
     setAnnualLimit("12")
+    setEarnedPerMonth("0")
     setIsPaid(true)
     setIsActive(true)
     setFormError("")
@@ -66,6 +68,7 @@ function LeaveSetupPage() {
     setEditingLeaveType(row)
     setLeaveTypeName(row.name || "")
     setAnnualLimit(String(row.annualLimit ?? 0))
+    setEarnedPerMonth(String(row.earnedPerMonth ?? 0))
     setIsPaid(Boolean(row.isPaid))
     setIsActive(Boolean(row.isActive))
     setFormError("")
@@ -78,6 +81,7 @@ function LeaveSetupPage() {
     setEditingLeaveType(null)
     setLeaveTypeName("")
     setAnnualLimit("12")
+    setEarnedPerMonth("0")
     setIsPaid(true)
     setIsActive(true)
     setFormError("")
@@ -86,12 +90,22 @@ function LeaveSetupPage() {
   const handleSave = async () => {
     const name = String(leaveTypeName || "").trim()
     const limit = Number(annualLimit)
+    const monthlyEarn = Number(earnedPerMonth)
+    const isEarnedLeave = name.toLowerCase().includes("earned")
     if (!name) {
       setFormError("Leave type name is required.")
       return
     }
     if (!Number.isFinite(limit) || limit < 0) {
       setFormError("Annual days must be 0 or more.")
+      return
+    }
+    if (!Number.isFinite(monthlyEarn) || monthlyEarn < 0) {
+      setFormError("Earn per month must be 0 or more.")
+      return
+    }
+    if (isEarnedLeave && monthlyEarn <= 0) {
+      setFormError("Set monthly earning days for Earned Leave.")
       return
     }
 
@@ -102,11 +116,12 @@ function LeaveSetupPage() {
         await updateLeaveType(editingLeaveType.id, {
           name,
           annualLimit: limit,
+          earnedPerMonth: monthlyEarn,
           isPaid,
           isActive,
         })
       } else {
-        await createLeaveType({ name, annualLimit: limit, isPaid })
+        await createLeaveType({ name, annualLimit: limit, earnedPerMonth: monthlyEarn, isPaid })
       }
       setShowModal(false)
       await loadTypes()
@@ -158,6 +173,7 @@ function LeaveSetupPage() {
             <tr>
               <th className="pb-3 font-medium">Leave Type</th>
               <th className="pb-3 font-medium">Annual Days</th>
+              <th className="pb-3 font-medium">Earn/Month</th>
               <th className="pb-3 font-medium">Paid/Unpaid</th>
               <th className="pb-3 font-medium">Status</th>
               <th className="pb-3 font-medium">Last Updated</th>
@@ -169,6 +185,7 @@ function LeaveSetupPage() {
               <tr key={row.id} className="border-b border-slate-100 last:border-0">
                 <td className="py-3.5 font-medium text-slate-800">{row.name}</td>
                 <td className="py-3.5 text-slate-700">{row.annualLimit}</td>
+                <td className="py-3.5 text-slate-700">{row.earnedPerMonth > 0 ? row.earnedPerMonth : "-"}</td>
                 <td className="py-3.5 text-slate-700">{row.isPaid ? "Paid" : "Unpaid"}</td>
                 <td className="py-3.5">
                   <span
@@ -194,14 +211,14 @@ function LeaveSetupPage() {
             ))}
             {!isLoading && filteredRows.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={7} className="py-10 text-center text-sm text-slate-500">
                   No leave types found.
                 </td>
               </tr>
             )}
             {isLoading && (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={7} className="py-10 text-center text-sm text-slate-500">
                   Loading leave setup...
                 </td>
               </tr>
@@ -247,6 +264,19 @@ function LeaveSetupPage() {
                   onChange={(event) => setAnnualLimit(event.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-violet-500"
                 />
+              </label>
+
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-slate-600">Earn Per Month (days)</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  value={earnedPerMonth}
+                  onChange={(event) => setEarnedPerMonth(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-violet-500"
+                />
+                <span className="text-xs text-slate-500">Use this for Earned Leave type monthly accrual.</span>
               </label>
 
               <label className="inline-flex items-center gap-2 text-sm text-slate-700">

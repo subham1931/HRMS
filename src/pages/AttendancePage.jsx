@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Plus, Search, SlidersHorizontal, X } from "lucide-react"
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Search, SlidersHorizontal, X } from "lucide-react"
 import { listAttendanceRecordsInRange, listAttendanceRowsByDate } from "../services/attendance"
 import { getEmployeeCount } from "../services/employees"
 
@@ -67,7 +67,8 @@ const getMonday = (date) => {
   return base
 }
 
-function AttendancePage() {
+function AttendancePage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const [searchQuery, setSearchQuery] = useState("")
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
@@ -349,13 +350,10 @@ function AttendancePage() {
     URL.revokeObjectURL(url)
   }
 
-  const addAttendanceRecord = () => {
-    setToastMessage("Attendance is synced from employee mobile check-in/check-out.")
-    window.setTimeout(() => setToastMessage(""), 2400)
-  }
-
   return (
-    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+    <article className={`min-w-0 rounded-2xl border p-3 sm:p-4 ${
+      isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"
+    }`}>
       <div className="mb-5 space-y-4">
         {loadError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
@@ -363,32 +361,34 @@ function AttendancePage() {
           </div>
         ) : null}
         <div>
-          <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">Attendance</h1>
-          <p className="mt-1 text-xs text-slate-500">Dashboard / Attendance</p>
+          <h1 className={`text-[26px] font-semibold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>Attendance</h1>
+          <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Dashboard / Attendance</p>
         </div>
 
         <div className="grid gap-3 xl:grid-cols-[1.55fr_1.25fr]">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 bg-[#d8e6c7] px-4 py-3 text-[18px] font-semibold leading-none text-slate-800">Present</div>
+            <div className={`flex h-full flex-col overflow-hidden rounded-2xl border ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+              <div className={`border-b px-4 py-3 text-[18px] font-semibold leading-none ${
+                isDark ? "border-slate-700 bg-[#1d2c22] text-slate-100" : "border-slate-200 bg-[#d8e6c7] text-slate-800"
+              }`}>Present</div>
               <div className="flex flex-1 flex-col p-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-[44px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.present}</p>
-                    <p className="mt-1 text-xs leading-none text-slate-500">Employees</p>
+                    <p className={`text-[44px] font-semibold leading-none ${isDark ? "text-emerald-300" : "text-[#155a4d]"}`}>{attendanceSummary.present}</p>
+                    <p className={`mt-1 text-xs leading-none ${isDark ? "text-slate-400" : "text-slate-500"}`}>Employees</p>
                   </div>
                   <div className="pb-2 text-right">
                     <span className="inline-flex rounded-xl bg-[#d8efe2] px-2.5 py-1 text-sm font-semibold leading-none text-[#2ea875]">+4</span>
-                    <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
+                    <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>vs yesterday</p>
                   </div>
                 </div>
-                <div className="mt-auto rounded-xl bg-[#ececec] px-4 py-2 text-sm">
+                <div className={`mt-auto rounded-xl px-4 py-2 text-sm ${isDark ? "bg-[#1b2530]" : "bg-[#ececec]"}`}>
                   <div className="space-y-1.5">
-                    <p className="flex items-center justify-between text-slate-500">
+                    <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                       <span>On-Time</span>
                       <span className="font-semibold text-[#155a4d]">{attendanceSummary.onTime}</span>
                     </p>
-                    <p className="flex items-center justify-between text-slate-500">
+                    <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                       <span>Late</span>
                       <span className="font-semibold text-[#155a4d]">{attendanceSummary.late}</span>
                     </p>
@@ -397,30 +397,32 @@ function AttendancePage() {
               </div>
             </div>
 
-            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 bg-[#53c4ae] px-4 py-3 text-[18px] font-semibold leading-none text-white">On Leave</div>
+            <div className={`flex h-full flex-col overflow-hidden rounded-2xl border ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+              <div className={`border-b px-4 py-3 text-[18px] font-semibold leading-none ${
+                isDark ? "border-slate-700 bg-[#1b4a42] text-slate-100" : "border-slate-200 bg-[#53c4ae] text-white"
+              }`}>On Leave</div>
               <div className="flex flex-1 flex-col p-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-[44px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.onLeave}</p>
-                    <p className="mt-1 text-xs leading-none text-slate-500">Employees</p>
+                    <p className={`text-[44px] font-semibold leading-none ${isDark ? "text-emerald-300" : "text-[#155a4d]"}`}>{attendanceSummary.onLeave}</p>
+                    <p className={`mt-1 text-xs leading-none ${isDark ? "text-slate-400" : "text-slate-500"}`}>Employees</p>
                   </div>
                   <div className="pb-2 text-right">
                     <span className="inline-flex rounded-xl bg-[#d8efe2] px-2.5 py-1 text-sm font-semibold leading-none text-[#2ea875]">+1</span>
-                    <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
+                    <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>vs yesterday</p>
                   </div>
                 </div>
-                <div className="mt-auto rounded-xl bg-[#ececec] px-3 py-2 text-xs">
+                <div className={`mt-auto rounded-xl px-3 py-2 text-xs ${isDark ? "bg-[#1b2530]" : "bg-[#ececec]"}`}>
                   <div className="space-y-1.5">
-                    <p className="flex items-center justify-between text-slate-500">
+                    <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                       <span>Annual Leave</span>
                       <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.annual}</span>
                     </p>
-                    <p className="flex items-center justify-between text-slate-500">
+                    <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                       <span>Sick Leave</span>
                       <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.sick}</span>
                     </p>
-                    <p className="flex items-center justify-between text-slate-500">
+                    <p className={`flex items-center justify-between ${isDark ? "text-slate-300" : "text-slate-500"}`}>
                       <span>Others</span>
                       <span className="font-semibold text-[#155a4d]">{attendanceSummary.leaveBreakdown.others}</span>
                     </p>
@@ -429,44 +431,48 @@ function AttendancePage() {
               </div>
             </div>
 
-            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 bg-[#0f5c4d] px-4 py-3 text-[18px] font-semibold leading-none text-white">Absent</div>
+            <div className={`flex h-full flex-col overflow-hidden rounded-2xl border ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+              <div className={`border-b px-4 py-3 text-[18px] font-semibold leading-none ${
+                isDark ? "border-slate-700 bg-[#143b34] text-slate-100" : "border-slate-200 bg-[#0f5c4d] text-white"
+              }`}>Absent</div>
               <div className="flex flex-1 flex-col p-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-[44px] font-semibold leading-none text-[#155a4d]">{attendanceSummary.absent}</p>
-                    <p className="mt-1 text-xs leading-none text-slate-500">Employees</p>
+                    <p className={`text-[44px] font-semibold leading-none ${isDark ? "text-emerald-300" : "text-[#155a4d]"}`}>{attendanceSummary.absent}</p>
+                    <p className={`mt-1 text-xs leading-none ${isDark ? "text-slate-400" : "text-slate-500"}`}>Employees</p>
                   </div>
                   <div className="pb-2 text-right">
                     <span className="inline-flex rounded-xl bg-[#d8efe2] px-2.5 py-1 text-sm font-semibold leading-none text-[#2ea875]">+0</span>
-                    <p className="mt-1 text-xs text-slate-500">vs yesterday</p>
+                    <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>vs yesterday</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-[20px] font-semibold tracking-tight text-slate-800">Attendance Overview</h3>
+              <h3 className={`text-[20px] font-semibold tracking-tight ${isDark ? "text-slate-100" : "text-slate-800"}`}>Attendance Overview</h3>
               <div className="relative">
                 <select
                   value={overviewRange}
                   onChange={(event) => setOverviewRange(event.target.value)}
-                  className="appearance-none rounded-lg bg-[#e8f1df] px-2.5 py-1 pr-6 text-xs text-slate-700 outline-none"
+                  className={`appearance-none rounded-lg px-2.5 py-1 pr-6 text-xs outline-none ${
+                    isDark ? "bg-[#1d2c22] text-slate-200" : "bg-[#e8f1df] text-slate-700"
+                  }`}
                 >
                   <option value="week">This Week</option>
                   <option value="month">This Month</option>
                   <option value="year">This Year</option>
                 </select>
-                <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-600" />
+                <ChevronDown size={12} className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-300" : "text-slate-600"}`} />
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-              <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+            <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-100 bg-slate-50/70"}`}>
+              <div className={`mb-3 flex items-center justify-between text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 <span>Monthly attendance rate</span>
-                <span className="rounded-full bg-[#e7f4ef] px-2 py-0.5 font-medium text-[#2f6f63]">
+                <span className={`rounded-full px-2 py-0.5 font-medium ${isDark ? "bg-[#1d2c22] text-emerald-300" : "bg-[#e7f4ef] text-[#2f6f63]"}`}>
                   Avg {Math.round(
                     attendanceOverviewBars
                       .filter((item) => item.rate != null)
@@ -480,10 +486,10 @@ function AttendancePage() {
               >
                 {attendanceOverviewBars.map((item) => (
                   <div key={item.month} className="flex h-full flex-col items-center justify-end gap-1">
-                    <span className="text-[11px] font-semibold text-slate-700">{item.rate == null ? "" : `${item.rate}%`}</span>
-                    <div className="flex h-[112px] w-full items-end overflow-hidden rounded-md bg-[#dfe7db]">
+                    <span className={`text-[11px] font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>{item.rate == null ? "" : `${item.rate}%`}</span>
+                    <div className={`flex h-[112px] w-full items-end overflow-hidden rounded-md ${isDark ? "bg-[#1b2530]" : "bg-[#dfe7db]"}`}>
                       {item.rate == null ? (
-                        <span className="block h-full w-full bg-[#eef3ea]" />
+                        <span className={`block h-full w-full ${isDark ? "bg-[#243243]" : "bg-[#eef3ea]"}`} />
                       ) : (
                         <span
                           className="block w-full rounded-md bg-[#53c4ae] transition-all duration-300"
@@ -491,7 +497,7 @@ function AttendancePage() {
                         />
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-500">{item.month}</span>
+                    <span className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.month}</span>
                   </div>
                 ))}
               </div>
@@ -501,7 +507,7 @@ function AttendancePage() {
 
         <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
-            <div className="relative w-full sm:w-[360px]">
+          <div className="relative w-full sm:w-[360px]">
             <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={searchQuery}
@@ -509,7 +515,9 @@ function AttendancePage() {
                 setSearchQuery(event.target.value)
                 setCurrentPage(1)
               }}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-14 text-sm outline-none focus:border-[#53c4ae]"
+              className={`w-full rounded-xl border py-2.5 pl-11 pr-14 text-sm outline-none focus:border-[#53c4ae] ${
+                isDark ? "border-slate-700 bg-[#0f1720] text-slate-100" : "border-slate-200 bg-white text-slate-900"
+              }`}
               placeholder="Search employee"
             />
           </div>
@@ -518,13 +526,17 @@ function AttendancePage() {
             <button
               type="button"
               onClick={() => setShowFilterMenu((prev) => !prev)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-[#e8f1df] px-4 py-2.5 text-sm font-medium text-slate-700 sm:w-auto"
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium sm:w-auto ${
+                isDark ? "border-slate-700 bg-[#1d2c22] text-slate-200" : "border-slate-200 bg-[#e8f1df] text-slate-700"
+              }`}
             >
               Filter
               <SlidersHorizontal size={14} className="text-slate-400" />
             </button>
             {showFilterMenu ? (
-              <div className="absolute left-0 top-[46px] z-20 w-full min-w-[240px] rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:w-[280px]">
+              <div className={`absolute left-0 top-[46px] z-20 w-full min-w-[240px] rounded-xl border p-3 shadow-lg sm:w-[280px] ${
+                isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-200 bg-white"
+              }`}>
                 <label className="block text-xs text-slate-500">
                   Department
                   <select
@@ -533,7 +545,9 @@ function AttendancePage() {
                       setDepartmentFilter(event.target.value)
                       setCurrentPage(1)
                     }}
-                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none"
+                    className={`mt-1.5 w-full rounded-lg border px-3 py-2 text-sm outline-none ${
+                      isDark ? "border-slate-700 bg-[#111a24] text-slate-200" : "border-slate-200 bg-white text-slate-700"
+                    }`}
                   >
                     <option>All Departments</option>
                     {departmentOptions.map((department) => (
@@ -549,7 +563,9 @@ function AttendancePage() {
                       setStatusFilter(event.target.value)
                       setCurrentPage(1)
                     }}
-                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none"
+                    className={`mt-1.5 w-full rounded-lg border px-3 py-2 text-sm outline-none ${
+                      isDark ? "border-slate-700 bg-[#111a24] text-slate-200" : "border-slate-200 bg-white text-slate-700"
+                    }`}
                   >
                     <option>All Status</option>
                     {statusOptions.map((status) => (
@@ -565,7 +581,9 @@ function AttendancePage() {
                       setStatusFilter("All Status")
                       setCurrentPage(1)
                     }}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600"
+                    className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                      isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-600"
+                    }`}
                   >
                     Clear
                   </button>
@@ -580,14 +598,6 @@ function AttendancePage() {
               </div>
             ) : null}
           </div>
-          <button
-            type="button"
-            onClick={addAttendanceRecord}
-            className="inline-flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#53c4ae] px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
-          >
-            <Plus size={14} />
-            Add Record
-          </button>
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
@@ -599,7 +609,9 @@ function AttendancePage() {
               setCalendarMonth(new Date(parsed.getFullYear(), parsed.getMonth(), 1))
               setShowDateModal(true)
             }}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 sm:w-auto"
+            className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm sm:w-auto ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-200" : "border-slate-200 bg-white text-slate-700"
+            }`}
           >
             <CalendarDays size={14} className="text-slate-500" />
             <span>{selectedDateLabel}</span>
@@ -608,7 +620,9 @@ function AttendancePage() {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 sm:w-auto"
+            className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm sm:w-auto ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-200" : "border-slate-200 bg-white text-slate-700"
+            }`}
           >
             Export CSV
             <Download size={14} className="text-slate-500" />
@@ -697,22 +711,22 @@ function AttendancePage() {
 
       <div className="w-full overflow-x-auto">
         <table className="w-full min-w-[1120px] text-left">
-          <thead className="text-xs text-slate-500">
+          <thead className={`text-xs ${isDark ? "text-slate-300" : "text-slate-500"}`}>
             <tr>
-              <th className="w-[270px] rounded-l-xl bg-slate-100 px-3 py-3 font-semibold">Name</th>
-              <th className="w-[220px] bg-slate-100 px-3 py-3 font-semibold">Job Title</th>
-              <th className="w-[150px] bg-slate-100 px-3 py-3 font-semibold">Date</th>
-              <th className="w-[130px] bg-slate-100 px-3 py-3 font-semibold">Office</th>
-              <th className="w-[190px] bg-slate-100 px-3 py-3 font-semibold">Check In - Out</th>
-              <th className="w-[110px] bg-slate-100 px-3 py-3 font-semibold">Duration</th>
-              <th className="w-[110px] bg-slate-100 px-3 py-3 font-semibold">Overtime</th>
-              <th className="w-[120px] rounded-r-xl bg-slate-100 px-3 py-3 font-semibold">Status</th>
+              <th className={`w-[270px] rounded-l-xl px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Name</th>
+              <th className={`w-[220px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Job Title</th>
+              <th className={`w-[150px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Date</th>
+              <th className={`w-[130px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Office</th>
+              <th className={`w-[190px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Check In - Out</th>
+              <th className={`w-[110px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Duration</th>
+              <th className={`w-[110px] px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Overtime</th>
+              <th className={`w-[120px] rounded-r-xl px-3 py-3 font-semibold ${isDark ? "bg-[#0f1720]" : "bg-slate-100"}`}>Status</th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {pagedRows.map((row) => (
-              <tr key={row[8]} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
-                <td className="px-3 py-3 text-slate-800">
+              <tr key={row[8]} className={`border-b last:border-0 ${isDark ? "border-slate-700 hover:bg-[#0f1720]/60" : "border-slate-100 hover:bg-slate-50/70"}`}>
+                <td className={`px-3 py-3 ${isDark ? "text-slate-100" : "text-slate-800"}`}>
                   <span className="flex items-center gap-3">
                     {row[7] && !brokenAvatarById[row[8]] ? (
                       <img
@@ -729,30 +743,32 @@ function AttendancePage() {
                       </span>
                     )}
                     <span>
-                      <span className="block font-medium text-slate-800">{row[0]}</span>
-                      <span className="mt-0.5 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">{row[8]}</span>
+                      <span className={`block font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{row[0]}</span>
+                      <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] ${
+                        isDark ? "bg-[#1b2530] text-slate-300" : "bg-slate-100 text-slate-500"
+                      }`}>{row[8]}</span>
                     </span>
                   </span>
                 </td>
-                <td className="px-3 py-3 text-slate-700">
+                <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   <span className="block font-medium">{row[2]}</span>
-                  <span className="block text-xs text-slate-500">{row[1]}</span>
+                  <span className={`block text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{row[1]}</span>
                 </td>
-                <td className="whitespace-nowrap px-3 py-3 text-slate-700">{selectedDateTableLabel}</td>
-                <td className="px-3 py-3 text-slate-700">{row[3]}</td>
-                <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                <td className={`whitespace-nowrap px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{selectedDateTableLabel}</td>
+                <td className={`px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row[3]}</td>
+                <td className={`whitespace-nowrap px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   <span className="font-medium">{row[4]}</span>
                   <span className="px-1.5 text-slate-400">-</span>
                   <span className="font-medium">{row[5]}</span>
                 </td>
-                <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                <td className={`whitespace-nowrap px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   {formatDuration(
                     toMinutesFromLabel(row[4]) != null && toMinutesFromLabel(row[5]) != null
                       ? toMinutesFromLabel(row[5]) - toMinutesFromLabel(row[4])
                       : null,
                   )}
                 </td>
-                <td className="whitespace-nowrap px-3 py-3 text-slate-700">
+                <td className={`whitespace-nowrap px-3 py-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   {formatOvertime(row[9])}
                 </td>
                 <td className="px-3 py-3">
@@ -765,7 +781,7 @@ function AttendancePage() {
 
             {pagedRows.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={8} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   No attendance records found.
                 </td>
               </tr>
@@ -774,7 +790,7 @@ function AttendancePage() {
         </table>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+      <div className={`mt-4 flex flex-wrap items-center justify-between gap-3 text-sm ${isDark ? "text-slate-400" : "text-slate-400"}`}>
         <div className="flex items-center gap-2">
           <span>Showing</span>
           <select
@@ -783,7 +799,9 @@ function AttendancePage() {
               setPageSize(Number(event.target.value))
               setCurrentPage(1)
             }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-slate-600 outline-none"
+            className={`rounded-lg border px-3 py-1.5 outline-none ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-200" : "border-slate-200 bg-white text-slate-600"
+            }`}
           >
             <option value={10}>10</option>
             <option value={20}>20</option>

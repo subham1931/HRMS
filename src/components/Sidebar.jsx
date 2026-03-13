@@ -37,7 +37,8 @@ function isPathActive(pathname, to) {
   return pathname === to
 }
 
-function Sidebar({ pathname, onNavigate, mobile = false }) {
+function Sidebar({ pathname, onNavigate, mobile = false, appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const setupItem = menuItems.find((item) => item.label === "Setup")
   const setupHasActiveChild = (setupItem?.children || []).some((child) => isPathActive(pathname, child.to))
   const setupIsActive = isPathActive(pathname, "/setup") || setupHasActiveChild
@@ -48,8 +49,12 @@ function Sidebar({ pathname, onNavigate, mobile = false }) {
   }, [setupIsActive])
 
   const asideClassName = mobile
-    ? "h-[calc(100dvh-72px)] w-[280px] shrink-0 overflow-y-auto border-r border-slate-200 bg-[#f7f7fa] p-5"
-    : "sticky top-[103px] hidden h-[calc(100dvh-103px)] w-[260px] shrink-0 self-start overflow-y-auto rounded-2xl border border-slate-200 bg-[#f7f7fa] p-5 xl:flex xl:flex-col"
+    ? `h-[calc(100dvh-72px)] w-[280px] shrink-0 overflow-y-auto border-r p-5 ${
+      isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-[#f7f7fa]"
+    }`
+    : `sticky top-[103px] hidden h-[calc(100dvh-103px)] w-[260px] shrink-0 self-start overflow-y-auto rounded-2xl border p-5 xl:flex xl:flex-col ${
+      isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-[#f7f7fa]"
+    }`
 
   return (
     <aside className={asideClassName}>
@@ -71,7 +76,9 @@ function Sidebar({ pathname, onNavigate, mobile = false }) {
                   onNavigate(item.to)
                 }}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] ${
-                  isActive ? "bg-slate-100 font-semibold text-slate-800" : "text-slate-700"
+                  isActive
+                    ? (isDark ? "bg-[#0f1720] font-semibold text-slate-100" : "bg-slate-100 font-semibold text-slate-800")
+                    : (isDark ? "text-slate-300 hover:bg-[#0f1720]" : "text-slate-700")
                 }`}
               >
                 <Icon size={17} strokeWidth={1.75} />
@@ -95,7 +102,9 @@ function Sidebar({ pathname, onNavigate, mobile = false }) {
                         type="button"
                         onClick={() => onNavigate(child.to)}
                         className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
-                          childActive ? "bg-slate-100 font-semibold text-slate-800" : "text-slate-600 hover:bg-slate-100"
+                          childActive
+                            ? (isDark ? "bg-[#0f1720] font-semibold text-slate-100" : "bg-slate-100 font-semibold text-slate-800")
+                            : (isDark ? "text-slate-400 hover:bg-[#0f1720]" : "text-slate-600 hover:bg-slate-100")
                         }`}
                       >
                         {child.label}

@@ -16,11 +16,13 @@ function TopNavbar({
   userName = "Admin User",
   userRole = "Admin",
   userImage = "",
+  appearance = "Light",
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const mobileMenuRef = useRef(null)
   const isPublic = mode === "public"
+  const isDark = appearance === "Dark" && !isPublic
   const initials = (userName || "A")
     .split(" ")
     .filter(Boolean)
@@ -66,13 +68,17 @@ function TopNavbar({
   }, [isPublic, notificationsOpen])
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between rounded-2xl border border-slate-200 bg-[#f7f7fa] px-3 py-3 sm:px-4 sm:py-3.5 lg:px-5 lg:py-4">
+    <header className={`sticky top-0 z-30 flex items-center justify-between rounded-2xl border px-3 py-3 sm:px-4 sm:py-3.5 lg:px-5 lg:py-4 ${
+      isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-[#f7f7fa]"
+    }`}>
       <div className="flex min-w-0 items-center gap-2 font-semibold">
         {!isPublic && (
           <button
             type="button"
             onClick={onMenuClick}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 xl:hidden"
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border xl:hidden ${
+              isDark ? "border-slate-600 bg-[#0f1720] text-slate-300" : "border-slate-200 bg-white text-slate-600"
+            }`}
             aria-label="Open navigation menu"
           >
             <Menu size={16} />
@@ -87,10 +93,14 @@ function TopNavbar({
             H
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-[18px] font-semibold leading-none tracking-tight text-slate-900 sm:text-[20px] lg:text-[22px]">
+            <span className={`block truncate text-[18px] font-semibold leading-none tracking-tight sm:text-[20px] lg:text-[22px] ${
+              isDark ? "text-slate-100" : "text-slate-900"
+            }`}>
               HRMS
             </span>
-            <span className="block truncate pt-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">
+            <span className={`block truncate pt-0.5 text-[10px] font-medium uppercase tracking-[0.14em] ${
+              isDark ? "text-slate-500" : "text-slate-400"
+            }`}>
               People Ops
             </span>
           </span>
@@ -112,7 +122,9 @@ function TopNavbar({
               type="button"
               onClick={onNotificationClick}
               className={`relative inline-flex h-9 w-9 items-center justify-center rounded-xl border sm:h-10 sm:w-10 ${
-                notificationsOpen ? "border-violet-200 bg-violet-50 text-violet-600" : "border-slate-200 bg-white text-slate-500"
+                notificationsOpen
+                  ? (isDark ? "border-teal-700 bg-teal-900/40 text-teal-300" : "border-violet-200 bg-violet-50 text-violet-600")
+                  : (isDark ? "border-slate-600 bg-[#0f1720] text-slate-300" : "border-slate-200 bg-white text-slate-500")
               }`}
               aria-label="Notifications"
             >
@@ -127,7 +139,9 @@ function TopNavbar({
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 md:hidden"
+                className={`inline-flex items-center gap-1 rounded-xl border px-2 py-1.5 md:hidden ${
+                  isDark ? "border-slate-600 bg-[#0f1720]" : "border-slate-200 bg-white"
+                }`}
                 aria-label="Open profile menu"
                 aria-expanded={mobileMenuOpen}
               >
@@ -144,7 +158,9 @@ function TopNavbar({
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
-                className="hidden items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-1.5 md:flex"
+                className={`hidden items-center gap-3 rounded-xl border px-3 py-1.5 md:flex ${
+                  isDark ? "border-slate-600 bg-[#0f1720]" : "border-slate-200 bg-white"
+                }`}
                 aria-label="Open profile menu"
                 aria-expanded={mobileMenuOpen}
               >
@@ -156,21 +172,23 @@ function TopNavbar({
                   </span>
                 )}
                 <span className="text-left">
-                  <span className="block text-sm font-semibold leading-none">{userName}</span>
-                  <span className="mt-1 block text-xs text-slate-500">{userRole}</span>
+                  <span className={`block text-sm font-semibold leading-none ${isDark ? "text-slate-100" : ""}`}>{userName}</span>
+                  <span className={`mt-1 block text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{userRole}</span>
                 </span>
                 <ChevronDown size={14} className={`text-slate-400 transition-transform ${mobileMenuOpen ? "rotate-180" : ""}`} />
               </button>
 
               {mobileMenuOpen && (
-                <div className="absolute right-0 top-[calc(100%+10px)] z-40 min-w-[205px] rounded-2xl bg-white p-3 shadow-md">
+                <div className={`absolute right-0 top-[calc(100%+10px)] z-40 min-w-[205px] rounded-2xl p-3 shadow-md ${
+                  isDark ? "border border-slate-700 bg-[#0f1720]" : "bg-white"
+                }`}>
                   <button
                     type="button"
                     onClick={() => {
                       setMobileMenuOpen(false)
                       onProfileClick?.()
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-[#2E2E2E]"
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left ${isDark ? "text-slate-100" : "text-[#2E2E2E]"}`}
                   >
                     <UserRound size={17} />
                     <span className="text-[15px] leading-none">My Profile</span>

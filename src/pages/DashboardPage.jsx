@@ -101,6 +101,17 @@ const getHeatmapClass = (count, maxCount) => {
   return HEATMAP_LEVEL_CLASSES[1]
 }
 
+const getDarkHeatmapClass = (className) => {
+  const map = {
+    "bg-[#f1f3ef]": "bg-[#1b2632]",
+    "bg-[#d2e1c3]": "bg-[#26453d]",
+    "bg-[#40c3ad]": "bg-[#248f7f]",
+    "bg-[#35bda6]": "bg-[#1d7a6c]",
+    "bg-[#0f5c4d]": "bg-[#0f5c4d]",
+  }
+  return map[className] || className
+}
+
 const buildWeeklyAttendanceRange = (records, previousRecords = []) => {
   const matrix = Array.from({ length: WEEKLY_ROW_LABELS.length }, () => Array.from({ length: WEEKLY_COLUMN_LABELS.length }, () => 0))
   let onTimeCount = 0
@@ -328,8 +339,9 @@ const buildYearlyAttendanceRange = (records, previousRecords = [], now = new Dat
   }
 }
 
-function DashboardPage() {
+function DashboardPage({ appearance = "Light" }) {
   const navigate = useNavigate()
+  const isDark = appearance === "Dark"
   const [attendanceRange, setAttendanceRange] = useState("weekly")
   const [teamPerformanceMonths, setTeamPerformanceMonths] = useState(TEAM_PERFORMANCE_DEFAULT_MONTHS)
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -599,27 +611,27 @@ function DashboardPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-        <p className="text-sm text-slate-500">Hello Davis!</p>
-        <h1 className="mt-1 text-3xl font-semibold text-slate-900">Good Morning</h1>
+    <div className={`space-y-4 ${isDark ? "text-slate-100" : ""}`}>
+      <section className={`rounded-2xl border p-4 sm:p-5 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
+        <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Hello Davis!</p>
+        <h1 className={`mt-1 text-3xl font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>Good Morning</h1>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {topStats.map((card) => (
-          <article key={card.title} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <article key={card.title} className={`overflow-hidden rounded-2xl border ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
             <div className="p-4">
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
+              <div className={`mb-2 flex items-center justify-between text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 <span>{card.title}</span>
                 <MoreHorizontal size={14} />
               </div>
-              <p className="text-[38px] font-semibold leading-none text-slate-900">{card.value}</p>
-              <p className="mt-1 text-xs text-slate-500">
-                <span className="font-medium text-slate-700">{card.sub}</span>
+              <p className={`text-[38px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-900"}`}>{card.value}</p>
+              <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <span className={`font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>{card.sub}</span>
                 {card.extra ? ` - ${card.extra}` : ""}
               </p>
             </div>
-            <div className="bg-[#e8f1df] px-4 py-2 text-xs text-emerald-700">{card.footer}</div>
+            <div className={`px-4 py-2 text-xs ${isDark ? "bg-[#1a2a20] text-emerald-300" : "bg-[#e8f1df] text-emerald-700"}`}>{card.footer}</div>
           </article>
         ))}
       </section>
@@ -627,19 +639,19 @@ function DashboardPage() {
       <section className="space-y-4">
         <div className="space-y-4">
           <div className="grid gap-3 lg:grid-cols-3">
-            <article className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4">
+            <article className={`flex h-full flex-col rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-[18px] font-semibold text-slate-800">Attendance Calendar</h3>
+                  <h3 className={`text-[18px] font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Attendance Calendar</h3>
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setShowYearModal(true)}
-                      className="inline-flex items-center gap-1 bg-transparent py-1 pl-0 pr-1 text-[20px] font-semibold text-slate-800"
+                      className={`inline-flex items-center gap-1 bg-transparent py-1 pl-0 pr-1 text-[20px] font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}
                       aria-label="Open year selector"
                     >
                       {calendarLabel}
-                      <ChevronDown size={14} className="text-slate-500" />
+                      <ChevronDown size={14} className={isDark ? "text-slate-400" : "text-slate-500"} />
                     </button>
                   </div>
                 </div>
@@ -647,7 +659,7 @@ function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f1df]"
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${isDark ? "bg-[#1d2c22] text-slate-200" : "bg-[#e8f1df]"}`}
                     aria-label="Previous month"
                   >
                     <ChevronLeft size={14} />
@@ -655,15 +667,15 @@ function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f1df]"
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${isDark ? "bg-[#1d2c22] text-slate-200" : "bg-[#e8f1df]"}`}
                     aria-label="Next month"
                   >
                     <ChevronRight size={14} />
                   </button>
                 </div>
               </div>
-              <div className="grid flex-1 grid-cols-7 grid-rows-[auto_repeat(6,minmax(0,1fr))] gap-y-1 text-center text-xs text-slate-500">
-                {["S", "M", "T", "W", "T", "F", "S"].map((d) => <span key={d} className="py-1">{d}</span>)}
+              <div className={`grid flex-1 grid-cols-7 grid-rows-[auto_repeat(6,minmax(0,1fr))] gap-y-1 text-center text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+      {["S", "M", "T", "W", "T", "F", "S"].map((d) => <span key={d} className="py-1">{d}</span>)}
                 {calendarCells.map((cell) => (
                   <span
                     key={cell.key}
@@ -675,15 +687,15 @@ function DashboardPage() {
                           : cell.isScheduled
                             ? "bg-[#39c9b3] text-white"
                         : !cell.inCurrentMonth
-                        ? "text-slate-300"
-                          : ""
+                        ? (isDark ? "text-slate-600" : "text-slate-300")
+                          : (isDark ? "text-slate-200" : "")
                     }`}
                   >
                     {cell.value}
                   </span>
                 ))}
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-600">
+              <div className={`mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-700" />
                   Today
@@ -699,14 +711,14 @@ function DashboardPage() {
               </div>
             </article>
 
-            <article className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4">
+            <article className={`flex h-full flex-col rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-[18px] font-semibold text-slate-800">Attendance Report</h3>
+                <h3 className={`text-[18px] font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Attendance Report</h3>
                 <div className="relative">
                   <select
                     value={attendanceRange}
                     onChange={(event) => setAttendanceRange(event.target.value)}
-                    className="appearance-none rounded-xl bg-[#dce8c8] py-1 pl-2.5 pr-6 text-xs font-medium text-slate-700 outline-none"
+                    className={`appearance-none rounded-xl py-1 pl-2.5 pr-6 text-xs font-medium outline-none ${isDark ? "bg-[#1d2c22] text-slate-200" : "bg-[#dce8c8] text-slate-700"}`}
                   >
                     <option value="weekly">This Week</option>
                     <option value="monthly">This Month</option>
@@ -716,19 +728,19 @@ function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <p className="text-[42px] font-semibold leading-none text-slate-800">{activeAttendanceRange.value}</p>
-                <span className="inline-flex items-center rounded-full bg-[#dce8c8] px-2 py-0.5 text-xs font-medium text-emerald-700">
+              <p className={`text-[42px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>{activeAttendanceRange.value}</p>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${isDark ? "bg-[#1d2c22] text-emerald-300" : "bg-[#dce8c8] text-emerald-700"}`}>
                   ↗ {activeAttendanceRange.growth}
                 </span>
               </div>
-              <p className="mt-1 text-[13px] text-slate-500">Attendance Rate</p>
+              <p className={`mt-1 text-[13px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>Attendance Rate</p>
 
               <div className="mt-4">
                 <div className={`grid items-start gap-x-2 ${activeAttendanceRange.rowLabels.length > 0 ? "grid-cols-[66px_1fr]" : "grid-cols-1"}`}>
                   {activeAttendanceRange.rowLabels.length > 0 ? (
                     <div className="space-y-1">
                       {activeAttendanceRange.rowLabels.map((label) => (
-                        <p key={label} className="h-[22px] text-[10px] text-slate-500">{label}</p>
+                        <p key={label} className={`h-[22px] text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{label}</p>
                       ))}
                     </div>
                   ) : null}
@@ -741,11 +753,12 @@ function DashboardPage() {
                         style={{ gridTemplateColumns: `repeat(${activeAttendanceRange.columnLabels.length}, minmax(0, 1fr))` }}
                       >
                         {row.map((cell, c) => {
-                          const className = typeof cell === "string" ? cell : cell.className
+                          const rawClassName = typeof cell === "string" ? cell : cell.className
+                          const className = isDark ? getDarkHeatmapClass(rawClassName) : rawClassName
                           const count = typeof cell === "string" ? 0 : Number(cell.count || 0)
                           const textClass = className === "bg-[#0f5c4d]" || className === "bg-[#35bda6]"
                             ? "text-white"
-                            : "text-slate-600"
+                            : (isDark ? "text-slate-100" : "text-slate-600")
                           return (
                             <span
                               key={`cell-${r}-${c}`}
@@ -758,7 +771,7 @@ function DashboardPage() {
                       </div>
                     ))}
                     <div
-                      className="grid gap-1.5 pt-1.5 text-center text-[12px] text-slate-500"
+                      className={`grid gap-1.5 pt-1.5 text-center text-[12px] ${isDark ? "text-slate-300" : "text-slate-500"}`}
                       style={{ gridTemplateColumns: `repeat(${activeAttendanceRange.columnLabels.length}, minmax(0, 1fr))` }}
                     >
                       {activeAttendanceRange.columnLabels.map((day) => (
@@ -770,14 +783,14 @@ function DashboardPage() {
               </div>
             </article>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <article className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-slate-800">Team Performance</h3>
+                <h3 className={`text-xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Team Performance</h3>
                 <div className="relative">
                   <select
                     value={String(teamPerformanceMonths)}
                     onChange={(event) => setTeamPerformanceMonths(Number(event.target.value) || TEAM_PERFORMANCE_DEFAULT_MONTHS)}
-                    className="appearance-none rounded-xl bg-[#dce8c8] py-1 pl-2.5 pr-6 text-xs font-medium text-slate-700 outline-none"
+                    className={`appearance-none rounded-xl py-1 pl-2.5 pr-6 text-xs font-medium outline-none ${isDark ? "bg-[#1d2c22] text-slate-200" : "bg-[#dce8c8] text-slate-700"}`}
                   >
                     <option value="3">Last 3 Months</option>
                     <option value="6">Last 6 Months</option>
@@ -786,7 +799,7 @@ function DashboardPage() {
                   <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-600" />
                 </div>
               </div>
-              <p className="text-[38px] font-semibold leading-none text-slate-800">{teamPerformanceRange.value}</p>
+              <p className={`text-[38px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>{teamPerformanceRange.value}</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${growthBadgeClass}`}>
                   {growthPrefix}{Math.abs(teamPerformanceRange.growth).toFixed(2)}%
@@ -794,8 +807,8 @@ function DashboardPage() {
                 <span className="text-[13px] text-slate-500">{growthLabel}</span>
               </div>
 
-              <div className="mt-3 w-full overflow-x-auto">
-                <svg viewBox="0 0 360 185" className="h-[170px] min-w-[360px] w-full">
+              <div className="mt-3 w-full overflow-hidden">
+                <svg viewBox="0 0 360 185" className="h-[170px] w-full">
                   {[0, 25, 50, 75, 100].map((tick, idx) => {
                     const y = 20 + idx * 33
                     return (
@@ -850,34 +863,34 @@ function DashboardPage() {
           </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
-            <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <article className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-slate-800">Schedules</h3>
-                <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-[#e8f1df] px-2 py-1 text-xs text-slate-700">21 Jun <ChevronDown size={12} /></button>
+                <h3 className={`text-xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Schedules</h3>
+                <button type="button" className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs ${isDark ? "bg-[#1d2c22] text-slate-200" : "bg-[#e8f1df] text-slate-700"}`}>21 Jun <ChevronDown size={12} /></button>
               </div>
               <div className="space-y-2.5">
                 {scheduleItems.map((item) => (
-                  <div key={item.title} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-                    <p className="text-[11px] text-emerald-500">{item.label}</p>
-                    <p className="mt-1 text-sm font-medium text-slate-800">{item.title}</p>
-                    <p className="mt-1 text-[11px] text-slate-500">{item.room} - {item.time}</p>
+                  <div key={item.title} className={`rounded-lg border p-2.5 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-100 bg-slate-50"}`}>
+                    <p className={`text-[11px] ${isDark ? "text-emerald-300" : "text-emerald-500"}`}>{item.label}</p>
+                    <p className={`mt-1 text-sm font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{item.title}</p>
+                    <p className={`mt-1 text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.room} - {item.time}</p>
                   </div>
                 ))}
               </div>
             </article>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <article className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-slate-800">Employee Satisfaction</h3>
-                <MoreHorizontal size={15} className="text-slate-400" />
+                <h3 className={`text-xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Employee Satisfaction</h3>
+                <MoreHorizontal size={15} className={isDark ? "text-slate-500" : "text-slate-400"} />
               </div>
               <div className="grid grid-cols-[1fr_160px] items-center gap-2">
                 <div>
-                  <p className="text-[36px] font-semibold leading-none text-slate-800">73%</p>
-                  <p className="mt-1 text-[13px] text-slate-500">Employee Satisfied</p>
+                  <p className={`text-[36px] font-semibold leading-none ${isDark ? "text-slate-100" : "text-slate-800"}`}>73%</p>
+                  <p className={`mt-1 text-[13px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>Employee Satisfied</p>
                   <div className="mt-3 flex items-center gap-2">
                     {renderRatingStars(4.2)}
-                    <span className="text-[21px] font-semibold text-slate-700">4.2/5</span>
+                    <span className={`text-[21px] font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>4.2/5</span>
                   </div>
                 </div>
                 <svg viewBox="0 0 160 92" className="h-[92px] w-[160px]">
@@ -889,37 +902,37 @@ function DashboardPage() {
                 </svg>
               </div>
 
-              <div className="mt-3 rounded-xl bg-[#dce8c8] px-3 py-2 text-[13px] text-slate-600">
-                That's an <span className="font-semibold text-slate-800">increase of 6%</span> from last month
+              <div className={`mt-3 rounded-xl px-3 py-2 text-[13px] ${isDark ? "bg-[#1d2c22] text-slate-300" : "bg-[#dce8c8] text-slate-600"}`}>
+                That's an <span className={`font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>increase of 6%</span> from last month
               </div>
 
               <div className="mt-4 space-y-3">
                 {satisfactionRows.map((item) => (
                   <div key={item.label} className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-[14px] font-semibold text-slate-800">{item.label}</p>
-                      <p className="text-[13px] text-slate-500">{item.percent}</p>
+                      <p className={`text-[14px] font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>{item.label}</p>
+                      <p className={`text-[13px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.percent}</p>
                     </div>
                     <div className="flex items-center gap-2 pt-0.5">
                       {renderRatingStars(item.score)}
-                      <span className="text-[17px] font-semibold text-slate-700">{item.score.toFixed(1)}/5</span>
+                      <span className={`text-[17px] font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>{item.score.toFixed(1)}/5</span>
                     </div>
                   </div>
                 ))}
               </div>
             </article>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <article className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-slate-800">Employment Status</h3>
-                <MoreHorizontal size={15} className="text-slate-400" />
+                <h3 className={`text-xl font-semibold ${isDark ? "text-slate-100" : "text-slate-800"}`}>Employment Status</h3>
+                <MoreHorizontal size={15} className={isDark ? "text-slate-500" : "text-slate-400"} />
               </div>
               <div className="mb-3 flex items-end justify-between">
                 <div>
-                  <p className="text-3xl font-semibold text-slate-900">{totalEmployees}</p>
-                  <p className="text-xs text-slate-500">Employees</p>
+                  <p className={`text-3xl font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>{totalEmployees}</p>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Employees</p>
                 </div>
-                <p className="text-xs text-slate-500">100%</p>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>100%</p>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
                 <div className="flex h-full w-full">
@@ -931,27 +944,27 @@ function DashboardPage() {
                   ) : null}
                 </div>
               </div>
-              <div className="mt-4 grid flex-1 grid-cols-2 gap-2.5 text-sm text-slate-700">
+              <div className={`mt-4 grid flex-1 grid-cols-2 gap-2.5 text-sm ${isDark ? "text-slate-200" : "text-slate-700"}`}>
                 {employmentStatusCards.map((item) => (
-                  <div key={item.key} className="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
+                  <div key={item.key} className={`rounded-lg border px-2.5 py-2 ${isDark ? "border-slate-700 bg-[#0f1720]" : "border-slate-100 bg-slate-50"}`}>
                     <p className="inline-flex items-center gap-1.5">
                       <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
                       {item.label}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">{item.percent}% - {item.count} Employees</p>
+                    <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.percent}% - {item.count} Employees</p>
                   </div>
                 ))}
               </div>
             </article>
           </div>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <article className={`rounded-2xl border p-4 sm:p-5 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[22px] font-semibold text-slate-900">Employee Attendance</h3>
+              <h3 className={`text-[22px] font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>Employee Attendance</h3>
               <button
                 type="button"
                 onClick={() => navigate("/attendance")}
-                className="inline-flex items-center gap-1 rounded-lg bg-[#e8f1df] px-3 py-1.5 text-xs text-slate-700"
+                className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs ${isDark ? "bg-[#1d2c22] text-slate-200" : "bg-[#e8f1df] text-slate-700"}`}
               >
                 View All
               </button>
@@ -959,15 +972,15 @@ function DashboardPage() {
             {attendanceError ? (
               <p className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">{attendanceError}</p>
             ) : null}
-            <div className="mb-3 grid grid-cols-4 gap-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
-              <p><span className="block text-3xl font-semibold text-slate-900">{attendanceCounts.onTime}</span>On-Time</p>
-              <p><span className="block text-3xl font-semibold text-slate-900">{attendanceCounts.late}</span>Late</p>
-              <p><span className="block text-3xl font-semibold text-slate-900">{attendanceCounts.onLeave}</span>On Leave</p>
-              <p><span className="block text-3xl font-semibold text-slate-900">{attendanceCounts.absent}</span>Absent</p>
+            <div className={`mb-3 grid grid-cols-4 gap-3 rounded-xl p-3 text-sm ${isDark ? "bg-[#0f1720] text-slate-300" : "bg-slate-50 text-slate-600"}`}>
+              <p><span className={`block text-3xl font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>{attendanceCounts.onTime}</span>On-Time</p>
+              <p><span className={`block text-3xl font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>{attendanceCounts.late}</span>Late</p>
+              <p><span className={`block text-3xl font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>{attendanceCounts.onLeave}</span>On Leave</p>
+              <p><span className={`block text-3xl font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>{attendanceCounts.absent}</span>Absent</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[880px] text-left text-sm">
-                <thead className="border-b border-slate-100 text-xs text-slate-400">
+                <thead className={`border-b text-xs ${isDark ? "border-slate-700 text-slate-400" : "border-slate-100 text-slate-400"}`}>
                   <tr>
                     <th className="pb-3 font-medium">Name</th>
                     <th className="pb-3 font-medium">Job Title</th>
@@ -979,7 +992,7 @@ function DashboardPage() {
                 </thead>
                 <tbody>
                   {attendanceRows.map((row) => (
-                    <tr key={row[8]} className="border-b border-slate-100 last:border-0">
+                    <tr key={row[8]} className={`border-b last:border-0 ${isDark ? "border-slate-700" : "border-slate-100"}`}>
                       <td className="py-2.5">
                         <span className="flex items-center gap-2.5">
                           {row[7] && !brokenAvatarById[row[8]] ? (
@@ -994,13 +1007,13 @@ function DashboardPage() {
                               {getInitials(row[0]) || "A"}
                             </span>
                           )}
-                          <span className="font-medium text-slate-800">{row[0]}</span>
+                          <span className={`font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{row[0]}</span>
                         </span>
                       </td>
-                      <td className="py-2.5 text-slate-700">{row[2]}</td>
-                      <td className="py-2.5 text-slate-700">{todayLabel}</td>
-                      <td className="py-2.5 text-slate-700">{row[4]}</td>
-                      <td className="py-2.5 text-slate-700">{row[5]}</td>
+                      <td className={`py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row[2]}</td>
+                      <td className={`py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{todayLabel}</td>
+                      <td className={`py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row[4]}</td>
+                      <td className={`py-2.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{row[5]}</td>
                       <td className="py-2.5">
                         <span className={`rounded-full px-2.5 py-1 text-xs ${getStatusClasses(row[6])}`}>{row[6]}</span>
                       </td>
@@ -1008,7 +1021,7 @@ function DashboardPage() {
                   ))}
                   {attendanceRows.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="py-6 text-center text-sm text-slate-500">
+                      <td colSpan={6} className={`py-6 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                         No attendance records for today.
                       </td>
                     </tr>

@@ -32,11 +32,12 @@ function getInitials(name) {
     .join("")
 }
 
-function NotificationsPanel() {
+function NotificationsPanel({ appearance = "Light" }) {
   const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
+  const isDark = appearance === "Dark"
 
   useEffect(() => {
     let mounted = true
@@ -80,7 +81,7 @@ function NotificationsPanel() {
   }
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-3">
+    <article className={`rounded-2xl border p-3 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
       {loadError ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
           {loadError}
@@ -88,11 +89,11 @@ function NotificationsPanel() {
       ) : null}
 
       {isLoading ? (
-        <div className="px-2 py-3 text-sm text-slate-500">Loading notifications...</div>
+        <div className={`px-2 py-3 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>Loading notifications...</div>
       ) : null}
 
       {!isLoading && !hasItems ? (
-        <div className="px-2 py-3 text-center text-sm text-slate-500">
+        <div className={`px-2 py-3 text-center text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>
           No new notifications.
         </div>
       ) : null}
@@ -102,8 +103,10 @@ function NotificationsPanel() {
           key={item.id}
           type="button"
           onClick={() => handleOpenNotification(item)}
-          className={`flex w-full items-center justify-between gap-3 px-2 py-3 text-left hover:bg-slate-50 ${
-            index !== items.length - 1 ? "border-b border-slate-100" : ""
+          className={`flex w-full items-center justify-between gap-3 px-2 py-3 text-left ${
+            isDark ? "hover:bg-[#0f1720]" : "hover:bg-slate-50"
+          } ${
+            index !== items.length - 1 ? (isDark ? "border-b border-slate-700" : "border-b border-slate-100") : ""
           }`}
         >
           <div className="flex items-center gap-3">
@@ -115,11 +118,11 @@ function NotificationsPanel() {
               </span>
             )}
             <div>
-              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-              <p className="mt-0.5 text-sm text-slate-500">{item.subtitle}</p>
+              <p className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>{item.title}</p>
+              <p className={`mt-0.5 text-sm ${isDark ? "text-slate-300" : "text-slate-500"}`}>{item.subtitle}</p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+          <span className={`inline-flex items-center gap-1 text-xs ${isDark ? "text-slate-400" : "text-slate-400"}`}>
             <CalendarDays size={13} />
             {item.time}
           </span>

@@ -14,6 +14,7 @@ function mapLeaveTypeRow(row) {
     id: row.id || "",
     name: row.name || "",
     annualLimit: parseNumber(row.annual_limit_days, 0),
+    earnedPerMonth: parseNumber(row.earned_per_month_days, 0),
     isPaid: Boolean(row.is_paid),
     isActive: Boolean(row.is_active),
     createdAt: row.created_at || null,
@@ -25,7 +26,7 @@ export async function listLeaveTypes() {
   assertSupabaseConfigured()
   const { data, error } = await supabase
     .from("leave_types")
-    .select("id, name, annual_limit_days, is_paid, is_active, created_at, updated_at")
+    .select("id, name, annual_limit_days, earned_per_month_days, is_paid, is_active, created_at, updated_at")
     .order("name", { ascending: true })
 
   if (error) throw new Error(error.message || "Failed to load leave types.")
@@ -36,6 +37,7 @@ export async function createLeaveType(payload = {}) {
   assertSupabaseConfigured()
   const name = normalizeLeaveTypeName(payload.name)
   const annualLimit = Math.max(0, parseNumber(payload.annualLimit, 0))
+  const earnedPerMonth = Math.max(0, parseNumber(payload.earnedPerMonth, 0))
   const isPaid = Boolean(payload.isPaid)
   if (!name) throw new Error("Leave type name is required.")
 
@@ -44,10 +46,11 @@ export async function createLeaveType(payload = {}) {
     .insert({
       name,
       annual_limit_days: annualLimit,
+      earned_per_month_days: earnedPerMonth,
       is_paid: isPaid,
       is_active: true,
     })
-    .select("id, name, annual_limit_days, is_paid, is_active, created_at, updated_at")
+    .select("id, name, annual_limit_days, earned_per_month_days, is_paid, is_active, created_at, updated_at")
     .single()
 
   if (error) {
@@ -74,6 +77,9 @@ export async function updateLeaveType(leaveTypeId, payload = {}) {
   if (Object.hasOwn(payload, "annualLimit")) {
     updates.annual_limit_days = Math.max(0, parseNumber(payload.annualLimit, 0))
   }
+  if (Object.hasOwn(payload, "earnedPerMonth")) {
+    updates.earned_per_month_days = Math.max(0, parseNumber(payload.earnedPerMonth, 0))
+  }
   if (Object.hasOwn(payload, "isPaid")) {
     updates.is_paid = Boolean(payload.isPaid)
   }
@@ -88,7 +94,7 @@ export async function updateLeaveType(leaveTypeId, payload = {}) {
     .from("leave_types")
     .update(updates)
     .eq("id", id)
-    .select("id, name, annual_limit_days, is_paid, is_active, created_at, updated_at")
+    .select("id, name, annual_limit_days, earned_per_month_days, is_paid, is_active, created_at, updated_at")
     .maybeSingle()
 
   if (error) {

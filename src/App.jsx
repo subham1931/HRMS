@@ -25,6 +25,7 @@ import SignInPage from "./pages/SignInPage"
 import { getCurrentAdminSession, signInAdmin, signOutAdmin } from "./services/auth"
 
 const PUBLIC_PATHS = new Set(["/", "/signin"])
+const THEME_STORAGE_KEY = "hrms_appearance_theme"
 
 function App() {
   const { pathname } = useLocation()
@@ -33,6 +34,24 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authReady, setAuthReady] = useState(false)
   const [adminProfile, setAdminProfile] = useState(null)
+  const [appearance, setAppearance] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem(THEME_STORAGE_KEY)
+      return saved === "Dark" ? "Dark" : "Light"
+    } catch {
+      return "Light"
+    }
+  })
+  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance")
+  const isDarkUi = appearance === "Dark"
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, appearance)
+    } catch {
+      // ignore localStorage failures
+    }
+  }, [appearance])
 
   useEffect(() => {
     let isMounted = true
@@ -112,13 +131,13 @@ function App() {
   }
 
   const routeContent = {
-    "/dashboard": <DashboardPage />,
+    "/dashboard": <DashboardPage appearance={appearance} />,
     "/employees": <EmployeesPage />,
     "/employees/addemploye": <AddEmployeePage />,
     "/employees/editemploye": <EditEmployeePage />,
     "/departments": <DepartmentsPage />,
     "/offices": <OfficesPage />,
-    "/attendance": <AttendancePage />,
+    "/attendance": <AttendancePage appearance={appearance} />,
     "/payroll": <PayrollPage />,
     "/jobs": <PlaceholderPage />,
     "/candidates": <PlaceholderPage />,
@@ -127,9 +146,9 @@ function App() {
     "/calendar": <LeaveCalendarPage />,
     "/leaves/calendar": <LeaveCalendarPage />,
     "/holidays": <HolidaysPage />,
-    "/setup": <SettingsPage />,
-    "/settings": <SettingsPage />,
-    "/notifications": <NotificationsPanel />,
+    "/setup": <SettingsPage appearance={appearance} onAppearanceChange={setAppearance} />,
+    "/settings": <SettingsPage appearance={appearance} onAppearanceChange={setAppearance} />,
+    "/notifications": <NotificationsPanel appearance={appearance} />,
     "/profile": <ProfilePage adminProfile={adminProfile} />,
   }
   const activeRouteContent = pathname === "/leaves/calendar"
@@ -147,7 +166,7 @@ function App() {
   const displayRole = (adminProfile?.role || "HR").toUpperCase()
 
   return (
-    <main className="min-h-screen bg-[#f3f3f6] px-0 pb-0 pt-0 text-slate-900 lg:px-0 lg:pb-0 lg:pt-0">
+    <main className={`min-h-screen px-0 pb-0 pt-0 lg:px-0 lg:pb-0 lg:pt-0 ${isDarkDashboard ? "bg-[#0f1720] text-slate-100" : "bg-[#f3f3f6] text-slate-900"}`}>
       <div className="mx-auto max-w-[1440px]">
         <TopNavbar
           notificationsOpen={pathname === "/notifications"}
@@ -157,6 +176,7 @@ function App() {
           onLogout={handleLogout}
           userName={displayName}
           userRole={displayRole}
+          appearance={appearance}
         />
 
         {mobileSidebarOpen && (
@@ -168,23 +188,27 @@ function App() {
               aria-label="Close navigation menu overlay"
             />
             <div className="relative z-10 h-full">
-              <div className="flex h-[72px] items-center justify-end border-b border-slate-200 bg-[#f7f7fa] px-4">
+              <div className={`flex h-[72px] items-center justify-end border-b px-4 ${
+                isDarkUi ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-[#f7f7fa]"
+              }`}>
                 <button
                   type="button"
                   onClick={() => setMobileSidebarOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border ${
+                    isDarkUi ? "border-slate-600 bg-[#0f1720] text-slate-300" : "border-slate-200 bg-white text-slate-600"
+                  }`}
                   aria-label="Close navigation menu"
                 >
                   <X size={16} />
                 </button>
               </div>
-              <Sidebar pathname={pathname} onNavigate={handleNavigate} mobile />
+              <Sidebar pathname={pathname} onNavigate={handleNavigate} mobile appearance={appearance} />
             </div>
           </div>
         )}
 
         <div className="flex gap-0 pt-4">
-          <Sidebar pathname={pathname} onNavigate={handleNavigate} />
+          <Sidebar pathname={pathname} onNavigate={handleNavigate} appearance={appearance} />
 
           <section className="min-w-0 flex-1 space-y-5 px-5 pb-5 pt-0">
             {activeRouteContent ?? <DashboardPage />}

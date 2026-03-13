@@ -1,8 +1,7 @@
 import { useState } from "react"
 import { ChevronDown } from "lucide-react"
 
-function SettingsPage() {
-  const [appearance, setAppearance] = useState("Light")
+function SettingsPage({ appearance = "Light", onAppearanceChange }) {
   const [language, setLanguage] = useState("English")
   const [toggles, setToggles] = useState({
     twoFactor: true,
@@ -22,7 +21,7 @@ function SettingsPage() {
           <div className="relative">
             <select
               value={appearance}
-              onChange={(event) => setAppearance(event.target.value)}
+              onChange={(event) => onAppearanceChange?.(event.target.value)}
               className="appearance-none rounded-lg bg-slate-100 py-2 pl-3 pr-8 text-[13px] text-slate-700 outline-none"
             >
               <option>Light</option>
