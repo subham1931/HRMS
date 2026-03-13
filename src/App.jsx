@@ -42,7 +42,7 @@ function App() {
       return "Light"
     }
   })
-  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup")
+  const isDarkDashboard = appearance === "Dark" && (pathname === "/dashboard" || pathname === "/notifications" || pathname === "/attendance" || pathname === "/employees" || pathname === "/payroll" || pathname === "/settings" || pathname === "/setup" || pathname === "/departments" || pathname === "/offices" || pathname === "/setup/leaves")
   const isDarkUi = appearance === "Dark"
 
   useEffect(() => {
@@ -135,14 +135,14 @@ function App() {
     "/employees": <EmployeesPage appearance={appearance} />,
     "/employees/addemploye": <AddEmployeePage />,
     "/employees/editemploye": <EditEmployeePage />,
-    "/departments": <DepartmentsPage />,
-    "/offices": <OfficesPage />,
+    "/departments": <DepartmentsPage appearance={appearance} />,
+    "/offices": <OfficesPage appearance={appearance} />,
     "/attendance": <AttendancePage appearance={appearance} />,
     "/payroll": <PayrollPage appearance={appearance} />,
     "/jobs": <PlaceholderPage />,
     "/candidates": <PlaceholderPage />,
     "/leaves": <LeavesPage />,
-    "/setup/leaves": <LeaveSetupPage />,
+    "/setup/leaves": <LeaveSetupPage appearance={appearance} />,
     "/calendar": <LeaveCalendarPage />,
     "/leaves/calendar": <LeaveCalendarPage />,
     "/holidays": <HolidaysPage />,

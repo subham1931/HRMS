@@ -15,7 +15,8 @@ function formatDateTime(value) {
   }).format(date)
 }
 
-function OfficesPage() {
+function OfficesPage({ appearance = "Light" }) {
+  const isDark = appearance === "Dark"
   const [offices, setOffices] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -103,11 +104,11 @@ function OfficesPage() {
   }
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+    <article className={`rounded-2xl border p-3 sm:p-4 ${isDark ? "border-slate-700 bg-[#111a24]" : "border-slate-200 bg-white"}`}>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Office Setup</h2>
-          <p className="text-sm text-slate-500">Create and update office locations.</p>
+          <h2 className={`text-lg font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>Office Setup</h2>
+          <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Create and update office locations.</p>
         </div>
         <button
           type="button"
@@ -125,7 +126,9 @@ function OfficesPage() {
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300"
+            className={`w-full rounded-xl border py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300 ${
+              isDark ? "border-slate-700 bg-[#0f1720] text-slate-100" : "border-slate-200 bg-white"
+            }`}
             placeholder="Search office"
           />
         </div>
@@ -139,7 +142,7 @@ function OfficesPage() {
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left">
-          <thead className="border-b border-slate-100 text-sm text-slate-400">
+          <thead className={`border-b text-sm ${isDark ? "border-slate-700 text-slate-300" : "border-slate-100 text-slate-400"}`}>
             <tr>
               <th className="pb-3 font-medium">Office</th>
               <th className="pb-3 font-medium">Status</th>
@@ -150,8 +153,8 @@ function OfficesPage() {
           </thead>
           <tbody className="text-sm">
             {!isLoading && filteredRows.map((row) => (
-              <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                <td className="py-3.5 font-medium text-slate-800">{row.name}</td>
+              <tr key={row.id} className={`border-b last:border-0 ${isDark ? "border-slate-700" : "border-slate-100"}`}>
+                <td className={`py-3.5 font-medium ${isDark ? "text-slate-100" : "text-slate-800"}`}>{row.name}</td>
                 <td className="py-3.5">
                   <span
                     className={`rounded px-2 py-1 text-xs font-medium ${
@@ -161,13 +164,15 @@ function OfficesPage() {
                     {row.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
-                <td className="py-3.5 text-slate-600">{formatDateTime(row.createdAt)}</td>
-                <td className="py-3.5 text-slate-600">{formatDateTime(row.updatedAt)}</td>
+                <td className={`py-3.5 ${isDark ? "text-slate-300" : "text-slate-600"}`}>{formatDateTime(row.createdAt)}</td>
+                <td className={`py-3.5 ${isDark ? "text-slate-300" : "text-slate-600"}`}>{formatDateTime(row.updatedAt)}</td>
                 <td className="py-3.5 text-right">
                   <button
                     type="button"
                     onClick={() => openUpdateModal(row)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
+                      isDark ? "border-slate-700 text-slate-200 hover:bg-[#0f1720]" : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
                   >
                     <Pencil size={14} />
                     Update
@@ -177,14 +182,14 @@ function OfficesPage() {
             ))}
             {!isLoading && filteredRows.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={5} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   No offices found.
                 </td>
               </tr>
             )}
             {isLoading && (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-sm text-slate-500">
+                <td colSpan={5} className={`py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   Loading offices...
                 </td>
               </tr>
@@ -195,11 +200,11 @@ function OfficesPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
-          <div className="w-full max-w-[430px] rounded-2xl bg-white p-5 shadow-xl">
-            <h3 className="text-[20px] font-semibold tracking-tight text-slate-900">
+          <div className={`w-full max-w-[430px] rounded-2xl p-5 shadow-xl ${isDark ? "border border-slate-700 bg-[#0f1720]" : "bg-white"}`}>
+            <h3 className={`text-[20px] font-semibold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>
               {editingOffice ? "Update Office" : "Add Office"}
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className={`mt-1 text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               {editingOffice
                 ? "Update office details and status."
                 : "Create a new office location for your organization."}
@@ -207,22 +212,26 @@ function OfficesPage() {
 
             <div className="mt-5 space-y-4">
               <label className="block space-y-1.5">
-                <span className="text-sm font-medium text-slate-600">Office Name</span>
+                <span className={`text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>Office Name</span>
                 <input
                   value={officeName}
                   onChange={(event) => {
                     setOfficeName(event.target.value)
                     if (formError) setFormError("")
                   }}
-                  className={`w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none ${
-                    formError ? "border-rose-400 focus:border-rose-500" : "border-slate-200 focus:border-violet-500"
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ${
+                    formError
+                      ? "border-rose-400 focus:border-rose-500"
+                      : isDark
+                        ? "border-slate-700 bg-[#111a24] text-slate-100 focus:border-violet-500"
+                        : "border-slate-200 bg-white focus:border-violet-500"
                   }`}
                   placeholder="Enter office name"
                 />
               </label>
 
               {editingOffice && (
-                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                <label className={`inline-flex items-center gap-2 text-sm ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   <input
                     type="checkbox"
                     checked={officeActive}
@@ -240,7 +249,9 @@ function OfficesPage() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600"
+                className={`rounded-xl border px-5 py-2.5 text-sm font-medium ${
+                  isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-600"
+                }`}
                 disabled={isSaving}
               >
                 Cancel
