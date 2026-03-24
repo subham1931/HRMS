@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import RegisterEmployeeForm from "../components/RegisterEmployeeForm"
 import { createEmployeeRecord } from "../services/employees"
 import { createDepartment, listDepartments } from "../services/departments"
-import { createOffice, listOffices } from "../services/offices"
+import { listOffices } from "../services/offices"
 
 function AddEmployeePage({ appearance = "Light" }) {
   const navigate = useNavigate()
@@ -61,19 +61,6 @@ function AddEmployeePage({ appearance = "Light" }) {
       setSubmitError(error?.message || "Unable to create department right now.")
     }
   }
-  const handleAddOffice = async (officeName) => {
-    const normalized = (officeName || "").trim()
-    if (!normalized) return
-    try {
-      const savedName = await createOffice(normalized)
-      setOfficeOptions((prev) => (
-        prev.some((item) => item.toLowerCase() === savedName.toLowerCase()) ? prev : [...prev, savedName].sort()
-      ))
-    } catch (error) {
-      setSubmitError(error?.message || "Unable to create office right now.")
-    }
-  }
-
   return (
     <RegisterEmployeeForm
       appearance={appearance}
@@ -82,7 +69,6 @@ function AddEmployeePage({ appearance = "Light" }) {
       onCancel={() => navigate("/employees")}
       onSubmit={handleAddEmployee}
       onAddDepartment={handleAddDepartment}
-      onAddOffice={handleAddOffice}
       submitError={submitError}
       isSubmitting={isSubmitting}
     />

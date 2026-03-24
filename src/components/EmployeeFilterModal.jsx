@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react"
 import { useState } from "react"
 
 function EmployeeFilterModal({ open, initialFilters, departmentOptions = [], onClose, onApply, appearance = "Light" }) {
@@ -42,38 +43,52 @@ function EmployeeFilterModal({ open, initialFilters, departmentOptions = [], onC
 
         <div className="mt-6">
           <p className={`mb-2 text-[16px] font-semibold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>Employment Type</p>
-          <select
-            value={selectedEmploymentType}
-            onChange={(event) => setSelectedEmploymentType(event.target.value)}
-            className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae] ${
-              isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200 bg-white text-slate-700"
-            }`}
-          >
-            <option value="">All Employment Types</option>
-            {["Full-Time", "Part-Time", "Internship", "Freelance", "Contract", "Temporary", "Permanent"].map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedEmploymentType}
+              onChange={(event) => setSelectedEmploymentType(event.target.value)}
+              className={`w-full appearance-none rounded-xl border py-2.5 pl-3 pr-11 text-sm outline-none focus:border-[#53c4ae] ${
+                isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200 bg-white text-slate-700"
+              }`}
+            >
+              <option value="">All Employment Types</option>
+              {["Full-Time", "Part-Time", "Internship", "Freelance", "Contract", "Temporary", "Permanent"].map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={18}
+              aria-hidden
+              className={`pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            />
+          </div>
         </div>
 
         <div className="mt-6">
           <p className={`mb-2 text-[16px] font-semibold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>Work Model</p>
-          <select
-            value={selectedWorkModel}
-            onChange={(event) => setSelectedWorkModel(event.target.value)}
-            className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#53c4ae] ${
-              isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200 bg-white text-slate-700"
-            }`}
-          >
-            <option value="">All Work Models</option>
-            {["On-Site", "Hybrid", "Remote", "Office", "Work from Home"].map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedWorkModel}
+              onChange={(event) => setSelectedWorkModel(event.target.value)}
+              className={`w-full appearance-none rounded-xl border py-2.5 pl-3 pr-11 text-sm outline-none focus:border-[#53c4ae] ${
+                isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200 bg-white text-slate-700"
+              }`}
+            >
+              <option value="">All Work Models</option>
+              {["On-Site", "Hybrid", "Remote", "Office", "Work from Home"].map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={18}
+              aria-hidden
+              className={`pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            />
+          </div>
         </div>
 
         <div className="mt-8 flex items-center gap-3">

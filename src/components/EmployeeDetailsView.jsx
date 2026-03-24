@@ -275,14 +275,25 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile, appearance = "Li
   const documentItems = useMemo(() => {
     const docs = employee?.documents || {}
     const labels = {
-      cv: "CV & Portfolio",
-      id: "ID",
+      cv: "CV",
+      id: "ID proof",
+      educationCertificates: "Educational certificates",
+      bankDetailsDoc: "Bank details document",
+      workExperienceCertificates: "Work experience certificates",
       contract: "Contract Agreement",
       offerLetter: "Offer Letter",
     }
-    return Object.entries(docs)
-      .filter(([, value]) => typeof value === "string" && value.trim() !== "")
-      .map(([key, value]) => ({ label: labels[key] || key, value }))
+    return Object.entries(docs).flatMap(([key, value]) => {
+      if (value == null) return []
+      if (Array.isArray(value)) {
+        const parts = value.map(String).map((s) => s.trim()).filter(Boolean)
+        return parts.map((v) => ({ label: labels[key] || key, value: v }))
+      }
+      if (typeof value === "string" && value.trim() !== "") {
+        return [{ label: labels[key] || key, value }]
+      }
+      return []
+    })
   }, [employee?.documents])
   const payrollDetails = [
     { label: "Salary", value: employee?.salary ? `₹${employee.salary}` : "" },
@@ -616,8 +627,8 @@ function EmployeeDetailsView({ employee, onBack, onEditProfile, appearance = "Li
               {documentItems.length === 0 ? (
                 <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>No documents uploaded.</p>
               ) : (
-                documentItems.map((item) => (
-                  <p key={item.label} className={`rounded-lg border px-3 py-2 text-sm ${isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-700"}`}>
+                documentItems.map((item, index) => (
+                  <p key={`${item.label}-${item.value}-${index}`} className={`rounded-lg border px-3 py-2 text-sm ${isDark ? "border-slate-700 text-slate-300" : "border-slate-200 text-slate-700"}`}>
                     <span className="font-medium">{item.label}:</span> {item.value}
                   </p>
                 ))

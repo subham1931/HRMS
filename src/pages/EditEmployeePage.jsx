@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import RegisterEmployeeForm from "../components/RegisterEmployeeForm"
 import { listDepartments } from "../services/departments"
 import { getEmployeeRecordByCode, updateEmployeeRecord } from "../services/employees"
-import { createOffice, listOffices } from "../services/offices"
+import { listOffices } from "../services/offices"
 
 function EditEmployeePage({ appearance = "Light" }) {
   const isDark = appearance === "Dark"
@@ -77,19 +77,6 @@ function EditEmployeePage({ appearance = "Light" }) {
     if (!normalized) return
     setDepartmentOptions((prev) => (prev.some((item) => item.toLowerCase() === normalized.toLowerCase()) ? prev : [...prev, normalized]))
   }
-  const handleAddOffice = async (officeName) => {
-    const normalized = (officeName || "").trim()
-    if (!normalized) return
-    try {
-      const savedName = await createOffice(normalized)
-      setOfficeOptions((prev) => (
-        prev.some((item) => item.toLowerCase() === savedName.toLowerCase()) ? prev : [...prev, savedName].sort()
-      ))
-    } catch (error) {
-      setSubmitError(error?.message || "Unable to create office right now.")
-    }
-  }
-
   const handleUpdateEmployee = async (payload) => {
     if (!employee) return
     try {
@@ -137,7 +124,6 @@ function EditEmployeePage({ appearance = "Light" }) {
       onCancel={() => navigate("/employees")}
       onSubmit={handleUpdateEmployee}
       onAddDepartment={handleAddDepartment}
-      onAddOffice={handleAddOffice}
       submitError={submitError}
       isSubmitting={isSubmitting}
     />
