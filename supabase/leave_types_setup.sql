@@ -90,11 +90,16 @@ create policy "HR admins can update leave types"
     )
   );
 
+-- Rename legacy seed name so existing databases pick up the new label.
+update public.leave_types
+set name = 'Work From Home'
+where lower(trim(name)) = lower('Other Leave');
+
 insert into public.leave_types (name, annual_limit_days, earned_per_month_days, is_paid, is_active)
 values
   ('Annual Leave', 12, 0, true, true),
   ('Sick Leave', 10, 0, true, true),
   ('Casual Leave', 8, 0, true, true),
   ('Earned Leave', 0, 1.5, true, true),
-  ('Other Leave', 0, 0, false, true)
+  ('Work From Home', 0, 0, false, true)
 on conflict (name) do nothing;

@@ -156,7 +156,7 @@ function LeaveSetupPage({ appearance = "Light" }) {
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className={`w-full rounded-xl border py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300 ${
+            className={`w-full rounded-xl border py-2.5 pl-11 pr-3 text-sm outline-none focus:border-[#53c4ae] ${
               isDark ? "border-slate-700 bg-[#0f1720] text-slate-100" : "border-slate-200 bg-white"
             }`}
             placeholder="Search leave type"
@@ -257,8 +257,8 @@ function LeaveSetupPage({ appearance = "Light" }) {
                     formError
                       ? "border-rose-400 focus:border-rose-500"
                       : isDark
-                        ? "border-slate-700 bg-[#111a24] text-slate-100 focus:border-violet-500"
-                        : "border-slate-200 bg-white focus:border-violet-500"
+                        ? "border-slate-700 bg-[#111a24] text-slate-100 focus:border-[#53c4ae]"
+                        : "border-slate-200 bg-white focus:border-[#53c4ae]"
                   }`}
                   placeholder="e.g. Casual Leave"
                 />
@@ -271,7 +271,7 @@ function LeaveSetupPage({ appearance = "Light" }) {
                   min={0}
                   value={annualLimit}
                   onChange={(event) => setAnnualLimit(event.target.value)}
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-violet-500 ${
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#53c4ae] ${
                     isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200 bg-white"
                   }`}
                 />
@@ -285,7 +285,7 @@ function LeaveSetupPage({ appearance = "Light" }) {
                   step="0.5"
                   value={earnedPerMonth}
                   onChange={(event) => setEarnedPerMonth(event.target.value)}
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-violet-500 ${
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#53c4ae] ${
                     isDark ? "border-slate-700 bg-[#111a24] text-slate-100" : "border-slate-200 bg-white"
                   }`}
                 />
@@ -297,7 +297,7 @@ function LeaveSetupPage({ appearance = "Light" }) {
                   type="checkbox"
                   checked={isPaid}
                   onChange={(event) => setIsPaid(event.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 accent-violet-600"
+                  className="h-4 w-4 rounded border-slate-300 accent-[#53c4ae]"
                 />
                 Paid leave type
               </label>
@@ -308,7 +308,7 @@ function LeaveSetupPage({ appearance = "Light" }) {
                     type="checkbox"
                     checked={isActive}
                     onChange={(event) => setIsActive(event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 accent-violet-600"
+                    className="h-4 w-4 rounded border-slate-300 accent-[#53c4ae]"
                   />
                   Active leave type
                 </label>
@@ -334,7 +334,7 @@ function LeaveSetupPage({ appearance = "Light" }) {
                 className="rounded-xl bg-[#53c4ae] px-5 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSaving}
               >
-                {isSaving ? "Saving..." : editingLeaveType ? "Update Leave Type" : "Create Leave Type"}
+                {isSaving ? "Saving..." : editingLeaveType ? "Save changes" : "Create Leave Type"}
               </button>
             </div>
           </div>

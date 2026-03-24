@@ -307,14 +307,14 @@ function LeaveCalendarPage({ appearance = "Light" }) {
               return (
                 <div
                   key={cell.key}
-                  className={`min-h-[96px] border-b border-r p-1.5 last:border-r-0 sm:min-h-[112px] sm:p-2 lg:min-h-[130px] ${
+                  className={`flex min-h-[96px] min-w-0 flex-col overflow-hidden border-b border-r p-1.5 last:border-r-0 sm:min-h-[112px] sm:p-2 lg:min-h-[130px] ${
                     isDark
                       ? `border-slate-700 ${cell.inCurrentMonth ? "bg-[#111a24]" : "bg-[#0f1720]"}`
                       : `border-slate-200 ${cell.inCurrentMonth ? "bg-white" : "bg-slate-50"}`
                   }`}
                 >
                   <span
-                    className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[11px] font-semibold sm:h-6 sm:min-w-[24px] sm:text-xs ${
+                    className={`inline-flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full px-1 text-[11px] font-semibold sm:h-6 sm:min-w-[24px] sm:text-xs ${
                       isToday
                         ? "bg-blue-600 text-white"
                         : cell.inCurrentMonth
@@ -324,7 +324,7 @@ function LeaveCalendarPage({ appearance = "Light" }) {
                   >
                     {cell.value}
                   </span>
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
                     {events.slice(0, 3).map((event) => (
                       <button
                         key={event.id}
@@ -334,7 +334,7 @@ function LeaveCalendarPage({ appearance = "Light" }) {
                             navigate(`/leaves/${encodeURIComponent(event.leaveId)}`)
                           }
                         }}
-                        className={`block truncate rounded-md px-1.5 py-1 text-[10px] font-medium sm:px-2 sm:text-[11px] ${getEventClass(event.type)}`}
+                        className={`block w-full max-w-full truncate rounded-md px-1.5 py-1 text-left text-[10px] font-medium sm:px-2 sm:text-[11px] ${getEventClass(event.type)}`}
                         title={event.title}
                       >
                         {event.title}

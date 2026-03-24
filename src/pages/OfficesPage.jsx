@@ -126,7 +126,7 @@ function OfficesPage({ appearance = "Light" }) {
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className={`w-full rounded-xl border py-2.5 pl-11 pr-3 text-sm outline-none focus:border-violet-300 ${
+            className={`w-full rounded-xl border py-2.5 pl-11 pr-3 text-sm outline-none focus:border-[#53c4ae] ${
               isDark ? "border-slate-700 bg-[#0f1720] text-slate-100" : "border-slate-200 bg-white"
             }`}
             placeholder="Search office"
@@ -223,8 +223,8 @@ function OfficesPage({ appearance = "Light" }) {
                     formError
                       ? "border-rose-400 focus:border-rose-500"
                       : isDark
-                        ? "border-slate-700 bg-[#111a24] text-slate-100 focus:border-violet-500"
-                        : "border-slate-200 bg-white focus:border-violet-500"
+                        ? "border-slate-700 bg-[#111a24] text-slate-100 focus:border-[#53c4ae]"
+                        : "border-slate-200 bg-white focus:border-[#53c4ae]"
                   }`}
                   placeholder="Enter office name"
                 />
@@ -236,7 +236,7 @@ function OfficesPage({ appearance = "Light" }) {
                     type="checkbox"
                     checked={officeActive}
                     onChange={(event) => setOfficeActive(event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 accent-violet-600"
+                    className="h-4 w-4 rounded border-slate-300 accent-[#53c4ae]"
                   />
                   Active office
                 </label>
@@ -262,7 +262,7 @@ function OfficesPage({ appearance = "Light" }) {
                 className="rounded-xl bg-[#53c4ae] px-5 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSaving}
               >
-                {isSaving ? "Saving..." : editingOffice ? "Update Office" : "Create Office"}
+                {isSaving ? "Saving..." : editingOffice ? "Save changes" : "Create Office"}
               </button>
             </div>
           </div>

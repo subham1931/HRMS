@@ -138,3 +138,8 @@ create policy "Public mobile leave cancel pending"
         and lower(e.employment_status) = 'active'
     )
   );
+
+-- Align legacy leave type label with HR setup (Work From Home).
+update public.leave_requests
+set leave_type = 'Work From Home'
+where lower(trim(leave_type)) = lower('Other Leave');

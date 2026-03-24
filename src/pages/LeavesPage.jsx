@@ -30,7 +30,9 @@ function normalizeLeaveType(type) {
   if (value.includes("annual") || value.includes("paid")) return "Annual Leave"
   if (value.includes("sick")) return "Sick Leave"
   if (value.includes("casual")) return "Casual Leave"
-  return "Other Leave"
+  if (value.includes("work from home") || value.includes("wfh")) return "Work From Home"
+  if (value.includes("other leave")) return "Work From Home"
+  return "Work From Home"
 }
 
 function makeDefaultLeaveRequests(employees) {
@@ -38,7 +40,7 @@ function makeDefaultLeaveRequests(employees) {
   const fallback = [
     { employeeId: "EMP-0234", name: "Lina Armand", department: "R&D", type: "Sick Leave", jobTitle: "Lab Analyst" },
     { employeeId: "EMP-0115", name: "Jacob Yuen", department: "Operations", type: "Annual Leave", jobTitle: "Site Supervisor" },
-    { employeeId: "EMP-0275", name: "Anya Rodriguez", department: "Marketing", type: "Other Leave", jobTitle: "Graphic Designer" },
+    { employeeId: "EMP-0275", name: "Anya Rodriguez", department: "Marketing", type: "Work From Home", jobTitle: "Graphic Designer" },
     { employeeId: "EMP-0234", name: "Olivia Mason", department: "Marketing", type: "Annual Leave", jobTitle: "Marketing Executive" },
     { employeeId: "EMP-0356", name: "Sara Kim", department: "Customer Service", type: "Sick Leave", jobTitle: "Customer Support" },
     { employeeId: "EMP-0291", name: "Daniel Cheung", department: "Operations", type: "Annual Leave", jobTitle: "Compliance Specialist" },
@@ -183,7 +185,7 @@ function LeavesPage({ appearance = "Light" }) {
     const typeCount = {
       annual: enrichedRequests.filter((item) => item.leaveType === "Annual Leave").length,
       sick: enrichedRequests.filter((item) => item.leaveType === "Sick Leave").length,
-      other: enrichedRequests.filter((item) => item.leaveType === "Other Leave").length,
+      other: enrichedRequests.filter((item) => item.leaveType === "Work From Home").length,
       casual: enrichedRequests.filter((item) => item.leaveType === "Casual Leave").length,
     }
     return { pending, approved, rejected, total: enrichedRequests.length, onLeaveToday, typeCount }
@@ -370,7 +372,7 @@ function LeavesPage({ appearance = "Light" }) {
               { label: "Total On Leave (Today)", value: summary.onLeaveToday, tone: "bg-[#e8f1df]", percent: `${Math.round((summary.onLeaveToday / Math.max(1, summary.total)) * 100)}%` },
               { label: "Annual Leave", value: summary.typeCount.annual, tone: "bg-slate-50", percent: `${Math.round((summary.typeCount.annual / totalType) * 100)}%` },
               { label: "Sick Leave", value: summary.typeCount.sick, tone: "bg-slate-50", percent: `${Math.round((summary.typeCount.sick / totalType) * 100)}%` },
-              { label: "Other Leaves", value: summary.typeCount.other, tone: "bg-slate-50", percent: `${Math.round((summary.typeCount.other / totalType) * 100)}%` },
+              { label: "Work From Home", value: summary.typeCount.other, tone: "bg-slate-50", percent: `${Math.round((summary.typeCount.other / totalType) * 100)}%` },
             ].map((card) => (
               <div key={card.label} className={`rounded-2xl p-3.5 sm:p-4 ${isDark ? "border border-slate-700 bg-[#0f1720]" : card.tone}`}>
                 <div className={`inline-flex items-center gap-2 text-[11px] sm:text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
@@ -403,7 +405,7 @@ function LeavesPage({ appearance = "Light" }) {
               {[
                 ["#0f5b4d", "Annual Leave", summary.typeCount.annual],
                 ["#2eb79d", "Sick Leave", summary.typeCount.sick],
-                ["#d8e8d3", "Other Leaves", summary.typeCount.other],
+                ["#d8e8d3", "Work From Home", summary.typeCount.other],
                 ["#edf2ea", "Casual Leave", summary.typeCount.casual],
               ].map(([color, label, count]) => (
                 <div key={label} className="flex items-center justify-between">
@@ -628,7 +630,24 @@ function LeavesPage({ appearance = "Light" }) {
               {pagedRows.map((item) => {
                 const durationDays = daysBetween(item.startDate, item.endDate)
                 return (
-                  <tr key={item.id} className={`border-b last:border-0 ${isDark ? "border-slate-700" : "border-slate-100"}`}>
+                  <tr
+                    key={item.id}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Open leave details for ${item.employeeName}`}
+                    onClick={() => {
+                      if (item.id) navigate(`/leaves/${encodeURIComponent(item.id)}`)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault()
+                        if (item.id) navigate(`/leaves/${encodeURIComponent(item.id)}`)
+                      }
+                    }}
+                    className={`cursor-pointer border-b transition-colors last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#53c4ae] ${
+                      isDark ? "border-slate-700 hover:bg-[#0f1720]" : "border-slate-100 hover:bg-slate-50"
+                    }`}
+                  >
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2.5">
                         {item.avatar && !brokenAvatarById[item.id] ? (

@@ -6,7 +6,7 @@ const YEARLY_LEAVE_QUOTA = {
   "Annual Leave": 20,
   "Sick Leave": 10,
   "Casual Leave": 12,
-  "Other Leave": 6,
+  "Work From Home": 6,
 }
 
 function toYMD(date) {
@@ -36,7 +36,9 @@ function normalizeLeaveType(type) {
   if (value.includes("annual") || value.includes("paid")) return "Annual Leave"
   if (value.includes("sick")) return "Sick Leave"
   if (value.includes("casual")) return "Casual Leave"
-  return "Other Leave"
+  if (value.includes("work from home") || value.includes("wfh")) return "Work From Home"
+  if (value.includes("other leave")) return "Work From Home"
+  return "Work From Home"
 }
 
 function normalizeRequests(rows) {
@@ -147,7 +149,7 @@ function LeaveRequestDetailsPage({ appearance = "Light" }) {
       "Annual Leave": 0,
       "Sick Leave": 0,
       "Casual Leave": 0,
-      "Other Leave": 0,
+      "Work From Home": 0,
     }
     leaveRequests
       .filter((item) => item.employeeId === leaveRequest.employeeId && item.status === "Approved")

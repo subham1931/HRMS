@@ -12,12 +12,6 @@ import { useEffect, useState } from "react"
 
 const menuItems = [
   { label: "Dashboard", icon: LayoutGrid, to: "/dashboard" },
-  { label: "All Employees", icon: Users, to: "/employees" },
-  { label: "Attendance", icon: CalendarCheck2, to: "/attendance" },
-  { label: "Payroll", icon: ClipboardList, to: "/payroll" },
-  { label: "Leaves", icon: CalendarDays, to: "/leaves" },
-  { label: "Calendar", icon: CalendarDays, to: "/calendar" },
-  { label: "Holidays", icon: Calendar, to: "/holidays" },
   {
     label: "Setup",
     icon: Settings,
@@ -28,6 +22,12 @@ const menuItems = [
       { label: "Leaves", to: "/setup/leaves" },
     ],
   },
+  { label: "All Employees", icon: Users, to: "/employees" },
+  { label: "Attendance", icon: CalendarCheck2, to: "/attendance" },
+  { label: "Payroll", icon: ClipboardList, to: "/payroll" },
+  { label: "Leaves", icon: CalendarDays, to: "/leaves" },
+  { label: "Calendar", icon: CalendarDays, to: "/calendar" },
+  { label: "Holidays", icon: Calendar, to: "/holidays" },
   { label: "Settings", icon: Settings, to: "/settings" },
 ]
 
